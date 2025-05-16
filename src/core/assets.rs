@@ -1,0 +1,67 @@
+use bevy::asset::{AssetServer, Handle};
+use bevy::prelude::*;
+use bevy_kira_audio::AudioSource;
+use std::collections::HashMap;
+
+pub struct WorldAssets {
+    pub audio: HashMap<&'static str, Handle<AudioSource>>,
+    pub fonts: HashMap<&'static str, Handle<Font>>,
+    pub images: HashMap<&'static str, Handle<Image>>,
+}
+
+impl WorldAssets {
+    fn get_asset<'a, T: Clone>(
+        &self,
+        map: &'a HashMap<&str, T>,
+        name: &str,
+        asset_type: &str,
+    ) -> &'a T {
+        map.get(name)
+            .expect(&format!("No asset for {asset_type} {name}"))
+    }
+
+    pub fn audio(&self, name: &str) -> Handle<AudioSource> {
+        self.get_asset(&self.audio, name, "audio").clone_weak()
+    }
+
+    pub fn font(&self, name: &str) -> Handle<Font> {
+        self.get_asset(&self.fonts, name, "font").clone_weak()
+    }
+
+    pub fn image(&self, name: &str) -> &Handle<Image> {
+        self.get_asset(&self.images, name, "image")
+    }
+}
+
+impl FromWorld for WorldAssets {
+    fn from_world(world: &mut World) -> Self {
+        let assets = world.get_resource::<AssetServer>().unwrap();
+
+        let audio = HashMap::from([
+            ("button", assets.load("audio/button.ogg")),
+            ("message", assets.load("audio/message.ogg")),
+            ("warning", assets.load("audio/warning.ogg")),
+            ("error", assets.load("audio/error.ogg")),
+            ("defeat", assets.load("audio/defeat.ogg")),
+            ("music", assets.load("audio/music.ogg")),
+        ]);
+
+        let fonts = HashMap::from([
+            ("bold", assets.load("fonts/FiraSans-Bold.ttf")),
+            ("medium", assets.load("fonts/FiraMono-Medium.ttf")),
+        ]);
+
+        let images: HashMap<&'static str, Handle<Image>> = HashMap::from([
+            // Icons
+            ("calendar", assets.load("images/icons/calendar.png")),
+            ("cash", assets.load("images/icons/cash.png")),
+            ("clock", assets.load("images/icons/clock.png")),
+        ]);
+
+        Self {
+            audio,
+            fonts,
+            images,
+        }
+    }
+}
