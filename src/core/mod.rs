@@ -14,14 +14,11 @@ use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::{AppState, AudioState, GameState};
 use crate::core::systems::time_pass;
-use crate::core::ui::systems::top_panel;
+use crate::core::ui::systems::{left_panel, top_panel};
 use crate::core::ui::utils::{add_egui_images, set_egui_style};
 use bevy::prelude::*;
 
 pub struct GamePlugin;
-
-#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
-struct InGameSet;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
@@ -36,7 +33,7 @@ impl Plugin for GamePlugin {
             .init_resource::<Player>()
             // Ui
             .add_systems(Startup, (set_egui_style, add_egui_images))
-            .add_systems(Update, top_panel)
+            .add_systems(Update, (left_panel, top_panel))
             // Systems
             .add_systems(
                 Update,

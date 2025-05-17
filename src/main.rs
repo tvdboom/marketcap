@@ -1,6 +1,7 @@
 //#![windows_subsystem = "windows"]
 
 mod core;
+mod utils;
 
 use crate::core::GamePlugin;
 use crate::core::ui::messages::MessagesPlugin;
