@@ -1,18 +1,22 @@
 mod assets;
 mod constants;
 mod game_settings;
+mod pause;
 mod player;
 mod resources;
 mod states;
+mod systems;
 pub mod ui;
 
 use crate::core::game_settings::GameSettings;
+use crate::core::pause::toggle_pause_keyboard;
 use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::{AppState, AudioState, GameState};
-use crate::core::ui::systems::{top_panel};
-use bevy::prelude::*;
+use crate::core::systems::time_pass;
+use crate::core::ui::systems::top_panel;
 use crate::core::ui::utils::{add_egui_images, set_egui_style};
+use bevy::prelude::*;
 
 pub struct GamePlugin;
 
@@ -32,6 +36,14 @@ impl Plugin for GamePlugin {
             .init_resource::<Player>()
             // Ui
             .add_systems(Startup, (set_egui_style, add_egui_images))
-            .add_systems(Update, top_panel);
+            .add_systems(Update, top_panel)
+            // Systems
+            .add_systems(
+                Update,
+                (
+                    time_pass.run_if(in_state(GameState::Running)),
+                    toggle_pause_keyboard,
+                ),
+            );
     }
 }

@@ -10,3 +10,9 @@ impl Default for Player {
         Player { cash: 1000 }
     }
 }
+
+impl Player {
+    pub fn market_cap(&self) -> u32 {
+        self.cash
+    }
+}

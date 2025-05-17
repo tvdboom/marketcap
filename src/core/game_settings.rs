@@ -1,20 +1,24 @@
+use crate::core::constants::DEFAULT_SPEED;
 use crate::core::states::AudioState;
 use bevy::prelude::*;
 use chrono::{Local, NaiveDate};
+use std::time::Duration;
 
 #[derive(Resource, Clone)]
 pub struct GameSettings {
     pub audio: AudioState,
-    pub speed: u32,
     pub date: NaiveDate,
+    pub speed: f32,
+    pub clock: Timer,
 }
 
 impl Default for GameSettings {
     fn default() -> Self {
         Self {
             audio: AudioState::default(),
-            speed: 5,
             date: Local::now().date_naive(),
+            speed: 1.,
+            clock: Timer::new(Duration::from_secs_f32(DEFAULT_SPEED), TimerMode::Repeating),
         }
     }
 }

@@ -55,7 +55,9 @@ impl FromWorld for WorldAssets {
             // Icons
             ("calendar", assets.load("images/icons/calendar.png")),
             ("cash", assets.load("images/icons/cash.png")),
-            ("clock", assets.load("images/icons/clock.png")),
+            ("logo", assets.load("images/icons/logo.png")),
+            ("time", assets.load("images/icons/time.png")),
+            ("time-paused", assets.load("images/icons/time-paused.png")),
         ]);
 
         Self {

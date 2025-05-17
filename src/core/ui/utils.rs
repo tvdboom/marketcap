@@ -1,10 +1,10 @@
-use bevy::prelude::{Local, ResMut};
-use bevy_egui::egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
-use bevy_egui::egui::{FontData, FontFamily};
-use bevy_egui::EguiContexts;
 use crate::core::assets::WorldAssets;
 use crate::core::resources::ImageIds;
 use crate::core::ui::themes::{Aesthetics, NordDark};
+use bevy::prelude::{Local, ResMut};
+use bevy_egui::EguiContexts;
+use bevy_egui::egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
+use bevy_egui::egui::{FontData, FontFamily};
 
 pub fn set_egui_style(mut contexts: EguiContexts) {
     let context = contexts.ctx_mut();
