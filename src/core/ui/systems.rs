@@ -1,5 +1,5 @@
 use crate::core::constants::{GREEN, LEFT_LABEL_FRAC, TOP_LABEL_FRAC};
-use crate::core::game_settings::GameSettings;
+use crate::core::game_params::GameParams;
 use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::GameState;
@@ -19,14 +19,24 @@ pub enum Tab {
     Stocks,
     Bonds,
     Crypto,
-    Espionage,
-    Factors,
     Credit,
+}
+
+impl Tab {
+    pub fn emoji(&self) -> &str {
+        match self {
+            Tab::Home => "🏠",
+            Tab::Stocks => "📈",
+            Tab::Bonds => "💵",
+            Tab::Crypto => "💰",
+            Tab::Credit => "💳",
+        }
+    }
 }
 
 pub fn top_panel(
     mut contexts: EguiContexts,
-    game_settings: Res<GameSettings>,
+    game_params: Res<GameParams>,
     player: Res<Player>,
     game_state: Res<State<GameState>>,
     images: Res<ImageIds>,
@@ -85,7 +95,7 @@ pub fn top_panel(
                     ui.add_space(window_width * 0.02);
 
                     ui.label(
-                        RichText::new(game_settings.date.format("%d-%m-%Y").to_string())
+                        RichText::new(game_params.date.format("%d-%m-%Y").to_string())
                             .size(height * 0.5),
                     );
 
@@ -101,24 +111,26 @@ pub fn top_panel(
                     ui.add_space(window_width * 0.01);
 
                     ui.label(
-                        RichText::new(format!("{:.1}%", 100. * game_settings.interest_rate()))
+                        RichText::new(format!("{:.1}%", game_params.interest_rate.current()))
                             .size(height * 0.5),
                     );
                     ui.add(Image::new(SizedTexture::new(
                         images.get("interest-rate"),
                         [height * 0.5, height * 0.5],
-                    )));
+                    )))
+                    .on_hover_text(game_params.interest_rate.description());
 
                     ui.add_space(window_width * 0.01);
 
                     ui.label(
-                        RichText::new(format!("{:.0}", 100. * game_settings.economy()))
+                        RichText::new(format!("{:.0}", game_params.economic_factor.current()))
                             .size(height * 0.5),
                     );
                     ui.add(Image::new(SizedTexture::new(
                         images.get("global-economy"),
                         [height * 0.5, height * 0.5],
-                    )));
+                    )))
+                    .on_hover_text(game_params.economic_factor.description());
                 });
             });
         });
@@ -126,7 +138,7 @@ pub fn top_panel(
 
 pub fn left_panel(
     mut contexts: EguiContexts,
-    mut game_settings: ResMut<GameSettings>,
+    mut game_params: ResMut<GameParams>,
     window: Single<&Window>,
 ) {
     let window_width = window.width();
@@ -143,9 +155,10 @@ pub fn left_panel(
 
                 for tab in Tab::iter() {
                     ui.selectable_value(
-                        &mut game_settings.tab,
+                        &mut game_params.tab,
                         tab,
-                        RichText::new(tab.to_name()).size(width * 0.12),
+                        RichText::new(format!("{}  {}", tab.emoji(), tab.to_name()))
+                            .size(width * 0.12),
                     );
                 }
             });

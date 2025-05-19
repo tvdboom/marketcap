@@ -1,23 +1,16 @@
-use crate::core::constants::BASE_INTEREST_RATE;
-use crate::core::game_settings::GameSettings;
+use crate::core::game_params::GameParams;
 use bevy::prelude::*;
 use chrono::Duration;
 
-fn calculate_global_economy(economy: f32) -> f32 {
-    economy + rng().random_range(-2.5, 2.5)
-}
+pub fn time_pass(mut game_params: ResMut<GameParams>, time: Res<Time>) {
+    game_params.clock.tick(time.delta());
 
-fn calculate_interest_rate(economy: f32) -> f32 {
-    BASE_INTEREST_RATE + ((1. - BASE_INTEREST_RATE) * (1. - economy))
-}
+    if game_params.clock.just_finished() {
+        game_params.date = game_params.date + Duration::days(1);
 
-pub fn time_pass(mut game_settings: ResMut<GameSettings>, time: Res<Time>) {
-    game_settings.clock.tick(time.delta());
+        game_params.economic_factor.bump();
 
-    if game_settings.clock.just_finished() {
-        game_settings.date = game_settings.date + Duration::days(1);
-
-        let interest = calculate_interest_rate(game_settings.economy());
-        game_settings.interest_rate.push(interest);
+        let economy = game_params.economic_factor.current();
+        game_params.interest_rate.bump(economy);
     }
 }

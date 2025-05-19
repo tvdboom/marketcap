@@ -14,4 +14,6 @@ pub const TOP_LABEL_FRAC: f32 = 0.1; // Fraction of the screen height for the to
 pub const LEFT_LABEL_FRAC: f32 = 0.1; // Fraction of the screen height for the left label
 
 /// Economics
-pub const BASE_INTEREST_RATE: f32 = 0.02; // Minimum interest rate (2%)
+pub const MIN_INTEREST_RATE: f32 = 0.02; // Minimum interest rate (2%)
+pub const MAX_INTEREST_RATE: f32 = 0.1; // Maximum interest rate (10%)
+pub const INTEREST_ADJUSTMENT_RATE: f32 = 0.1; // Adjustment rate for the interest

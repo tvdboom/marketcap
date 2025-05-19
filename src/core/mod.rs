@@ -1,5 +1,6 @@
 mod assets;
 mod constants;
+mod game_params;
 mod game_settings;
 mod pause;
 mod player;
@@ -8,6 +9,7 @@ mod states;
 mod systems;
 pub mod ui;
 
+use crate::core::game_params::GameParams;
 use crate::core::game_settings::GameSettings;
 use crate::core::pause::toggle_pause_keyboard;
 use crate::core::player::Player;
@@ -30,6 +32,7 @@ impl Plugin for GamePlugin {
             // Resources
             .init_resource::<ImageIds>()
             .init_resource::<GameSettings>()
+            .init_resource::<GameParams>()
             .init_resource::<Player>()
             // Ui
             .add_systems(Startup, (set_egui_style, add_egui_images))

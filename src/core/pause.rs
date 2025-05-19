@@ -1,4 +1,5 @@
 use crate::core::constants::{GAME_SPEED_STEP, MAX_GAME_SPEED};
+use crate::core::game_params::GameParams;
 use crate::core::game_settings::GameSettings;
 use crate::core::states::{AppState, GameState};
 use bevy::prelude::*;
@@ -10,6 +11,7 @@ pub fn toggle_pause_keyboard(
     game_state: Res<State<GameState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
     mut game_settings: ResMut<GameSettings>,
+    mut game_params: ResMut<GameParams>,
 ) {
     if keyboard.just_pressed(KeyCode::Escape) {
         match app_state.get() {
@@ -39,7 +41,7 @@ pub fn toggle_pause_keyboard(
                 next_game_state.set(GameState::Paused);
             } else {
                 let duration = Duration::from_secs_f32(1. / game_settings.speed);
-                game_settings.clock.set_duration(duration);
+                game_params.clock.set_duration(duration);
             }
         }
 
@@ -47,7 +49,7 @@ pub fn toggle_pause_keyboard(
             game_settings.speed += GAME_SPEED_STEP;
 
             let duration = Duration::from_secs_f32(1. / game_settings.speed);
-            game_settings.clock.set_duration(duration);
+            game_params.clock.set_duration(duration);
 
             next_game_state.set(GameState::Running);
         }
