@@ -53,16 +53,12 @@ impl FromWorld for WorldAssets {
 
         let images: HashMap<&'static str, Handle<Image>> = HashMap::from([
             // Icons
-            ("calendar", assets.load("images/icons/calendar.png")),
             ("cash", assets.load("images/icons/cash.png")),
-            (
-                "global-economy",
-                assets.load("images/icons/global-economy.png"),
-            ),
-            (
-                "interest-rate",
-                assets.load("images/icons/interest-rate.png"),
-            ),
+            ("credit-score", assets.load("images/icons/credit-score.png")),
+            ("economic", assets.load("images/icons/economic.png")),
+            ("enterprise", assets.load("images/icons/enterprise.png")),
+            ("global", assets.load("images/icons/global.png")),
+            ("interest", assets.load("images/icons/interest.png")),
             ("logo", assets.load("images/icons/logo.png")),
             ("netflow", assets.load("images/icons/netflow.png")),
             ("time", assets.load("images/icons/time.png")),

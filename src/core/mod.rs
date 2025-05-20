@@ -1,4 +1,5 @@
 mod assets;
+pub mod attributes;
 mod constants;
 mod game_params;
 mod game_settings;

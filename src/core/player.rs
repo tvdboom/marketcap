@@ -1,30 +1,27 @@
+use crate::core::attributes::cash::Cash;
+use crate::core::attributes::credit_score::CreditScore;
 use bevy::prelude::*;
 
-#[derive(Resource, Clone)]
+#[derive(Resource, Clone, Default)]
 pub struct Player {
-    pub cash: u32,
-}
-
-impl Default for Player {
-    fn default() -> Self {
-        Player { cash: 1000 }
-    }
+    pub cash: Cash,
+    pub credit_score: CreditScore,
 }
 
 impl Player {
-    pub fn market_cap(&self) -> u32 {
-        self.cash
+    pub fn enterprise_value(&self) -> f32 {
+        self.cash.amount
     }
 
-    pub fn inflow(&self) -> u32 {
-        self.cash
+    pub fn inflow(&self) -> f32 {
+        self.cash.accumulated_interest
     }
 
-    pub fn outflow(&self) -> u32 {
-        0
+    pub fn outflow(&self) -> f32 {
+        0.
     }
 
-    pub fn netflow(&self) -> i32 {
-        self.inflow() as i32 - self.outflow() as i32
+    pub fn netflow(&self) -> f32 {
+        self.inflow() - self.outflow()
     }
 }
