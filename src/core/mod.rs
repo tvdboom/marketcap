@@ -1,8 +1,8 @@
 mod assets;
-pub mod attributes;
 mod constants;
-mod game_params;
+pub mod factors;
 mod game_settings;
+mod global_economy;
 mod pause;
 mod player;
 mod resources;
@@ -10,14 +10,14 @@ mod states;
 mod systems;
 pub mod ui;
 
-use crate::core::game_params::GameParams;
 use crate::core::game_settings::GameSettings;
+use crate::core::global_economy::GlobalEconomy;
 use crate::core::pause::toggle_pause_keyboard;
 use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::{AppState, AudioState, GameState};
 use crate::core::systems::time_pass;
-use crate::core::ui::systems::{left_panel, top_panel};
+use crate::core::ui::systems::{central_panel, left_panel, top_panel, UiState};
 use crate::core::ui::utils::{add_egui_images, set_egui_style};
 use bevy::prelude::*;
 
@@ -32,12 +32,13 @@ impl Plugin for GamePlugin {
             .init_state::<AudioState>()
             // Resources
             .init_resource::<ImageIds>()
+            .init_resource::<UiState>()
             .init_resource::<GameSettings>()
-            .init_resource::<GameParams>()
+            .init_resource::<GlobalEconomy>()
             .init_resource::<Player>()
             // Ui
             .add_systems(Startup, (set_egui_style, add_egui_images))
-            .add_systems(Update, (left_panel, top_panel))
+            .add_systems(Update, (top_panel, left_panel, central_panel).chain())
             // Systems
             .add_systems(
                 Update,

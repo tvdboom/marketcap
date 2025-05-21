@@ -58,6 +58,7 @@ impl FromWorld for WorldAssets {
             ("economic", assets.load("images/icons/economic.png")),
             ("enterprise", assets.load("images/icons/enterprise.png")),
             ("global", assets.load("images/icons/global.png")),
+            ("inflation", assets.load("images/icons/inflation.png")),
             ("interest", assets.load("images/icons/interest.png")),
             ("logo", assets.load("images/icons/logo.png")),
             ("netflow", assets.load("images/icons/netflow.png")),

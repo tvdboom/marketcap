@@ -1,5 +1,5 @@
-use crate::core::attributes::cash::Cash;
-use crate::core::attributes::credit_score::CreditScore;
+use crate::core::factors::cash::Cash;
+use crate::core::factors::credit_score::CreditScore;
 use bevy::prelude::*;
 
 #[derive(Resource, Clone, Default)]

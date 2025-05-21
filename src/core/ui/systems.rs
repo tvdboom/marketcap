@@ -1,6 +1,6 @@
-use crate::core::attributes::attribute::Attribute;
 use crate::core::constants::{GREEN, LEFT_LABEL_FRAC, TOP_LABEL_FRAC};
-use crate::core::game_params::GameParams;
+use crate::core::factors::Factor;
+use crate::core::global_economy::GlobalEconomy;
 use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::GameState;
@@ -9,7 +9,9 @@ use crate::utils::NameFromEnum;
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::widget_text::RichText;
-use bevy_egui::egui::{Align, Color32, Layout, SidePanel, TopBottomPanel};
+use bevy_egui::egui::{
+    Align, CentralPanel, Color32, Frame, Layout, Margin, SidePanel, TopBottomPanel,
+};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
@@ -20,7 +22,9 @@ pub enum Tab {
     Stocks,
     Bonds,
     Crypto,
+    Commodities,
     Credit,
+    Policies,
 }
 
 impl Tab {
@@ -30,14 +34,29 @@ impl Tab {
             Tab::Stocks => "📈",
             Tab::Bonds => "💵",
             Tab::Crypto => "💰",
+            Tab::Commodities => "💎",
             Tab::Credit => "💳",
+            Tab::Policies => "📜",
         }
     }
 }
 
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
+pub enum CreditTab {
+    #[default]
+    Bank,
+    AlternativeLoanProvider,
+}
+
+#[derive(Resource, Clone, Debug, Default)]
+pub struct UiState {
+    pub tab: Tab,
+    pub credit_tab: CreditTab,
+}
+
 pub fn top_panel(
     mut contexts: EguiContexts,
-    game_params: Res<GameParams>,
+    economy: Res<GlobalEconomy>,
     player: Res<Player>,
     game_state: Res<State<GameState>>,
     images: Res<ImageIds>,
@@ -99,23 +118,33 @@ pub fn top_panel(
                 ui.add_space(window.width() * 0.04);
 
                 ui.add_block(
-                    game_params.economic_factor.to_string(),
-                    game_params.economic_factor.description(),
-                    images.get(game_params.economic_factor.image()),
+                    economy.economy.to_string(),
+                    economy.economy.description(),
+                    images.get(economy.economy.image()),
                     Color32::WHITE,
                     &window,
                 );
 
                 ui.add_block(
-                    game_params.interest_rate.to_string(),
-                    game_params.interest_rate.description(),
-                    images.get(game_params.interest_rate.image()),
+                    economy.inflation.to_string(),
+                    economy.inflation.description(),
+                    images.get(economy.inflation.image()),
                     Color32::WHITE,
                     &window,
                 );
 
                 ui.add_block(
-                    game_params.date.format("%d-%m-%Y").to_string(),
+                    economy.interest.to_string(),
+                    economy.interest.description(),
+                    images.get(economy.interest.image()),
+                    Color32::WHITE,
+                    &window,
+                );
+
+                ui.add_space(window.width() * 0.04);
+
+                ui.add_block(
+                    economy.date.format("%d-%m-%Y").to_string(),
                     "Current date\n\n\
                         Income and expenses are paid every last day of the month. Interests are \
                         calculated daily.\n\n\
@@ -134,29 +163,77 @@ pub fn top_panel(
 
 pub fn left_panel(
     mut contexts: EguiContexts,
-    mut game_params: ResMut<GameParams>,
+    mut ui_state: ResMut<UiState>,
     window: Single<&Window>,
 ) {
-    let window_width = window.width();
-    let window_height = window.height();
+    let width = window.width() * LEFT_LABEL_FRAC;
 
-    let width = window_width * LEFT_LABEL_FRAC;
     SidePanel::left("left_panel")
         .exact_width(width)
         .show_separator_line(false)
         .resizable(false)
         .show(contexts.ctx_mut(), |ui| {
             ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
-                ui.add_space(window_height * 0.1);
+                ui.add_space(window.height() * 0.12);
 
                 for tab in Tab::iter() {
                     ui.selectable_value(
-                        &mut game_params.tab,
+                        &mut ui_state.tab,
                         tab,
                         RichText::new(format!("{}  {}", tab.emoji(), tab.to_name()))
-                            .size(width * 0.12),
+                            .size(width * 0.1),
                     );
                 }
             });
+        });
+}
+
+pub fn central_panel(
+    mut contexts: EguiContexts,
+    ui_state: Res<UiState>,
+    window: Single<&Window>,
+) {
+    CentralPanel::default()
+        // .frame(Frame::default().inner_margin(Margin::same(10)))
+        .show(contexts.ctx_mut(), |ui| {
+            ui.add_space(window.height() * 0.08);
+
+            match ui_state.tab {
+                Tab::Home => {
+                    ui.heading("Home");
+                }
+                Tab::Stocks => {
+                    ui.heading("Stocks");
+                }
+                Tab::Bonds => {
+                    ui.heading("Bonds");
+                }
+                Tab::Crypto => {
+                    ui.heading("Crypto");
+                }
+                Tab::Commodities => {
+                    ui.heading("Commodities");
+                }
+                Tab::Credit => {
+                    ui.label(RichText::new("Credit")
+                        .size(window.height() * 0.08));
+                    ui.separator();
+                    ui.horizontal(|ui| {
+                        ui.add_space(window.width() * 0.08);
+
+                        for tab in CreditTab::iter() {
+                            ui.selectable_value(
+                                &mut ui_state.credit_tab,
+                                tab,
+                                RichText::new(format!("{}  {}", tab.emoji(), tab.to_name()))
+                                    .size(window.width() * 0.1),
+                            );
+                        }
+                    });
+                }
+                Tab::Policies => {
+                    ui.heading("Policies");
+                }
+            }
         });
 }

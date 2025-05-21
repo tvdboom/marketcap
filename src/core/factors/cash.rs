@@ -1,4 +1,4 @@
-use crate::core::attributes::attribute::Attribute;
+use crate::core::factors::Factor;
 use std::fmt::{Display, Formatter, Result};
 
 #[derive(Clone)]
@@ -39,7 +39,7 @@ impl Display for Cash {
     }
 }
 
-impl Attribute for Cash {
+impl Factor for Cash {
     fn image(&self) -> &str {
         "cash"
     }

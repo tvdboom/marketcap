@@ -12,10 +12,6 @@ impl Aesthetics for NordDark {
         Color32::from_rgb(94, 129, 172)
     }
 
-    fn secondary_accent_color_visuals(&self) -> Color32 {
-        Color32::from_rgb(129, 161, 193)
-    }
-
     fn bg_primary_color_visuals(&self) -> Color32 {
         Color32::from_rgb(46, 52, 64)
     }
@@ -38,10 +34,6 @@ impl Aesthetics for NordDark {
 
     fn fg_primary_text_color_visuals(&self) -> Option<Color32> {
         Some(Color32::from_rgb(216, 222, 233))
-    }
-
-    fn fg_success_text_color_visuals(&self) -> Color32 {
-        Color32::from_rgb(80, 250, 123)
     }
 
     fn fg_warn_text_color_visuals(&self) -> Color32 {

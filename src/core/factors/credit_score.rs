@@ -1,4 +1,4 @@
-use crate::core::attributes::attribute::Attribute;
+use crate::core::factors::Factor;
 
 #[derive(Clone)]
 pub struct CreditScore(f32);
@@ -14,7 +14,7 @@ impl Default for CreditScore {
     }
 }
 
-impl Attribute for CreditScore {
+impl Factor for CreditScore {
     fn image(&self) -> &str {
         "credit-score"
     }

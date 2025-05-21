@@ -3,7 +3,7 @@ use bevy_egui::egui::Color32;
 /// General
 pub const DEFAULT_SPEED: f32 = 1.;
 pub const GAME_SPEED_STEP: f32 = 0.5;
-pub const MAX_GAME_SPEED: f32 = 5.;
+pub const MAX_GAME_SPEED: f32 = 8.;
 pub const MESSAGE_DURATION: u64 = 4; // Seconds that messages are shown
 
 /// Colors

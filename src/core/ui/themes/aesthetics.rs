@@ -9,9 +9,6 @@ pub trait Aesthetics {
     /// The primary accent color of the theme.
     fn primary_accent_color_visuals(&self) -> Color32;
 
-    /// The secondary accent color of the theme.
-    fn secondary_accent_color_visuals(&self) -> Color32;
-
     /// Used for the main background color of the app.
     ///
     /// - This value is used for eguis `panel_fill` and `window_fill` fields
@@ -42,9 +39,6 @@ pub trait Aesthetics {
     /// If text color is None (default), then the text color will be the same as the foreground stroke color
     /// and will depend on whether the widget is being interacted with.
     fn fg_primary_text_color_visuals(&self) -> Option<Color32>;
-
-    /// Success color for text.
-    fn fg_success_text_color_visuals(&self) -> Color32;
 
     /// Warning text color.
     fn fg_warn_text_color_visuals(&self) -> Color32;

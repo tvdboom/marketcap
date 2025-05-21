@@ -1,30 +1,36 @@
-use crate::core::attributes::attribute::Attribute;
-use crate::core::game_params::GameParams;
+use crate::core::factors::Factor;
+use crate::core::global_economy::GlobalEconomy;
 use crate::core::player::Player;
 use bevy::prelude::*;
 use chrono::Datelike;
 
-pub fn time_pass(mut game_params: ResMut<GameParams>, mut player: ResMut<Player>, time: Res<Time>) {
-    game_params.clock.tick(time.delta());
+pub fn time_pass(
+    mut global_economy: ResMut<GlobalEconomy>,
+    mut player: ResMut<Player>,
+    time: Res<Time>,
+) {
+    global_economy.clock.tick(time.delta());
 
-    if game_params.clock.just_finished() {
-        let month = game_params.date.month();
+    if global_economy.clock.just_finished() {
+        let month = global_economy.date.month();
 
         // Advance 1 day
-        game_params.date = game_params.date.succ_opt().unwrap();
+        global_economy.date = global_economy.date.succ_opt().unwrap();
 
         // Daily operations =================================== >>
 
-        game_params.economic_factor.bump();
+        global_economy.bump();
 
-        let economy = game_params.economic_factor.current();
-        game_params.interest_rate.bump(economy);
-
-        player.cash.bump(game_params.interest_rate.current());
+        player.cash.bump(global_economy.interest.current());
 
         // Monthly operations =================================== >>
 
-        if month != game_params.date.month() {
+        if month != global_economy.date.month() {
+            // Central bank calculates/pushes next interest rate
+            let inflation = global_economy.inflation.current();
+            global_economy.interest.resolve(inflation);
+
+            // Interest on cash is paid
             player.cash.resolve();
         }
     }

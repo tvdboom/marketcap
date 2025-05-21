@@ -1,34 +1,51 @@
-use std::fmt::{Display, Formatter, Result};
-use crate::core::attributes::attribute::Attribute;
+use crate::core::factors::Factor;
 use rand::{Rng, rng};
-use crate::core::attributes::cash::Cash;
+use std::fmt::{Display, Formatter, Result};
 
 #[derive(Clone)]
-pub struct GlobalEconomicFactor(Vec<f32>);
+pub struct Economy(Vec<f32>);
 
-impl Default for GlobalEconomicFactor {
+impl Default for Economy {
     fn default() -> Self {
-        Self(Vec::from([(Self::MIN + Self::MAX) * 0.5]))
+        Self(Vec::from([Self::DEFAULT]))
     }
 }
 
-impl Display for GlobalEconomicFactor {
+impl Display for Economy {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result {
         write!(f, "{:.0}", self.current().floor())
     }
 }
 
-impl GlobalEconomicFactor {
+impl Economy {
     pub const MIN: f32 = 0.;
     pub const MAX: f32 = 100.;
+    pub const DEFAULT: f32 = (Self::MIN + Self::MAX) * 0.5;
 
-    pub fn bump(&mut self) {
-        self.0
-            .push((self.current() + rng().random_range(-2.5..2.5)).clamp(Self::MIN, Self::MAX))
+    /// Maximum random daily fluctuation from the current value
+    const FLUCTUATION: f32 = 2.0;
+
+    pub fn bump(&mut self) -> f32 {
+        let norm = (self.current() - Self::DEFAULT) / Self::MAX;
+
+        let u = rng().random::<f32>();
+
+        // When the economy goes very well or badly, tend to normalize
+        let bias = match self.current() {
+            n if n < 20. => u.powf(1. / (1. - norm * 3.)),
+            n if n > 80. => u.powf(1. + norm * 3.),
+            _ => u,
+        };
+
+        let fluctuation = bias * 2. * Self::FLUCTUATION - Self::FLUCTUATION;
+        let value = (self.current() + fluctuation).clamp(Self::MIN, Self::MAX);
+
+        self.0.push(value);
+        value
     }
 }
 
-impl Attribute for GlobalEconomicFactor {
+impl Factor for Economy {
     fn image(&self) -> &str {
         "economic"
     }

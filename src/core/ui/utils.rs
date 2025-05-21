@@ -79,8 +79,8 @@ impl CustomUi for Ui {
         let height = window.height() * TOP_LABEL_FRAC;
 
         self.horizontal_centered(|ui| {
-            ui.add(Image::new(SizedTexture::new(texture_id, [height * 0.5; 2])));
-            ui.label(RichText::new(text).size(height * 0.5).color(color))
+            ui.add(Image::new(SizedTexture::new(texture_id, [height * 0.4; 2])));
+            ui.label(RichText::new(text).size(height * 0.4).color(color))
         })
         .response
         .on_hover_text(hover_text);
