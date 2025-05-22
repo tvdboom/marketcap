@@ -1,4 +1,5 @@
 use crate::core::factors::Factor;
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone)]
 pub struct CreditScore(f32);
@@ -14,6 +15,12 @@ impl Default for CreditScore {
     }
 }
 
+impl Display for CreditScore {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:.0}", self.current().floor())
+    }
+}
+
 impl Factor for CreditScore {
     fn image(&self) -> &str {
         "credit-score"
@@ -21,11 +28,11 @@ impl Factor for CreditScore {
 
     fn description(&self) -> String {
         "Credit score\n\n\
-        The credit score is a measure of the player's creditworthiness, which is used by \
-        banks and other credit providers to determine the interest rate for loans. A higher \
-        score means lower interest rates and better loan conditions.\n\n\
+        The credit score (0-100) is a measure of the player's creditworthiness, which is used \
+        by banks and brokers to determine the maximum principal and interest rate for loans. A \
+        higher score means better loan conditions.\n\n\
         If the player has active loans and pays the installments, the credit score increases \
-        gradually. On the contrary, if the player defaults on a loan, the credit score drops \
+        gradually. On the other hand, if the player defaults on a loan, the credit score drops \
         significantly."
             .to_string()
     }

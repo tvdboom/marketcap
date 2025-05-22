@@ -1,5 +1,21 @@
+use chrono::{Datelike, NaiveDate};
 use regex::Regex;
 use std::fmt::Debug;
+
+/// Gets the last day of the month for a given date
+pub fn last_day_of_next_month(date: NaiveDate) -> NaiveDate {
+    let (mut y, mut m) = (date.year(), date.month() + 1);
+
+    if m > 12 {
+        m = 1;
+        y += 1;
+    }
+
+    NaiveDate::from_ymd_opt(y, m % 12 + 1, 1)
+        .unwrap()
+        .pred_opt()
+        .unwrap()
+}
 
 /// Helper function to extract only the variant name (removes tuple/struct fields)
 fn extract_variant_name(text: String) -> String {

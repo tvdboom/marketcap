@@ -3,8 +3,8 @@
 mod core;
 mod utils;
 
+use self::core::messages::MessagesPlugin;
 use crate::core::GamePlugin;
-use crate::core::ui::messages::MessagesPlugin;
 use bevy::asset::AssetMetaCheck;
 use bevy::prelude::NonSend;
 use bevy::prelude::*;

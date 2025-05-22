@@ -1,5 +1,4 @@
 use crate::core::factors::Factor;
-use crate::core::factors::economy::Economy;
 use crate::core::factors::inflation::Inflation;
 use std::fmt::{Display, Formatter, Result};
 

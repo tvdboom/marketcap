@@ -1,11 +1,13 @@
 use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
+use crate::core::loans::{Loan};
 use bevy::prelude::*;
 
 #[derive(Resource, Clone, Default)]
 pub struct Player {
     pub cash: Cash,
     pub credit_score: CreditScore,
+    pub loans: Vec<Loan>,
 }
 
 impl Player {
