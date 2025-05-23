@@ -38,8 +38,8 @@ impl Default for MessagesPlugin {
         Self {
             builder: Some(|| {
                 Toasts::default()
-                    .with_margin([0., 30.].into())
-                    .with_anchor(Anchor::TopLeft)
+                    .with_margin([0., 70.].into())
+                    .with_anchor(Anchor::TopRight)
             }),
         }
     }

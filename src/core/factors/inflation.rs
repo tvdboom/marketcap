@@ -1,6 +1,7 @@
 use crate::core::factors::Factor;
 use crate::core::factors::economy::Economy;
 use crate::core::factors::interest::Interest;
+use crate::utils::Round1;
 use std::fmt::{Display, Formatter, Result};
 
 #[derive(Clone)]
@@ -30,6 +31,7 @@ impl Inflation {
             + Self::ADJUSTMENT_ECONOMY_RATE
                 * (Self::MIN + Self::MAX * (economy / Economy::MAX).powf(2.2) - self.current())
             + Self::ADJUSTMENT_INTEREST_RATE * Inflation::DEFAULT * (Interest::DEFAULT - interest))
+            .round1()
             .clamp(Self::MIN, Self::MAX);
 
         self.0.push(value);

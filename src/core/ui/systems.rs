@@ -1,21 +1,21 @@
-use crate::core::constants::{GREEN, LEFT_LABEL_FRAC, MIN_PRINCIPAL, TOP_LABEL_FRAC};
+use crate::core::constants::{DATE_FORMAT, GREEN, LEFT_LABEL_FRAC, TOP_LABEL_FRAC};
 use crate::core::factors::Factor;
 use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::loans::{LoanKind, LoanProvider};
+use crate::core::messages::Messages;
 use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::GameState;
-use crate::core::ui::state::{LoanTerm, Tab, UiState};
+use crate::core::ui::credit::credit_panel;
+use crate::core::ui::state::{Tab, UiState};
 use crate::core::ui::utils::{CustomUi, TextSizes};
-use crate::utils::{last_day_of_next_month, NameFromEnum};
+use crate::utils::NameFromEnum;
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::widget_text::RichText;
 use bevy_egui::egui::{
-    Align, Button, CentralPanel, Color32, Frame, Layout, Margin, SidePanel, Slider, TopBottomPanel,
+    Align, CentralPanel, Color32, Frame, Layout, Margin, SidePanel, TopBottomPanel,
 };
-use egui_extras::{Column, TableBuilder};
 use strum::IntoEnumIterator;
 
 pub fn top_panel(
@@ -31,7 +31,7 @@ pub fn top_panel(
         .show_separator_line(false)
         .show(contexts.ctx_mut(), |ui| {
             ui.horizontal_centered(|ui| {
-                ui.add_space(window.width() * 0.075);
+                ui.add_space(window.width() * 0.07);
 
                 ui.add_block(
                     format!("{:.0}", player.enterprise_value().floor()),
@@ -43,8 +43,9 @@ pub fn top_panel(
                         In the game, the enterprise value represents a measure of the success \
                         of the player. If the enterprise value drops below zero, the company \
                         goes bankrupt and the game is lost.\n\n\
-                        Cash: {}",
-                        player.cash
+                        Cash: {}\nDebts: {:.0}",
+                        player.cash,
+                        player.loans.iter().map(|l| l.outstanding).sum::<f32>()
                     ),
                     images.get("enterprise"),
                     GREEN,
@@ -96,7 +97,7 @@ pub fn top_panel(
                     },
                     window.xxl_size(),
                 );
-                
+
                 ui.add_space(window.width() * 0.04);
 
                 ui.add_block(
@@ -130,10 +131,10 @@ pub fn top_panel(
                 ui.add_space(window.width() * 0.04);
 
                 ui.add_block(
-                    economy.date.format("%d-%m-%Y").to_string(),
+                    economy.date.format(DATE_FORMAT).to_string(),
                     "Current date\n\n\
-                        Income and expenses are paid every last day of the month. Interests are \
-                        calculated daily.\n\n\
+                        Income and expenses are paid every first day of the month. Interest \
+                        (for example on cash) is calculated daily.\n\n\
                         Use the space key to pause/unpause the time.",
                     images.get(if *game_state.get() == GameState::Running {
                         "time"
@@ -177,7 +178,8 @@ pub fn central_panel(
     mut ui_state: ResMut<UiState>,
     game_settings: Res<GameSettings>,
     economy: Res<GlobalEconomy>,
-    player: Res<Player>,
+    mut player: ResMut<Player>,
+    mut messages: ResMut<Messages>,
     window: Single<&Window>,
 ) {
     CentralPanel::default()
@@ -202,169 +204,14 @@ pub fn central_panel(
             Tab::Commodities => {
                 ui.heading("Commodities");
             }
-            Tab::Credit => {
-                ui.horizontal(|ui| {
-                    for tab in LoanProvider::iter() {
-                        ui.selectable_value(
-                            &mut ui_state.credit.provider,
-                            tab,
-                            RichText::new(format!("{}  {}", tab.emoji(), tab.to_name()))
-                                .size(window.xl_size()),
-                        );
-                    }
-                });
-
-                ui.separator();
-
-                ui.add_text(ui_state.credit.provider.description(), window.m_size());
-
-                ui.separator();
-
-                // Current loans with this provider
-                let loans = player
-                    .loans
-                    .iter()
-                    .filter(|l| l.provider == ui_state.credit.provider)
-                    .collect::<Vec<_>>();
-
-                ui.horizontal(|ui| {
-                    ui.vertical(|ui| {
-                        ui.set_width(ui.available_width() * 0.5);
-
-                        ui.add_text("New loan", window.l_size());
-
-                        ui.add_text("Principal", window.m_size());
-                        let max_principal = ui_state
-                            .credit
-                            .max_principal(player.enterprise_value(), player.credit_score.current());
-
-                        ui.add(
-                            Slider::new(&mut ui_state.credit.principal,MIN_PRINCIPAL..=max_principal)
-                            .step_by(100.)
-                        );
-
-                        ui.add_text("Loan kind", window.m_size());
-                        ui.horizontal(|ui| {
-                            for item in LoanKind::iter() {
-                                ui.selectable_value(
-                                    &mut ui_state.credit.kind,
-                                    item.clone(),
-                                    RichText::new(item.to_name()).size(window.s_size()),
-                                )
-                                .on_hover_text(LoanKind::Annuity.description());
-                            }
-                        });
-
-                        ui.add_text("Term", window.m_size());
-                        ui.horizontal(|ui| {
-                            for item in LoanTerm::iter() {
-                                ui.selectable_value(
-                                    &mut ui_state.credit.term,
-                                    item.clone(),
-                                    RichText::new(item.to_name()).size(window.s_size()),
-                                );
-                            }
-                        });
-
-                        ui.add_text("Conditions", window.m_size());
-                        let interest = ui_state.credit.interest(
-                            economy.interest.current(),
-                            player.credit_score.current(),
-                        );
-
-                        let installment = ui_state.credit.installment(interest);
-                        let start = last_day_of_next_month(economy.date);
-                        
-                        ui.add_text(format!("Interest rate: {:.1}%", interest), window.s_size()).on_hover_text("Percentage of the principal that must be paid as interest every year.");
-                        ui.add_text(format!("First installment: {:.0} on {}", installment, start.format("%d-%m-%Y")), window.s_size()).on_hover_text("Amount to be paid back every month.");
-                        ui.add_text(format!("Maturity date: {}", 5), window.s_size()).on_hover_text("Date on which the loan is fully repaid.");
-                        
-                        let button = ui
-                            .add_enabled(
-                                loans.iter().all(|l| l.outstanding < l.principal * 0.5),
-                                Button::new("✏  Take the loan"),
-                            )
-                            .on_disabled_hover_text(
-                                "You have an outstanding loan with this provider. \
-                                You can only take a new loan when the remaining debt is \
-                                less than 50% of the principal.",
-                            );
-
-                        if button.clicked() {
-                            println!("check");
-                        }
-                    });
-
-                    ui.vertical(|ui| {
-                        ui.set_width(ui.available_width());
-
-                        ui.add_text("Outstanding loans", window.l_size());
-
-                        if loans.is_empty() {
-                            ui.add_text(
-                                "No outstanding loans with this provider.",
-                                window.m_size(),
-                            );
-                        } else {
-                            Frame::new()
-                                .inner_margin(ui.spacing().menu_margin)
-                                .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
-                                .show(ui, |ui| {
-                                    TableBuilder::new(ui)
-                                        .columns(Column::auto(), 5)
-                                        .header(30., |mut header| {
-                                            header.col(|ui| {
-                                                ui.strong("Principal");
-                                            });
-                                            header.col(|ui| {
-                                                ui.strong("Outstanding");
-                                            });
-                                            header.col(|ui| {
-                                                ui.strong("Interest");
-                                            });
-                                            header.col(|ui| {
-                                                ui.strong("Term");
-                                            });
-                                            header.col(|ui| {
-                                                ui.strong("Kind");
-                                            });
-                                        })
-                                        .body(|mut body| {
-                                            for loan in loans.iter() {
-                                                body.row(30., |mut row| {
-                                                    row.col(|ui| {
-                                                        ui.label(format!("{:.0}", loan.principal));
-                                                    });
-                                                    row.col(|ui| {
-                                                        ui.label(format!(
-                                                            "{:.0}",
-                                                            loan.outstanding.floor()
-                                                        ));
-                                                    });
-                                                    row.col(|ui| {
-                                                        ui.label(format!(
-                                                            "{:.1}%",
-                                                            loan.interest_rate
-                                                        ));
-                                                    });
-                                                    row.col(|ui| {
-                                                        ui.label(
-                                                            loan.term
-                                                                .format("%d-%m-%Y")
-                                                                .to_string(),
-                                                        );
-                                                    });
-                                                    row.col(|ui| {
-                                                        ui.label(loan.kind.to_name());
-                                                    });
-                                                });
-                                            }
-                                        });
-                                });
-                        }
-                    });
-                });
-            }
+            Tab::Credit => credit_panel(
+                ui,
+                &mut ui_state,
+                &mut player,
+                &economy,
+                &mut messages,
+                &window,
+            ),
             Tab::Policies => {
                 ui.heading("Policies");
             }

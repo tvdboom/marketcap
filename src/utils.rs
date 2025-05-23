@@ -2,19 +2,16 @@ use chrono::{Datelike, NaiveDate};
 use regex::Regex;
 use std::fmt::Debug;
 
-/// Gets the last day of the month for a given date
-pub fn last_day_of_next_month(date: NaiveDate) -> NaiveDate {
-    let (mut y, mut m) = (date.year(), date.month() + 1);
+/// Gets the first day of the next month after the next month
+pub fn first_day_in_two_months(date: NaiveDate) -> NaiveDate {
+    let (mut month, mut year) = (date.month() + 2, date.year());
 
-    if m > 12 {
-        m = 1;
-        y += 1;
+    if month > 12 {
+        month -= 12;
+        year += 1;
     }
 
-    NaiveDate::from_ymd_opt(y, m % 12 + 1, 1)
-        .unwrap()
-        .pred_opt()
-        .unwrap()
+    NaiveDate::from_ymd_opt(year, month, 1).expect(format!("Invalid date: {}", date).as_str())
 }
 
 /// Helper function to extract only the variant name (removes tuple/struct fields)
@@ -38,5 +35,16 @@ impl<T: Debug> NameFromEnum for T {
 
         let text = extract_variant_name(format!("{:?}", self));
         re.replace_all(&text, "$1 $2").to_string()
+    }
+}
+
+/// Trait to round a number to one decimal place
+pub trait Round1 {
+    fn round1(self) -> Self;
+}
+
+impl Round1 for f32 {
+    fn round1(self) -> Self {
+        (self * 10.).round() / 10.
     }
 }

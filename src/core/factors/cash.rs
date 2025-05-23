@@ -26,7 +26,7 @@ impl Cash {
 impl Default for Cash {
     fn default() -> Self {
         Cash {
-            amount: 1000.,
+            amount: 10_000.,
             current_interest: 0.,
             accumulated_interest: 0.,
         }

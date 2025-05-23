@@ -1,5 +1,6 @@
 use crate::core::factors::Factor;
 use crate::core::factors::inflation::Inflation;
+use crate::utils::Round1;
 use std::fmt::{Display, Formatter, Result};
 
 #[derive(Clone)]
@@ -37,6 +38,7 @@ impl Interest {
             // Calculate the next interest rate
             let value = (self.current()
                 + Self::ADJUSTMENT_INFLATION_RATE * -(Inflation::DEFAULT - inflation))
+                .round1()
                 .clamp(Self::MIN, Self::MAX);
 
             self.next_rate = Some(value);

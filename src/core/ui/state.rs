@@ -1,5 +1,7 @@
-use crate::core::constants::MIN_PRINCIPAL;
-use crate::core::loans::{LoanKind, LoanProvider};
+use crate::core::constants::LOAN_STEP;
+use crate::core::factors::credit_score::CreditScore;
+use crate::core::loans::{LoanKind, LoanProvider, LoanTerm};
+use crate::utils::Round1;
 use bevy::prelude::*;
 use strum_macros::EnumIter;
 
@@ -29,24 +31,6 @@ impl Tab {
     }
 }
 
-#[derive(EnumIter, Clone, Debug, Default, PartialEq)]
-pub enum LoanTerm {
-    #[default]
-    OneYear,
-    ThreeYears,
-    FiveYears,
-}
-
-impl LoanTerm {
-    pub fn n_terms(&self) -> u32 {
-        match self {
-            LoanTerm::OneYear => 12,
-            LoanTerm::ThreeYears => 36,
-            LoanTerm::FiveYears => 60,
-        }
-    }
-}
-
 #[derive(Clone, Debug)]
 pub struct LoanState {
     pub provider: LoanProvider,
@@ -56,27 +40,35 @@ pub struct LoanState {
 }
 
 impl LoanState {
-    /// The maximum amount of money that can be borrowed in steps of `MIN_PRINCIPAL`
-    pub fn max_principal(&self, enterprise_value: f32, credit_score: f32) -> u32 {
-        ((enterprise_value * (0.3 + 0.7 * credit_score / 100.)) as u32 / MIN_PRINCIPAL)
-            * MIN_PRINCIPAL
+    pub fn max_principal(
+        &self,
+        enterprise_value: f32,
+        credit_score: f32,
+        provider: LoanProvider,
+    ) -> u32 {
+        match provider {
+            LoanProvider::Bank => {
+                ((enterprise_value * (0.3 + 0.7 * credit_score / CreditScore::MAX as f32)) as u32
+                    / LOAN_STEP)
+                    * LOAN_STEP
+            }
+            LoanProvider::AlternativeLender => {
+                ((enterprise_value * 0.5) as u32 / LOAN_STEP) * LOAN_STEP
+            }
+        }
     }
 
-    /// The interest rate of the loan
-    pub fn interest(&self, interest_rate: f32, credit_score: f32) -> f32 {
-        interest_rate
-            + 1.4 * interest_rate / 100. * (1. - credit_score / 100.)
-            + 0.5 * interest_rate / 100. * (6. - self.term.n_terms() as f32)
-    }
-
-    /// Amount to pay on the first installment
-    pub fn installment(&self, interest_rate: f32) -> f32 {
-        self.kind.installment(
-            self.principal,
-            self.principal,
-            interest_rate,
-            self.term.n_terms(),
-        )
+    pub fn interest(&self, interest_rate: f32, credit_score: f32, provider: LoanProvider) -> f32 {
+        match provider {
+            LoanProvider::Bank => (interest_rate
+                + 0.8 * interest_rate * (1. - credit_score / CreditScore::MAX as f32)
+                + 0.1 * interest_rate * (5. - self.term.years() as f32))
+                .round1(),
+            LoanProvider::AlternativeLender => (interest_rate
+                + 0.6 * interest_rate
+                + 0.1 * interest_rate * (5. - self.term.years() as f32))
+                .round1(),
+        }
     }
 }
 
@@ -84,7 +76,7 @@ impl Default for LoanState {
     fn default() -> Self {
         Self {
             provider: LoanProvider::default(),
-            principal: MIN_PRINCIPAL,
+            principal: 0,
             kind: LoanKind::default(),
             term: LoanTerm::default(),
         }

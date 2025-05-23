@@ -2,22 +2,26 @@ use crate::core::factors::Factor;
 use std::fmt::{Display, Formatter};
 
 #[derive(Clone)]
-pub struct CreditScore(f32);
+pub struct CreditScore {
+    pub score: u8,
+}
 
 impl CreditScore {
-    const MIN: f32 = 0.;
-    const MAX: f32 = 100.;
+    pub const MIN: u8 = 0;
+    pub const MAX: u8 = 100;
 }
 
 impl Default for CreditScore {
     fn default() -> Self {
-        CreditScore((Self::MIN + Self::MAX) * 0.5)
+        CreditScore {
+            score: (Self::MIN + Self::MAX) / 2,
+        }
     }
 }
 
 impl Display for CreditScore {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:.0}", self.current().floor())
+        write!(f, "{}", self.current())
     }
 }
 
@@ -38,6 +42,6 @@ impl Factor for CreditScore {
     }
 
     fn current(&self) -> f32 {
-        self.0
+        self.score as f32
     }
 }
