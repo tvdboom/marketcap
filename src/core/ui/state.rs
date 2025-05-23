@@ -1,6 +1,6 @@
 use crate::core::constants::LOAN_STEP;
 use crate::core::factors::credit_score::CreditScore;
-use crate::core::loans::{LoanKind, LoanProvider, LoanTerm};
+use crate::core::loans::{Loan, LoanKind, LoanProvider, LoanTerm};
 use crate::utils::Round1;
 use bevy::prelude::*;
 use strum_macros::EnumIter;
@@ -31,15 +31,16 @@ impl Tab {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct LoanState {
+#[derive(Clone)]
+pub struct CreditState {
     pub provider: LoanProvider,
     pub principal: u32,
     pub kind: LoanKind,
     pub term: LoanTerm,
+    pub repay: Option<Loan>,
 }
 
-impl LoanState {
+impl CreditState {
     pub fn max_principal(
         &self,
         enterprise_value: f32,
@@ -72,19 +73,20 @@ impl LoanState {
     }
 }
 
-impl Default for LoanState {
+impl Default for CreditState {
     fn default() -> Self {
         Self {
             provider: LoanProvider::default(),
             principal: 0,
             kind: LoanKind::default(),
             term: LoanTerm::default(),
+            repay: None,
         }
     }
 }
 
-#[derive(Resource, Clone, Debug, Default)]
+#[derive(Resource, Clone, Default)]
 pub struct UiState {
     pub tab: Tab,
-    pub credit: LoanState,
+    pub credit: CreditState,
 }

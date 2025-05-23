@@ -8,7 +8,7 @@ use crate::core::ui::state::UiState;
 use crate::core::ui::utils::{CustomUi, TextSizes};
 use crate::utils::{NameFromEnum, first_day_in_two_months};
 use bevy::prelude::*;
-use bevy_egui::egui::{Button, Frame, RichText, Separator, Slider, Ui};
+use bevy_egui::egui::{Button, Frame, RichText, Sense, Separator, Slider, Ui};
 use egui_extras::{Column, TableBuilder};
 use strum::IntoEnumIterator;
 
@@ -135,6 +135,7 @@ pub fn credit_panel(
 
             if button.clicked() {
                 player.loans.push(loan.clone());
+                player.cash.amount += loan.principal;
                 messages.info("Loan acquired!");
             }
         });
@@ -194,6 +195,7 @@ pub fn credit_panel(
                     .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
                     .show(ui, |ui| {
                         TableBuilder::new(ui)
+                            .sense(Sense::click())
                             .columns(Column::remainder(), 6)
                             .header(30., |mut header| {
                                 for col in [
@@ -244,10 +246,26 @@ pub fn credit_panel(
                                         row.col(|ui| {
                                             ui.add_text(loan.defaults.to_string(), window.s_size());
                                         });
+
+                                        if row.response().clicked() {
+                                            ui_state.credit.repay = Some(loan.clone());
+                                        }
                                     });
                                 }
                             });
                     });
+
+                if let Some(loan) = &ui_state.credit.repay {
+                    ui.add_space(window.height() * 0.02);
+
+                    ui.add_text("Repay loan early", window.l_size());
+
+                    ui.add_space(window.height() * 0.02);
+                    
+                    let button = ui.add(
+                        Button::new(RichText::new("✏  Repay loan").size(window.l_size()))
+                    );
+                }
             }
         });
     });

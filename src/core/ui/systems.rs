@@ -71,7 +71,7 @@ pub fn top_panel(
                         The net flow represents the total financial movement at the end of \
                         each month, calculated as income minus debt repayments and expenses. \
                         It shows whether the player will gain or lose money this month.\n\n\
-                        Inflow: {:+.0}\nOutflow: {:+.0}",
+                        Inflow: {:+.0}\nOutflow: -{:.0}",
                         player.inflow().floor(),
                         player.outflow().floor(),
                     ),
