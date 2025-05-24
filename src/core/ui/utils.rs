@@ -44,11 +44,11 @@ impl CustomUi for Ui {
 
 /// Standard text sizes as a fraction of the window width
 pub trait TextSizes {
-    const XXL_SIZE: f32 = 0.022;
-    const XL_SIZE: f32 = 0.012;
-    const L_SIZE: f32 = 0.011;
-    const M_SIZE: f32 = 0.009;
-    const S_SIZE: f32 = 0.008;
+    const XXL_SIZE: f32 = 0.044;
+    const XL_SIZE: f32 = 0.024;
+    const L_SIZE: f32 = 0.022;
+    const M_SIZE: f32 = 0.018;
+    const S_SIZE: f32 = 0.016;
 
     fn xxl_size(&self) -> f32;
     fn xl_size(&self) -> f32;

@@ -59,7 +59,7 @@ pub fn credit_panel(
                 ui.add_space(window.height() * 0.02);
 
                 let button = ui.add(Button::new(
-                    RichText::new("✏  Take a new loan").size(window.m_size()),
+                    RichText::new("Take a new loan").size(window.m_size()),
                 ));
 
                 if button.clicked() {
@@ -175,7 +175,7 @@ pub fn credit_panel(
 
             let mut button = ui.add_enabled(
                 ui_state.credit.principal > 0 && !has_loans,
-                Button::new(RichText::new("✏  Take the loan").size(window.m_size())),
+                Button::new(RichText::new("Take the loan").size(window.m_size())),
             );
 
             if has_loans {

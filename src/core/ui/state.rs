@@ -39,9 +39,9 @@ pub enum CreditTab {
 impl CreditTab {
     pub fn emoji(&self) -> &str {
         match self {
-            CreditTab::OutstandingLoans => "🗺️",
-            CreditTab::NewLoan => "💳",
-            CreditTab::P2P => "🤝",
+            CreditTab::OutstandingLoans => "🗺",
+            CreditTab::NewLoan => "✏",
+            CreditTab::P2P => "👤",
         }
     }
 }
