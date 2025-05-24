@@ -1,3 +1,4 @@
+use crate::core::assets::WorldAssets;
 use crate::core::constants::{DATE_FORMAT, GREEN, LEFT_LABEL_FRAC, TOP_LABEL_FRAC};
 use crate::core::factors::Factor;
 use crate::core::game_settings::GameSettings;
@@ -12,11 +13,60 @@ use crate::core::ui::utils::{CustomUi, TextSizes};
 use crate::utils::NameFromEnum;
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
+use bevy_egui::egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
 use bevy_egui::egui::widget_text::RichText;
 use bevy_egui::egui::{
-    Align, CentralPanel, Color32, Frame, Layout, Margin, SidePanel, TopBottomPanel,
+    Align, CentralPanel, Color32, FontData, FontFamily, Frame, Layout, Margin, SidePanel,
+    TopBottomPanel,
 };
 use strum::IntoEnumIterator;
+
+pub fn set_egui_style(mut contexts: EguiContexts, game_settings: Res<GameSettings>) {
+    let context = contexts.ctx_mut();
+
+    context.set_style(game_settings.theme.get().custom_style());
+
+    context.add_font(FontInsert::new(
+        "firamono",
+        FontData::from_static(include_bytes!("../../../assets/fonts/FiraMono-Medium.ttf")),
+        vec![
+            InsertFontFamily {
+                family: FontFamily::Proportional,
+                priority: FontPriority::Highest,
+            },
+            InsertFontFamily {
+                family: FontFamily::Monospace,
+                priority: FontPriority::Lowest,
+            },
+        ],
+    ));
+
+    context.add_font(FontInsert::new(
+        "firasans",
+        FontData::from_static(include_bytes!("../../../assets/fonts/FiraSans-Bold.ttf")),
+        vec![
+            InsertFontFamily {
+                family: FontFamily::Proportional,
+                priority: FontPriority::Highest,
+            },
+            InsertFontFamily {
+                family: FontFamily::Monospace,
+                priority: FontPriority::Lowest,
+            },
+        ],
+    ));
+}
+
+pub fn add_egui_images(
+    mut contexts: EguiContexts,
+    mut images: ResMut<ImageIds>,
+    assets: Local<WorldAssets>,
+) {
+    for (k, v) in assets.images.iter() {
+        let id = contexts.add_image(v.clone_weak());
+        images.0.insert(k, id);
+    }
+}
 
 pub fn top_panel(
     mut contexts: EguiContexts,

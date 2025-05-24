@@ -1,59 +1,9 @@
-use crate::core::assets::WorldAssets;
-use crate::core::game_settings::GameSettings;
-use crate::core::resources::ImageIds;
-use bevy::prelude::*;
-use bevy_egui::EguiContexts;
-use bevy_egui::egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
-use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::{
-    Color32, FontData, FontFamily, Image, Response, RichText, TextureId, Ui, WidgetText,
-};
+use bevy::prelude::Window;
+use bevy_egui::egui::{load::SizedTexture, *};
 
-pub fn set_egui_style(mut contexts: EguiContexts, game_settings: Res<GameSettings>) {
-    let context = contexts.ctx_mut();
-
-    context.set_style(game_settings.theme.get().custom_style());
-
-    context.add_font(FontInsert::new(
-        "firamono",
-        FontData::from_static(include_bytes!("../../../assets/fonts/FiraMono-Medium.ttf")),
-        vec![
-            InsertFontFamily {
-                family: FontFamily::Proportional,
-                priority: FontPriority::Highest,
-            },
-            InsertFontFamily {
-                family: FontFamily::Monospace,
-                priority: FontPriority::Lowest,
-            },
-        ],
-    ));
-
-    context.add_font(FontInsert::new(
-        "firasans",
-        FontData::from_static(include_bytes!("../../../assets/fonts/FiraSans-Bold.ttf")),
-        vec![
-            InsertFontFamily {
-                family: FontFamily::Proportional,
-                priority: FontPriority::Highest,
-            },
-            InsertFontFamily {
-                family: FontFamily::Monospace,
-                priority: FontPriority::Lowest,
-            },
-        ],
-    ));
-}
-
-pub fn add_egui_images(
-    mut contexts: EguiContexts,
-    mut images: ResMut<ImageIds>,
-    assets: Local<WorldAssets>,
-) {
-    for (k, v) in assets.images.iter() {
-        let id = contexts.add_image(v.clone_weak());
-        images.0.insert(k, id);
-    }
+/// Add text widget with custom size
+fn add_text(text: impl Into<String>, size: f32) -> RichText {
+    RichText::new(text).size(size)
 }
 
 /// Custom syntactic sugar for repetitive UI elements
@@ -85,7 +35,7 @@ impl CustomUi for Ui {
     ) {
         self.horizontal_centered(|ui| {
             ui.add(Image::new(SizedTexture::new(texture_id, [size; 2])));
-            ui.label(RichText::new(text).size(size).color(color))
+            ui.label(add_text(text, size).color(color))
         })
         .response
         .on_hover_text(hover_text);
@@ -109,19 +59,19 @@ pub trait TextSizes {
 
 impl TextSizes for Window {
     fn xxl_size(&self) -> f32 {
-        self.width() * Self::XXL_SIZE
+        self.width().min(self.height()) * Self::XXL_SIZE
     }
 
     fn xl_size(&self) -> f32 {
-        self.width() * Self::XL_SIZE
+        self.width().min(self.height()) * Self::XL_SIZE
     }
 
     fn l_size(&self) -> f32 {
-        self.width() * Self::L_SIZE
+        self.width().min(self.height()) * Self::L_SIZE
     }
 
     fn m_size(&self) -> f32 {
-        self.width() * Self::M_SIZE
+        self.width().min(self.height()) * Self::M_SIZE
     }
 
     fn s_size(&self) -> f32 {

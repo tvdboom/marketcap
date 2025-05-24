@@ -20,8 +20,9 @@ use crate::core::resources::ImageIds;
 use crate::core::states::{AppState, AudioState, GameState};
 use crate::core::systems::time_pass;
 use crate::core::ui::state::UiState;
-use crate::core::ui::systems::{central_panel, left_panel, top_panel};
-use crate::core::ui::utils::{add_egui_images, set_egui_style};
+use crate::core::ui::systems::{
+    add_egui_images, central_panel, left_panel, set_egui_style, top_panel,
+};
 use bevy::prelude::*;
 
 pub struct GamePlugin;

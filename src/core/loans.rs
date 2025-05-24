@@ -1,3 +1,6 @@
+use crate::core::constants::LOAN_STEP;
+use crate::core::factors::credit_score::CreditScore;
+use crate::utils::Round1;
 use chrono::{Months, NaiveDate};
 use strum_macros::EnumIter;
 
@@ -9,22 +12,15 @@ pub enum LoanProvider {
 }
 
 impl LoanProvider {
-    pub fn emoji(&self) -> &str {
-        match self {
-            LoanProvider::Bank => "🏦",
-            LoanProvider::AlternativeLender => "💸",
-        }
-    }
-
     pub fn description(&self) -> &str {
         match self {
             LoanProvider::Bank => {
                 "\
                 Banks are the standard credit providers for companies. The maximum amount \
-                that can be borrowed depends on the player's enterprise value and credit score. \
+                that can be borrowed depends on the company's enterprise value and credit score. \
                 The interest rate is based on the global interest rate, the credit score and \
                 the payback period, where a longer payback period reduces the loan's interest.\n\n\
-                If a player defaults on a loan (fails to pay an installment) four consecutive \
+                If a company defaults on a loan (fails to pay an installment) four consecutive \
                 times, its assets will be forcibly sold (usually for unfavorable terms) until \
                 there is enough cash to pay back the complete loan."
             }
@@ -38,6 +34,32 @@ impl LoanProvider {
                 times, its assets will be forcibly sold (usually for unfavorable terms) until \
                 there is enough cash to pay back the complete loan."
             }
+        }
+    }
+
+    pub fn max_principal(&self, enterprise_value: f32, credit_score: f32) -> u32 {
+        match self {
+            LoanProvider::Bank => {
+                ((enterprise_value * (0.3 + 0.7 * credit_score / CreditScore::MAX as f32)) as u32
+                    / LOAN_STEP)
+                    * LOAN_STEP
+            }
+            LoanProvider::AlternativeLender => {
+                ((enterprise_value * 0.5) as u32 / LOAN_STEP) * LOAN_STEP
+            }
+        }
+    }
+
+    pub fn interest(&self, global_interest_rate: f32, credit_score: f32, term: &LoanTerm) -> f32 {
+        match self {
+            LoanProvider::Bank => (global_interest_rate
+                + 0.8 * global_interest_rate * (1. - credit_score / CreditScore::MAX as f32)
+                + 0.1 * global_interest_rate * (5. - term.years() as f32))
+                .round1(),
+            LoanProvider::AlternativeLender => (global_interest_rate
+                + 0.6 * global_interest_rate
+                + 0.1 * global_interest_rate * (5. - term.years() as f32))
+                .round1(),
         }
     }
 }
@@ -89,6 +111,9 @@ impl LoanTerm {
 
 #[derive(Clone)]
 pub struct Loan {
+    /// Id of the loan
+    pub id: String,
+
     /// Institution that provided the loan
     pub provider: LoanProvider,
 

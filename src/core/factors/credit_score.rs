@@ -32,11 +32,11 @@ impl Factor for CreditScore {
 
     fn description(&self) -> String {
         "Credit score\n\n\
-        The credit score (0-100) is a measure of the player's creditworthiness, which is used \
+        The credit score (0-100) is a measure of the company's creditworthiness, which is used \
         by banks and brokers to determine the maximum principal and interest rate for loans. A \
         higher score means better loan conditions.\n\n\
-        If the player has active loans and pays the installments, the credit score increases \
-        gradually. On the other hand, if the player defaults on a loan, the credit score drops \
+        If the company has active loans and pays the installments, the credit score increases \
+        gradually. On the other hand, if the company defaults on a loan, the credit score drops \
         significantly."
             .to_string()
     }

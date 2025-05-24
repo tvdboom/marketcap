@@ -1,6 +1,17 @@
 use chrono::{Datelike, NaiveDate};
+use rand::distr::Alphanumeric;
+use rand::{Rng, rng};
 use regex::Regex;
 use std::fmt::Debug;
+
+/// Create a random 4-character GUID
+pub fn create_guid() -> String {
+    rng()
+        .sample_iter(&Alphanumeric)
+        .take(4)
+        .map(char::from)
+        .collect()
+}
 
 /// Gets the first day of the next month after the next month
 pub fn first_day_in_two_months(date: NaiveDate) -> NaiveDate {
