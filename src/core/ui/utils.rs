@@ -2,7 +2,7 @@ use bevy::prelude::Window;
 use bevy_egui::egui::{load::SizedTexture, *};
 
 /// Add text widget with custom size
-fn add_text(text: impl Into<String>, size: f32) -> RichText {
+pub fn add_text(text: impl Into<String>, size: f32) -> RichText {
     RichText::new(text).size(size)
 }
 
@@ -42,19 +42,21 @@ impl CustomUi for Ui {
     }
 }
 
-/// Standard text sizes as a fraction of the window width
+/// Standard text sizes as a fraction of the window size
 pub trait TextSizes {
-    const XXL_SIZE: f32 = 0.044;
+    const XXL_SIZE: f32 = 0.034;
     const XL_SIZE: f32 = 0.024;
     const L_SIZE: f32 = 0.022;
     const M_SIZE: f32 = 0.018;
     const S_SIZE: f32 = 0.016;
+    const XS_SIZE: f32 = 0.014;
 
     fn xxl_size(&self) -> f32;
     fn xl_size(&self) -> f32;
     fn l_size(&self) -> f32;
     fn m_size(&self) -> f32;
     fn s_size(&self) -> f32;
+    fn xs_size(&self) -> f32;
 }
 
 impl TextSizes for Window {
@@ -75,6 +77,10 @@ impl TextSizes for Window {
     }
 
     fn s_size(&self) -> f32 {
-        self.width() * Self::S_SIZE
+        self.width().min(self.height()) * Self::S_SIZE
+    }
+
+    fn xs_size(&self) -> f32 {
+        self.width().min(self.height()) * Self::XS_SIZE
     }
 }

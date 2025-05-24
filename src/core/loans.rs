@@ -16,23 +16,16 @@ impl LoanProvider {
         match self {
             LoanProvider::Bank => {
                 "\
-                Banks are the standard credit providers for companies. The maximum amount \
-                that can be borrowed depends on the company's enterprise value and credit score. \
-                The interest rate is based on the global interest rate, the credit score and \
-                the payback period, where a longer payback period reduces the loan's interest.\n\n\
-                If a company defaults on a loan (fails to pay an installment) four consecutive \
-                times, its assets will be forcibly sold (usually for unfavorable terms) until \
-                there is enough cash to pay back the complete loan."
+                Banks are the standard credit providers for companies. They use a company's \
+                credit score to calculate the maximum principal and the loan's interest rate. \
+                For decent credit scores, they offer better terms than alternative lenders."
             }
             LoanProvider::AlternativeLender => {
                 "\
                 Alternative credit providers offer loans were traditional institutions like \
                 banks may hesitate, usually against a higher interest rate. Contrary to banks,\
                 the credit score is not used in the calculations for the maximum principal nor \
-                the interest rate.\n\n\
-                If a player defaults on a loan (fails to pay an installment) three consecutive \
-                times, its assets will be forcibly sold (usually for unfavorable terms) until \
-                there is enough cash to pay back the complete loan."
+                the interest rate."
             }
         }
     }
@@ -111,7 +104,7 @@ impl LoanTerm {
 
 #[derive(Clone)]
 pub struct Loan {
-    /// Id of the loan
+    /// Loan identifier
     pub id: String,
 
     /// Institution that provided the loan
@@ -125,6 +118,9 @@ pub struct Loan {
 
     /// The interest over the loan
     pub interest_rate: f32,
+
+    /// Global interest rate at the time of the contract
+    pub global_interest_rate: f32,
 
     /// Type of loan
     pub kind: LoanKind,
@@ -166,7 +162,7 @@ impl Loan {
         }
     }
 
-    pub fn maturity_date(&self) -> NaiveDate {
+    pub fn installments_left(&self) -> u32 {
         let mut clone = self.clone();
         let mut installments = 0;
 
@@ -175,9 +171,12 @@ impl Loan {
             installments += 1;
         }
 
-        clone
-            .start_date
-            .checked_add_months(Months::new(installments))
+        installments
+    }
+
+    pub fn maturity_date(&self) -> NaiveDate {
+        self.start_date
+            .checked_add_months(Months::new(self.installments_left()))
             .unwrap()
     }
 }

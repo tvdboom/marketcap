@@ -5,7 +5,6 @@ use std::collections::HashMap;
 
 pub struct WorldAssets {
     pub audio: HashMap<&'static str, Handle<AudioSource>>,
-    pub fonts: HashMap<&'static str, Handle<Font>>,
     pub images: HashMap<&'static str, Handle<Image>>,
 }
 
@@ -22,10 +21,6 @@ impl WorldAssets {
 
     pub fn audio(&self, name: &str) -> Handle<AudioSource> {
         self.get_asset(&self.audio, name, "audio").clone_weak()
-    }
-
-    pub fn font(&self, name: &str) -> Handle<Font> {
-        self.get_asset(&self.fonts, name, "font").clone_weak()
     }
 
     pub fn image(&self, name: &str) -> &Handle<Image> {
@@ -46,11 +41,6 @@ impl FromWorld for WorldAssets {
             ("music", assets.load("audio/music.ogg")),
         ]);
 
-        let fonts = HashMap::from([
-            ("bold", assets.load("fonts/FiraSans-Bold.ttf")),
-            ("medium", assets.load("fonts/FiraMono-Medium.ttf")),
-        ]);
-
         let images: HashMap<&'static str, Handle<Image>> = HashMap::from([
             // Icons
             ("cash", assets.load("images/icons/cash.png")),
@@ -66,10 +56,6 @@ impl FromWorld for WorldAssets {
             ("time-paused", assets.load("images/icons/time-paused.png")),
         ]);
 
-        Self {
-            audio,
-            fonts,
-            images,
-        }
+        Self { audio, images }
     }
 }

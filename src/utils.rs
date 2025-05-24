@@ -10,6 +10,7 @@ pub fn create_guid() -> String {
         .sample_iter(&Alphanumeric)
         .take(4)
         .map(char::from)
+        .map(|c| c.to_ascii_uppercase())
         .collect()
 }
 

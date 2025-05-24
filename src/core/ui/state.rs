@@ -1,4 +1,4 @@
-use crate::core::loans::{Loan, LoanKind, LoanProvider, LoanTerm};
+use crate::core::loans::{LoanKind, LoanProvider, LoanTerm};
 use bevy::prelude::*;
 use strum_macros::EnumIter;
 
@@ -31,7 +31,7 @@ impl Tab {
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum CreditTab {
     #[default]
-    OutstandingLoans,
+    Overview,
     NewLoan,
     P2P,
 }
@@ -39,7 +39,7 @@ pub enum CreditTab {
 impl CreditTab {
     pub fn emoji(&self) -> &str {
         match self {
-            CreditTab::OutstandingLoans => "🗺",
+            CreditTab::Overview => "🗺",
             CreditTab::NewLoan => "✏",
             CreditTab::P2P => "👤",
         }

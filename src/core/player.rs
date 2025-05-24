@@ -52,7 +52,7 @@ impl Player {
             self.credit_score.score = (self.credit_score.score - 12).max(CreditScore::MIN);
         }
 
-        // Remove loans that are fully paid
+        // Remove loans that are fully repaid
         self.loans.retain(|l| l.outstanding >= 1.);
 
         success

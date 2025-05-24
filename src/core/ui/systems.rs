@@ -81,7 +81,7 @@ pub fn top_panel(
         .show_separator_line(false)
         .show(contexts.ctx_mut(), |ui| {
             ui.horizontal_centered(|ui| {
-                ui.add_space(window.width() * 0.07);
+                ui.add_space(window.width() * 0.095);
 
                 ui.add_block(
                     format!("{:.0}", player.enterprise_value().floor()),
@@ -236,7 +236,12 @@ pub fn central_panel(
         .frame(
             Frame::new()
                 .fill(game_settings.theme.get().bg_primary_color_visuals())
-                .inner_margin(Margin::same(48)),
+                .inner_margin(Margin {
+                    left: 60,
+                    right: 60,
+                    top: 40,
+                    bottom: 40,
+                }),
         )
         .show(contexts.ctx_mut(), |ui| match ui_state.tab {
             Tab::Home => {

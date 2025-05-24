@@ -27,7 +27,7 @@ fn main() {
                     title: TITLE.into(),
                     mode: WindowMode::Windowed,
                     position: WindowPosition::Centered(MonitorSelection::Primary),
-                    resolution: WindowResolution::new(1500., 800.),
+                    resolution: WindowResolution::new(1600., 900.),
 
                     // Tells Wasm to resize the window according to the available canvas
                     fit_canvas_to_parent: true,

@@ -1,14 +1,15 @@
 use crate::core::constants::{DATE_FORMAT, LOAN_STEP};
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::loans::{Loan, LoanKind, LoanTerm};
+use crate::core::loans::{Loan, LoanKind, LoanProvider, LoanTerm};
 use crate::core::messages::Messages;
 use crate::core::player::Player;
 use crate::core::ui::state::{CreditTab, UiState};
-use crate::core::ui::utils::{CustomUi, TextSizes};
+use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
 use crate::utils::{NameFromEnum, create_guid, first_day_in_two_months};
 use bevy::prelude::*;
-use bevy_egui::egui::{Button, Frame, RichText, Sense, Separator, Slider, Ui};
+use bevy_egui::egui::{Button, Frame, Sense, Separator, Slider, Ui};
+use chrono::Months;
 use egui_extras::{Column, TableBuilder};
 use strum::IntoEnumIterator;
 
@@ -25,7 +26,10 @@ pub fn credit_panel(
             ui.selectable_value(
                 &mut ui_state.credit.tab,
                 tab,
-                RichText::new(format!("{}  {}", tab.emoji(), tab.to_name())).size(window.xl_size()),
+                add_text(
+                    format!("{}  {}", tab.emoji(), tab.to_name()),
+                    window.l_size(),
+                ),
             );
         }
     });
@@ -38,62 +42,129 @@ pub fn credit_panel(
         make purchases, invest, and manage expenses beyond their immediate cash availability.\n\n\
         If a company defaults on a loan (fails to pay an installment) four consecutive months, \
         its assets will be forcibly sold (usually for unfavorable terms) until there is enough \
-        cash to pay back the complete loan.\n\n\
-        Six months after the start date of a loan, a company can choose to repay the debt early, \
-        paying an additional fee to the provider to cover missed earnings. If the global interest \
-        rate has increased since the start of the loan, the fee consists of two months of interest \
-        over the repaid amount. If the global interest rate has decreased, the fee consists of \
-        the difference in interest times the repaid installments.",
+        cash to pay back the complete loan. Six months after the start date of a loan, a company \
+        can choose to repay the debt early, paying an additional fee to the provider to cover \
+        missed earnings.",
         window.m_size(),
     );
 
     ui.separator();
 
-    match ui_state.credit.tab {
-        CreditTab::OutstandingLoans => {
-            ui.add_text("Outstanding loans", window.l_size());
+    ui.add_space(window.height() * 0.02);
 
+    match ui_state.credit.tab {
+        CreditTab::Overview => {
             if player.loans.is_empty() {
-                ui.add_text("No outstanding loans.", window.m_size());
+                ui.add_text("Outstanding loans", window.l_size());
 
                 ui.add_space(window.height() * 0.02);
 
-                let button = ui.add(Button::new(
-                    RichText::new("Take a new loan").size(window.m_size()),
-                ));
+                ui.add_text("No outstanding loans.", window.s_size());
+
+                ui.add_space(window.height() * 0.02);
+
+                let button = ui.add(Button::new(add_text("Take a new loan", window.m_size())));
 
                 if button.clicked() {
                     ui_state.credit.tab = CreditTab::NewLoan;
                 }
             } else {
-                credit_overview(ui, ui_state, &player.loans, window);
+                ui.horizontal(|ui| {
+                    ui.vertical(|ui| {
+                        ui.set_width(ui.available_width() * 0.75);
 
-                // if let Some(loan) = &ui_state.credit.repay {
-                //     ui.add_space(window.height() * 0.02);
-                // 
-                //     ui.add_text("Repay loan early", window.l_size());
-                // 
-                //     ui.add_space(window.height() * 0.02);
-                // 
-                //     let repay_amount = ui_state.credit.repay_amount;
-                // 
-                //     ui.spacing_mut().slider_width = window.width() * 0.13;
-                //     ui.add(
-                //         Slider::new(
-                //             &mut ui_state.credit.repay_amount,
-                //             0..=loan.outstanding as u32,
-                //         )
-                //         .show_value(false)
-                //         .text(RichText::new(repay_amount.to_string()).size(window.s_size())),
-                //     );
-                // 
-                //     ui.add_space(window.height() * 0.02);
-                // 
-                //     let button = ui.add_enabled(
-                //         ui_state.credit.repay_amount > 0,
-                //         Button::new(RichText::new("✏  Repay loan").size(window.m_size())),
-                //     );
-                // }
+                        ui.add_text("Outstanding loans", window.l_size());
+
+                        ui.add_space(window.height() * 0.02);
+
+                        credit_overview(ui, ui_state, &player.loans, window);
+
+                        ui.add_text("Click on a row to repay the loan early.", window.xs_size());
+                    });
+
+                    ui.add_space(window.width() * 0.03);
+
+                    ui.vertical(|ui| {
+                        if let Some(id) = &ui_state.credit.repay {
+                            if let Some(loan) = player.loans.iter_mut().find(|l| l.id == *id) {
+                                ui.add_text(format!("Repay loan {} early", loan.id), window.l_size());
+
+                                ui.add_space(window.height() * 0.02);
+
+                                let repay_amount = ui_state.credit.repay_amount;
+                                let fee = if economy.interest.current() >= loan.global_interest_rate
+                                {
+                                    12. * repay_amount as f32 * loan.interest_rate / 100. / 12.
+                                } else {
+                                    repay_amount as f32
+                                        * (loan.interest_rate
+                                            + (loan.global_interest_rate
+                                                - economy.interest.current()))
+                                        / 100.
+                                        / 12.
+                                        * loan.installments_left() as f32
+                                };
+
+                                ui.add_text("Amount", window.m_size());
+                                
+                                ui.spacing_mut().slider_width = window.width() * 0.1;
+                                ui.add(
+                                    Slider::new(
+                                        &mut ui_state.credit.repay_amount,
+                                        0..=loan.outstanding.min(player.cash.current() - fee)
+                                            as u32,
+                                    )
+                                    .show_value(false)
+                                    .text(add_text(repay_amount.to_string(), window.m_size())),
+                                );
+
+                                let costs = ui_state.credit.repay_amount as f32 + fee;
+                                
+                                ui.add_space(window.height() * 0.02);
+
+                                ui.add_text(format!("Fee: {fee:.0}            Costs: {costs:.0}"), window.m_size())
+                                    .on_hover_text(
+                                        "If the global interest rate has increased since \
+                                        the start of the loan, the fee consists of twelve months \
+                                        of interest over the repaid amount. If the global interest \
+                                        rate has decreased, the fee consists of the agreed interest \
+                                        plus the current difference multiplied by the number of \
+                                        missed installments.",
+                                    );
+
+                                ui.add_space(window.height() * 0.02);
+
+                                let date_diff = economy.date > loan.start_date.checked_add_months(Months::new(6)).unwrap();
+                                
+                                let mut button = ui.add_enabled(
+                                    ui_state.credit.repay_amount > 0 && date_diff,
+                                    Button::new(add_text("Repay loan", window.m_size())),
+                                );
+
+                                if !date_diff {
+                                    button = button.on_disabled_hover_text(
+                                        "You can only repay a loan early six months after the start date.",
+                                    );
+                                }
+                                
+                                if button.clicked() {
+                                    player.cash.amount -= costs;
+                                    loan.outstanding -= ui_state.credit.repay_amount as f32;
+
+                                    messages.info(format!(
+                                        "You repaid {} of loan {}.",
+                                        ui_state.credit.repay_amount, loan.id
+                                    ));
+                                }
+                            } else {
+                                ui_state.credit.repay = None;
+                            }
+
+                            // Remove loans that are fully repaid
+                            player.loans.retain(|l| l.outstanding >= 1.);
+                        }
+                    });
+                });
             }
         }
         CreditTab::NewLoan => {
@@ -107,6 +178,7 @@ pub fn credit_panel(
                     player.credit_score.current(),
                     &ui_state.credit.term,
                 ),
+                global_interest_rate: economy.interest.current(),
                 kind: ui_state.credit.kind.clone(),
                 term: ui_state.credit.term.clone(),
                 start_date: first_day_in_two_months(economy.date),
@@ -117,124 +189,135 @@ pub fn credit_panel(
 
             ui.add_space(window.height() * 0.02);
 
-            ui.add_text("Principal", window.m_size());
-            let max_principal = ui_state
-                .credit
-                .provider
-                .max_principal(player.enterprise_value(), player.credit_score.current());
-
-            ui.spacing_mut().slider_width = window.width() * 0.13;
-            let principal = ui_state.credit.principal;
-            ui.add(
-                Slider::new(&mut ui_state.credit.principal, 0..=max_principal)
-                    .step_by(LOAN_STEP as f64)
-                    .show_value(false)
-                    .text(RichText::new(principal.to_string()).size(window.s_size())),
-            )
-            .on_hover_text(
-                "The amount of money you want to borrow. The maximum amount you can \
-                borrow is determined by the enterprise value and the credit score.",
-            );
-
-            ui.add_space(window.height() * 0.02);
-
-            ui.add_text("Loan kind", window.m_size());
             ui.horizontal(|ui| {
-                for item in LoanKind::iter() {
-                    ui.selectable_value(
-                        &mut ui_state.credit.kind,
-                        item.clone(),
-                        RichText::new(item.to_name()).size(window.s_size()),
+                ui.vertical(|ui| {
+                    ui.add_text("Principal", window.m_size());
+                    let max_principal = ui_state
+                        .credit
+                        .provider
+                        .max_principal(player.enterprise_value(), player.credit_score.current());
+
+                    ui.spacing_mut().slider_width = window.width() * 0.13;
+                    let principal = ui_state.credit.principal;
+                    ui.add(
+                        Slider::new(&mut ui_state.credit.principal, 0..=max_principal)
+                            .step_by(LOAN_STEP as f64)
+                            .show_value(false)
+                            .text(add_text(principal.to_string(), window.m_size())),
                     )
-                    .on_hover_text(item.description());
-                }
-            });
+                        .on_hover_text(
+                            "The amount of money you want to borrow. The maximum amount you \
+                            can borrow is determined by the credit provider and the company's \
+                            enterprise value.",
+                        );
 
-            ui.add_space(window.height() * 0.02);
+                    ui.add_text("Provider", window.m_size());
+                    ui.horizontal(|ui| {
+                        for item in LoanProvider::iter() {
+                            ui.selectable_value(
+                                &mut ui_state.credit.provider,
+                                item.clone(),
+                                add_text(item.to_name(), window.s_size()),
+                            )
+                                .on_hover_text(item.description());
+                        }
+                    });
 
-            ui.add_text("Term", window.m_size());
-            ui.horizontal(|ui| {
-                for item in LoanTerm::iter() {
-                    ui.selectable_value(
-                        &mut ui_state.credit.term,
-                        item.clone(),
-                        RichText::new(item.to_name()).size(window.s_size()),
+                    ui.add_text("Kind", window.m_size());
+                    ui.horizontal(|ui| {
+                        for item in LoanKind::iter() {
+                            ui.selectable_value(
+                                &mut ui_state.credit.kind,
+                                item.clone(),
+                                add_text(item.to_name(), window.s_size()),
+                            )
+                                .on_hover_text(item.description());
+                        }
+                    });
+
+                    ui.add_text("Term", window.m_size());
+                    ui.horizontal(|ui| {
+                        for item in LoanTerm::iter() {
+                            ui.selectable_value(
+                                &mut ui_state.credit.term,
+                                item.clone(),
+                                add_text(item.to_name(), window.s_size()),
+                            )
+                                .on_hover_text(
+                                    "Longer terms reduce the monthly installment and the interest rate.");
+                        }
+                    });
+
+                    // Check if the player has active loan with >50% outstanding
+                    let loans = player
+                        .loans
+                        .iter()
+                        .filter(|l| l.provider == ui_state.credit.provider)
+                        .collect::<Vec<_>>();
+                    let has_loans = loans.iter().any(|l| l.outstanding > l.principal * 0.5);
+
+                    let mut button = ui.add_enabled(
+                        ui_state.credit.principal > 0 && !has_loans,
+                        Button::new(add_text("Take the loan", window.m_size())),
                     );
-                }
-            });
 
-            ui.add_space(window.height() * 0.02);
+                    if has_loans {
+                        button = button.on_disabled_hover_text(
+                            "You have an outstanding loan with this provider. \
+                            You can only take a new loan when the remaining debt is \
+                            less than 50% of the principal.",
+                        );
+                    }
 
-            // Check if the player has active loan with >50% outstanding
-            let loans = player
-                .loans
-                .iter()
-                .filter(|l| l.provider == ui_state.credit.provider)
-                .collect::<Vec<_>>();
-            let has_loans = loans.iter().any(|l| l.outstanding > l.principal * 0.5);
+                    if button.clicked() {
+                        player.loans.push(loan.clone());
+                        player.loans.sort_by_key(|loan| loan.maturity_date());
+                        player.cash.amount += loan.principal;
+                        messages.info(format!("Loan {} acquired!", loan.id));
+                    }
+                });
 
-            let mut button = ui.add_enabled(
-                ui_state.credit.principal > 0 && !has_loans,
-                Button::new(RichText::new("Take the loan").size(window.m_size())),
-            );
+                ui.add(Separator::default().vertical());
 
-            if has_loans {
-                button = button.on_disabled_hover_text(
-                    "You have an outstanding loan with this provider. \
-                    You can only take a new loan when the remaining debt is \
-                    less than 50% of the principal.",
-                );
-            }
+                ui.vertical(|ui| {
+                    ui.add_text("Conditions", window.m_size());
 
-            if button.clicked() {
-                player.loans.push(loan.clone());
-                player.loans.sort_by_key(|loan| loan.maturity_date());
-                player.cash.amount += loan.principal;
-                messages.info("Loan acquired!");
-            }
+                    ui.add_text(
+                        format!("Interest rate: {}%", loan.interest_rate),
+                        window.s_size(),
+                    )
+                        .on_hover_text(
+                            "Percentage of the outstanding amount that must be paid as \
+                            interest every year.",
+                        );
 
-            ui.add(
-                Separator::default()
-                    .vertical()
-                    .shrink(window.height() * 0.06),
-            );
+                    ui.add_text(
+                        format!(
+                            "Installment: {:.0}",
+                            loan.next_installment_amount(),
+                        ),
+                        window.s_size(),
+                    )
+                        .on_hover_text(
+                            "Amount to be paid back the first month. For the straight-line \
+                            loan kind, the installments change over time."
+                        );
 
-            ui.vertical(|ui| {
-                ui.set_width(ui.available_width() * 0.3);
+                    ui.add_text(
+                        format!("Start date: {}", loan.start_date.format(DATE_FORMAT)),
+                        window.s_size(),
+                    )
+                        .on_hover_text("Starting date of the installments.");
 
-                ui.add_text("", window.l_size());
-
-                ui.add_space(window.height() * 0.02);
-
-                ui.add_text("Conditions", window.m_size());
-                ui.add_text(
-                    format!("Interest rate: {}%", loan.interest_rate),
-                    window.s_size(),
-                )
-                .on_hover_text(
-                    "Percentage of the principal that must be paid as interest every year.",
-                );
-                ui.add_text(
-                    format!(
-                        "First installment amount: {:.0}",
-                        loan.next_installment_amount(),
-                    ),
-                    window.s_size(),
-                )
-                .on_hover_text("Amount to be paid back every month.");
-                ui.add_text(
-                    format!("Start date: {}", loan.start_date.format(DATE_FORMAT)),
-                    window.s_size(),
-                )
-                .on_hover_text("Starting date of the installments.");
-                ui.add_text(
-                    format!(
-                        "Maturity date: {}",
-                        loan.maturity_date().format(DATE_FORMAT)
-                    ),
-                    window.s_size(),
-                )
-                .on_hover_text("Date on which the loan is fully repaid.");
+                    ui.add_text(
+                        format!(
+                            "Maturity date: {}",
+                            loan.maturity_date().format(DATE_FORMAT)
+                        ),
+                        window.s_size(),
+                    )
+                        .on_hover_text("Date on which the loan is fully repaid.");
+                });
             });
         }
         CreditTab::P2P => {}
@@ -245,9 +328,11 @@ pub fn credit_overview(ui: &mut Ui, ui_state: &mut UiState, loans: &Vec<Loan>, w
     let columns = [
         "Id",
         "Maturity",
+        "Installment",
         "Outstanding",
         "Principal",
         "Interest",
+        "Provider",
         "Kind",
         "Defaults",
     ];
@@ -257,12 +342,13 @@ pub fn credit_overview(ui: &mut Ui, ui_state: &mut UiState, loans: &Vec<Loan>, w
         .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
         .show(ui, |ui| {
             TableBuilder::new(ui)
+                .striped(false)
                 .sense(Sense::click())
                 .columns(Column::remainder(), columns.len())
                 .header(30., |mut header| {
                     for col in columns {
                         header.col(|ui| {
-                            ui.label(RichText::new(col).size(window.s_size()).strong());
+                            ui.label(add_text(col, window.s_size()).strong());
                         });
                     }
                 })
@@ -271,13 +357,15 @@ pub fn credit_overview(ui: &mut Ui, ui_state: &mut UiState, loans: &Vec<Loan>, w
                         let content = [
                             &loan.id,
                             &loan.maturity_date().format(DATE_FORMAT).to_string(),
+                            &loan.next_installment_amount().floor().to_string(),
                             &loan.outstanding.floor().to_string(),
                             &loan.principal.to_string(),
-                            &loan.interest_rate.to_string(),
+                            &format!("{}%", loan.interest_rate.to_string()),
+                            &loan.provider.to_name(),
                             &loan.kind.to_name(),
                             &loan.defaults.to_string(),
                         ];
-                        
+
                         body.row(30., |mut row| {
                             for col in content {
                                 row.col(|ui| {
