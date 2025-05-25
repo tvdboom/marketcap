@@ -43,17 +43,31 @@ impl LoanProvider {
         }
     }
 
-    pub fn interest(&self, global_interest_rate: f32, credit_score: f32, term: &LoanTerm) -> f32 {
-        match self {
-            LoanProvider::Bank => (global_interest_rate
-                + 0.8 * global_interest_rate * (1. - credit_score / CreditScore::MAX as f32)
-                + 0.1 * global_interest_rate * (5. - term.years() as f32))
-                .round1(),
-            LoanProvider::AlternativeLender => (global_interest_rate
-                + 0.6 * global_interest_rate
-                + 0.1 * global_interest_rate * (5. - term.years() as f32))
-                .round1(),
+    pub fn interest(
+        &self,
+        global_interest_rate: f32,
+        credit_score: f32,
+        term: &LoanTerm,
+        no_fee: bool,
+    ) -> f32 {
+        let mut interest = match self {
+            LoanProvider::Bank => {
+                global_interest_rate
+                    + 0.8 * global_interest_rate * (1. - credit_score / CreditScore::MAX as f32)
+                    + 0.1 * global_interest_rate * (5. - term.years() as f32)
+            }
+            LoanProvider::AlternativeLender => {
+                global_interest_rate
+                    + 0.6 * global_interest_rate
+                    + 0.1 * global_interest_rate * (5. - term.years() as f32)
+            }
+        };
+
+        if no_fee {
+            interest = 1.15 * interest
         }
+
+        interest.round1()
     }
 }
 
@@ -127,6 +141,9 @@ pub struct Loan {
 
     /// The number of years to pay back the loan
     pub term: LoanTerm,
+
+    /// Whether this is a prepayment-free loan
+    pub no_fee: bool,
 
     /// Date of the first installment
     pub start_date: NaiveDate,

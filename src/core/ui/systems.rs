@@ -8,6 +8,7 @@ use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::GameState;
 use crate::core::ui::credit::credit_panel;
+use crate::core::ui::currencies::currencies_panel;
 use crate::core::ui::state::{Tab, UiState};
 use crate::core::ui::utils::{CustomUi, TextSizes};
 use crate::utils::NameFromEnum;
@@ -16,8 +17,8 @@ use bevy_egui::EguiContexts;
 use bevy_egui::egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
 use bevy_egui::egui::widget_text::RichText;
 use bevy_egui::egui::{
-    Align, CentralPanel, Color32, FontData, FontFamily, Frame, Layout, Margin, SidePanel,
-    TopBottomPanel,
+    Align, CentralPanel, Color32, FontData, FontFamily, Frame, Id, Layout, Margin, Modal,
+    SidePanel, TopBottomPanel,
 };
 use strum::IntoEnumIterator;
 
@@ -232,6 +233,34 @@ pub fn central_panel(
     mut messages: ResMut<Messages>,
     window: Single<&Window>,
 ) {
+    if ui_state.menu {
+        let modal = Modal::new(Id::new("in-game-menu")).show(contexts.ctx_mut(), |ui| {
+            ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
+                ui.add_space(window.height() * 0.1);
+
+                ui.heading("In-game menu");
+
+                ui.add_space(window.height() * 0.02);
+
+                if ui.button("Resume").clicked() {
+                    ui_state.menu = false;
+                }
+
+                if ui.button("Settings").clicked() {
+                    ui_state.menu = false;
+                }
+
+                if ui.button("Exit to main menu").clicked() {
+                    ui_state.menu = false;
+                }
+            });
+        });
+        
+        if modal.should_close() {
+            ui_state.menu = false;
+        }
+    }
+
     CentralPanel::default()
         .frame(
             Frame::new()
@@ -253,9 +282,14 @@ pub fn central_panel(
             Tab::Bonds => {
                 ui.heading("Bonds");
             }
-            Tab::Crypto => {
-                ui.heading("Crypto");
-            }
+            Tab::Currencies => currencies_panel(
+                ui,
+                &mut ui_state,
+                &mut player,
+                &economy,
+                &mut messages,
+                &window,
+            ),
             Tab::Commodities => {
                 ui.heading("Commodities");
             }
@@ -271,4 +305,29 @@ pub fn central_panel(
                 ui.heading("Policies");
             }
         });
+}
+
+pub fn check_keys(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut ui_state: ResMut<UiState>,
+) {
+    if keyboard.just_pressed(KeyCode::Escape) {
+        ui_state.menu = !ui_state.menu;
+    }
+
+    if keyboard.just_pressed(KeyCode::Digit1) {
+        ui_state.tab = Tab::Home;
+    } else if keyboard.just_pressed(KeyCode::Digit2) {
+        ui_state.tab = Tab::Stocks;
+    } else if keyboard.just_pressed(KeyCode::Digit3) {
+        ui_state.tab = Tab::Bonds;
+    } else if keyboard.just_pressed(KeyCode::Digit4) {
+        ui_state.tab = Tab::Currencies;
+    } else if keyboard.just_pressed(KeyCode::Digit5) {
+        ui_state.tab = Tab::Commodities;
+    } else if keyboard.just_pressed(KeyCode::Digit6) {
+        ui_state.tab = Tab::Credit;
+    } else if keyboard.just_pressed(KeyCode::Digit7) {
+        ui_state.tab = Tab::Policies;
+    }
 }

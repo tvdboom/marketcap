@@ -5,7 +5,7 @@ use crate::core::loans::{Loan, LoanKind, LoanProvider, LoanTerm};
 use crate::core::messages::Messages;
 use crate::core::player::Player;
 use crate::core::ui::state::{CreditTab, UiState};
-use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
+use crate::core::ui::utils::{CustomUi, TextSizes, add_text, toggle};
 use crate::utils::{NameFromEnum, create_guid, first_day_in_two_months};
 use bevy::prelude::*;
 use bevy_egui::egui::{Button, Frame, Sense, Separator, Slider, Ui};
@@ -92,9 +92,14 @@ pub fn credit_panel(
                                 ui.add_space(window.height() * 0.02);
 
                                 let repay_amount = ui_state.credit.repay_amount;
-                                let fee = if economy.interest.current() >= loan.global_interest_rate
-                                {
-                                    12. * repay_amount as f32 * loan.interest_rate / 100. / 12.
+                                let fee = if loan.no_fee {
+                                    0.
+                                } else if economy.interest.current() >= loan.global_interest_rate {
+                                    loan.installments_left().min(12) as f32
+                                        * repay_amount as f32
+                                        * loan.interest_rate
+                                        / 100.
+                                        / 12.
                                 } else {
                                     repay_amount as f32
                                         * (loan.interest_rate
@@ -122,15 +127,18 @@ pub fn credit_panel(
                                 
                                 ui.add_space(window.height() * 0.02);
 
-                                ui.add_text(format!("Fee: {fee:.0}            Costs: {costs:.0}"), window.m_size())
+                                ui.add_text(format!("Fee: {fee:.0}"), window.m_size())
                                     .on_hover_text(
                                         "If the global interest rate has increased since \
-                                        the start of the loan, the fee consists of twelve months \
-                                        of interest over the repaid amount. If the global interest \
-                                        rate has decreased, the fee consists of the agreed interest \
-                                        plus the current difference multiplied by the number of \
-                                        missed installments.",
+                                        the start of the loan, the fee consists of up to twelve \
+                                        months of interest over the repaid amount (depending on \
+                                        the number of installments left). If the global interest \
+                                        rate has decreased, the fee consists of the agreed \
+                                        interest plus the current difference multiplied by the \
+                                        number of missed installments.",
                                     );
+                                ui.add_text(format!("Total costs: {costs:.0}"), window.m_size())
+                                    .on_hover_text("Total amount to be paid. Includes the repaid amount plus the repayment fee.");
 
                                 ui.add_space(window.height() * 0.02);
 
@@ -177,17 +185,15 @@ pub fn credit_panel(
                     economy.interest.current(),
                     player.credit_score.current(),
                     &ui_state.credit.term,
+                    ui_state.credit.no_fee,
                 ),
                 global_interest_rate: economy.interest.current(),
                 kind: ui_state.credit.kind.clone(),
                 term: ui_state.credit.term.clone(),
+                no_fee: ui_state.credit.no_fee,
                 start_date: first_day_in_two_months(economy.date),
                 defaults: 0,
             };
-
-            ui.add_text("New loan", window.l_size());
-
-            ui.add_space(window.height() * 0.02);
 
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
@@ -248,13 +254,17 @@ pub fn credit_panel(
                         }
                     });
 
+                    ui.add_text("Prepayment-free loan", window.m_size());
+                    ui.add(toggle(&mut ui_state.credit.no_fee)).on_hover_text(
+                        "No early repayment fee for an increase in interest.",
+                    );
+                    
                     // Check if the player has active loan with >50% outstanding
-                    let loans = player
+                    let has_loans = player
                         .loans
                         .iter()
                         .filter(|l| l.provider == ui_state.credit.provider)
-                        .collect::<Vec<_>>();
-                    let has_loans = loans.iter().any(|l| l.outstanding > l.principal * 0.5);
+                        .any(|l| l.outstanding > l.principal * 0.5);
 
                     let mut button = ui.add_enabled(
                         ui_state.credit.principal > 0 && !has_loans,
@@ -334,6 +344,7 @@ pub fn credit_overview(ui: &mut Ui, ui_state: &mut UiState, loans: &Vec<Loan>, w
         "Interest",
         "Provider",
         "Kind",
+        "No fee",
         "Defaults",
     ];
 
@@ -363,6 +374,7 @@ pub fn credit_overview(ui: &mut Ui, ui_state: &mut UiState, loans: &Vec<Loan>, w
                             &format!("{}%", loan.interest_rate.to_string()),
                             &loan.provider.to_name(),
                             &loan.kind.to_name(),
+                            &loan.no_fee.to_string(),
                             &loan.defaults.to_string(),
                         ];
 

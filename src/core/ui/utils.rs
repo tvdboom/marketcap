@@ -6,6 +6,41 @@ pub fn add_text(text: impl Into<String>, size: f32) -> RichText {
     RichText::new(text).size(size)
 }
 
+/// Custom IOS style toggle for UI
+pub fn toggle(on: &mut bool) -> impl Widget + '_ {
+    move |ui: &mut Ui| {
+        let desired_size = ui.spacing().interact_size.y * Vec2::new(2.0, 1.0);
+        let (rect, mut response) = ui.allocate_exact_size(desired_size, Sense::click());
+        if response.clicked() {
+            *on = !*on;
+            response.mark_changed();
+        }
+
+        response
+            .widget_info(|| WidgetInfo::selected(WidgetType::Checkbox, ui.is_enabled(), *on, ""));
+
+        if ui.is_rect_visible(rect) {
+            let how_on = ui.ctx().animate_bool_responsive(response.id, *on);
+            let visuals = ui.style().interact_selectable(&response, *on);
+            let rect = rect.expand(visuals.expansion);
+            let radius = 0.5 * rect.height();
+            ui.painter().rect(
+                rect,
+                radius,
+                visuals.bg_fill,
+                visuals.bg_stroke,
+                StrokeKind::Outside,
+            );
+            let circle_x = lerp((rect.left() + radius)..=(rect.right() - radius), how_on);
+            let center = Pos2::new(circle_x, rect.center().y);
+            ui.painter()
+                .circle(center, 0.75 * radius, visuals.bg_fill, visuals.fg_stroke);
+        }
+
+        response
+    }
+}
+
 /// Custom syntactic sugar for repetitive UI elements
 pub trait CustomUi {
     fn add_text(&mut self, text: impl Into<String>, size: f32) -> Response;

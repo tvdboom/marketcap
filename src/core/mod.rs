@@ -20,9 +20,7 @@ use crate::core::resources::ImageIds;
 use crate::core::states::{AppState, AudioState, GameState};
 use crate::core::systems::time_pass;
 use crate::core::ui::state::UiState;
-use crate::core::ui::systems::{
-    add_egui_images, central_panel, left_panel, set_egui_style, top_panel,
-};
+use crate::core::ui::systems::{add_egui_images, central_panel, check_keys, left_panel, set_egui_style, top_panel};
 use bevy::prelude::*;
 
 pub struct GamePlugin;
@@ -49,6 +47,7 @@ impl Plugin for GamePlugin {
                 (
                     time_pass.run_if(in_state(GameState::Running)),
                     toggle_pause_keyboard,
+                    check_keys,
                 ),
             );
     }

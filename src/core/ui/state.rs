@@ -8,7 +8,7 @@ pub enum Tab {
     Home,
     Stocks,
     Bonds,
-    Crypto,
+    Currencies,
     Commodities,
     Credit,
     Policies,
@@ -20,10 +20,26 @@ impl Tab {
             Tab::Home => "🏠",
             Tab::Stocks => "📈",
             Tab::Bonds => "💵",
-            Tab::Crypto => "💰",
+            Tab::Currencies => "💰",
             Tab::Commodities => "💎",
             Tab::Credit => "💳",
             Tab::Policies => "📜",
+        }
+    }
+}
+
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
+pub enum CurrencyTab {
+    #[default]
+    Forex,
+    Crypto,
+}
+
+impl CurrencyTab {
+    pub fn emoji(&self) -> &str {
+        match self {
+            CurrencyTab::Forex => "💱",
+            CurrencyTab::Crypto => "💸",
         }
     }
 }
@@ -45,7 +61,6 @@ impl CreditTab {
         }
     }
 }
-
 #[derive(Clone)]
 pub struct CreditState {
     pub tab: CreditTab,
@@ -53,6 +68,7 @@ pub struct CreditState {
     pub principal: u32,
     pub kind: LoanKind,
     pub term: LoanTerm,
+    pub no_fee: bool,
     pub repay: Option<String>,
     pub repay_amount: u32,
 }
@@ -65,6 +81,7 @@ impl Default for CreditState {
             principal: 0,
             kind: LoanKind::default(),
             term: LoanTerm::default(),
+            no_fee: false,
             repay: None,
             repay_amount: 0,
         }
@@ -74,5 +91,7 @@ impl Default for CreditState {
 #[derive(Resource, Clone, Default)]
 pub struct UiState {
     pub tab: Tab,
+    pub currencies: CurrencyTab,
     pub credit: CreditState,
+    pub menu: bool,
 }
