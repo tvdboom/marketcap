@@ -293,7 +293,7 @@ pub trait Aesthetics {
                 },
                 menu_corner_radius: CornerRadius::same(self.rounding_visuals()),
                 popup_shadow: Shadow {
-                    spread: 16,
+                    spread: 3,
                     color: Color32::from_rgba_premultiplied(19, 18, 18, 96),
                     ..Default::default()
                 },

@@ -7,6 +7,7 @@ use crate::core::messages::Messages;
 use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::GameState;
+use crate::core::ui::bonds::bonds_panel;
 use crate::core::ui::credit::credit_panel;
 use crate::core::ui::currencies::currencies_panel;
 use crate::core::ui::state::{Tab, UiState};
@@ -17,8 +18,8 @@ use bevy_egui::EguiContexts;
 use bevy_egui::egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
 use bevy_egui::egui::widget_text::RichText;
 use bevy_egui::egui::{
-    Align, CentralPanel, Color32, FontData, FontFamily, Frame, Id, Layout, Margin, Modal,
-    SidePanel, TopBottomPanel,
+    Align, CentralPanel, Color32, FontData, FontFamily, Frame, Layout, Margin, SidePanel,
+    TopBottomPanel,
 };
 use strum::IntoEnumIterator;
 
@@ -94,7 +95,7 @@ pub fn top_panel(
                         In the game, the enterprise value represents a measure of the success \
                         of the player. If the enterprise value drops below zero, the company \
                         goes bankrupt and the game is lost.\n\n\
-                        Cash: {}\nDebts: {:.0}",
+                        Cash: {}\nDebt: {:.0}",
                         player.cash,
                         player.loans.iter().map(|l| l.outstanding).sum::<f32>()
                     ),
@@ -122,9 +123,9 @@ pub fn top_panel(
                         The net flow represents the total financial movement at the end of \
                         each month, calculated as income minus debt repayments and expenses. \
                         It shows whether the player will gain or lose money this month.\n\n\
-                        Inflow: {:+.0}\nOutflow: -{:.0}",
+                        Inflow: {:+.0}\nOutflow: {:+.0}",
                         player.inflow().floor(),
-                        player.outflow().floor(),
+                        -player.outflow().floor(),
                     ),
                     images.get("netflow"),
                     match player.netflow() {
@@ -210,7 +211,7 @@ pub fn left_panel(
         .resizable(false)
         .show(contexts.ctx_mut(), |ui| {
             ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
-                ui.add_space(window.height() * 0.12);
+                ui.add_space(window.height() * 0.14);
 
                 for tab in Tab::iter() {
                     ui.selectable_value(
@@ -233,34 +234,6 @@ pub fn central_panel(
     mut messages: ResMut<Messages>,
     window: Single<&Window>,
 ) {
-    if ui_state.menu {
-        let modal = Modal::new(Id::new("in-game-menu")).show(contexts.ctx_mut(), |ui| {
-            ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
-                ui.add_space(window.height() * 0.1);
-
-                ui.heading("In-game menu");
-
-                ui.add_space(window.height() * 0.02);
-
-                if ui.button("Resume").clicked() {
-                    ui_state.menu = false;
-                }
-
-                if ui.button("Settings").clicked() {
-                    ui_state.menu = false;
-                }
-
-                if ui.button("Exit to main menu").clicked() {
-                    ui_state.menu = false;
-                }
-            });
-        });
-        
-        if modal.should_close() {
-            ui_state.menu = false;
-        }
-    }
-
     CentralPanel::default()
         .frame(
             Frame::new()
@@ -279,9 +252,14 @@ pub fn central_panel(
             Tab::Stocks => {
                 ui.heading("Stocks");
             }
-            Tab::Bonds => {
-                ui.heading("Bonds");
-            }
+            Tab::Bonds => bonds_panel(
+                ui,
+                &mut ui_state,
+                &mut player,
+                &economy,
+                &mut messages,
+                &window,
+            ),
             Tab::Currencies => currencies_panel(
                 ui,
                 &mut ui_state,
@@ -307,14 +285,7 @@ pub fn central_panel(
         });
 }
 
-pub fn check_keys(
-    keyboard: Res<ButtonInput<KeyCode>>,
-    mut ui_state: ResMut<UiState>,
-) {
-    if keyboard.just_pressed(KeyCode::Escape) {
-        ui_state.menu = !ui_state.menu;
-    }
-
+pub fn check_keys(keyboard: Res<ButtonInput<KeyCode>>, mut ui_state: ResMut<UiState>) {
     if keyboard.just_pressed(KeyCode::Digit1) {
         ui_state.tab = Tab::Home;
     } else if keyboard.just_pressed(KeyCode::Digit2) {

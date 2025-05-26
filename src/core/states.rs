@@ -13,6 +13,7 @@ pub enum GameState {
     Running,
     Paused,
     InGameMenu,
+    Settings,
 }
 
 #[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]

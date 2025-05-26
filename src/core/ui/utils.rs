@@ -44,7 +44,7 @@ pub fn toggle(on: &mut bool) -> impl Widget + '_ {
 /// Custom syntactic sugar for repetitive UI elements
 pub trait CustomUi {
     fn add_text(&mut self, text: impl Into<String>, size: f32) -> Response;
-
+    fn add_button(&mut self, text: impl Into<String>, window: &Window) -> Response;
     fn add_block(
         &mut self,
         text: impl Into<String>,
@@ -58,6 +58,13 @@ pub trait CustomUi {
 impl CustomUi for Ui {
     fn add_text(&mut self, text: impl Into<String>, size: f32) -> Response {
         self.label(RichText::new(text).size(size))
+    }
+
+    fn add_button(&mut self, text: impl Into<String>, window: &Window) -> Response {
+        self.add_sized(
+            [window.width() * 0.25, window.height() * 0.1],
+            Button::new(add_text(text, window.xxl_size())),
+        )
     }
 
     fn add_block(

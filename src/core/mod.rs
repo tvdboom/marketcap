@@ -19,11 +19,23 @@ use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::{AppState, AudioState, GameState};
 use crate::core::systems::time_pass;
+use crate::core::ui::menu::{in_game_menu, toggle_menu_keyboard};
 use crate::core::ui::state::UiState;
-use crate::core::ui::systems::{add_egui_images, central_panel, check_keys, left_panel, set_egui_style, top_panel};
+use crate::core::ui::systems::{
+    add_egui_images, central_panel, check_keys, left_panel, set_egui_style, top_panel,
+};
 use bevy::prelude::*;
 
 pub struct GamePlugin;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+struct InGameSet;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+struct InRunningGameSet;
+
+#[derive(SystemSet, Debug, Clone, PartialEq, Eq, Hash)]
+struct InRunningOrPausedGameSet;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
@@ -38,16 +50,36 @@ impl Plugin for GamePlugin {
             .init_resource::<GameSettings>()
             .init_resource::<GlobalEconomy>()
             .init_resource::<Player>()
+            // Sets
+            .configure_sets(Update, InGameSet.run_if(in_state(AppState::Game)))
+            .configure_sets(
+                Update,
+                InRunningGameSet
+                    .run_if(in_state(GameState::Running))
+                    .in_set(InGameSet),
+            )
+            .configure_sets(
+                Update,
+                InRunningOrPausedGameSet
+                    .run_if(in_state(GameState::Running).or(in_state(GameState::Paused)))
+                    .in_set(InGameSet),
+            )
             // Ui
             .add_systems(Startup, (set_egui_style, add_egui_images))
-            .add_systems(Update, (top_panel, left_panel, central_panel).chain())
+            .add_systems(
+                Update,
+                (top_panel, left_panel, central_panel, in_game_menu)
+                    .chain()
+                    .in_set(InGameSet),
+            )
             // Systems
             .add_systems(
                 Update,
                 (
-                    time_pass.run_if(in_state(GameState::Running)),
-                    toggle_pause_keyboard,
-                    check_keys,
+                    time_pass.in_set(InRunningGameSet),
+                    toggle_pause_keyboard.in_set(InRunningOrPausedGameSet),
+                    toggle_menu_keyboard.in_set(InGameSet),
+                    check_keys.in_set(InRunningGameSet),
                 ),
             );
     }
