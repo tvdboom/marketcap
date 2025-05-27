@@ -4,7 +4,7 @@ use crate::core::factors::economy::Economy;
 use crate::core::factors::inflation::Inflation;
 use crate::core::factors::interest::Interest;
 use bevy::prelude::*;
-use chrono::{Local, NaiveDate};
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
@@ -38,7 +38,7 @@ impl GlobalEconomy {
 impl Default for GlobalEconomy {
     fn default() -> Self {
         Self {
-            date: Local::now().date_naive(),
+            date: NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
             clock: Timer::new(Duration::from_secs_f32(DEFAULT_SPEED), TimerMode::Repeating),
             economy: Economy::default(),
             inflation: Inflation::default(),

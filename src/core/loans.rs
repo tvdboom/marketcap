@@ -131,6 +131,9 @@ pub struct Loan {
     /// The amount left to pay back
     pub outstanding: f32,
 
+    /// Number of installments already paid
+    pub n_installments: u32,
+
     /// The interest over the loan
     pub interest_rate: f32,
 
@@ -155,10 +158,12 @@ pub struct Loan {
 
 impl Loan {
     pub fn next_principal_component(&self) -> f32 {
-        match self.kind {
+        let principal = match self.kind {
             LoanKind::StraightLine => self.principal / self.term.n_installments() as f32,
             LoanKind::Annuity => self.next_installment_amount() - self.next_interest_component(),
-        }
+        };
+
+        principal.min(self.outstanding)
     }
 
     pub fn next_interest_component(&self) -> f32 {
@@ -172,29 +177,20 @@ impl Loan {
             }
             LoanKind::Annuity => {
                 let interest = self.interest_rate / 100. / 12.;
-                let installments = self.term.n_installments() as f32;
+                let installments = (self.term.n_installments() - self.n_installments) as f32;
 
-                self.principal * (interest * (1. + interest).powf(installments))
-                    / ((1. + interest).powf(installments) - 1.)
+                self.outstanding * interest / (1. - (1. + interest).powf(-installments))
             }
         }
     }
 
     pub fn installments_left(&self) -> u32 {
-        let mut clone = self.clone();
-        let mut installments = 0;
-
-        while clone.next_installment_amount() > 0. && clone.outstanding >= 1. {
-            clone.outstanding -= clone.next_principal_component();
-            installments += 1;
-        }
-
-        installments
+        self.term.n_installments() - self.n_installments
     }
 
     pub fn maturity_date(&self) -> NaiveDate {
         self.start_date
-            .checked_add_months(Months::new(self.installments_left()))
+            .checked_add_months(Months::new(self.n_installments))
             .unwrap()
     }
 }

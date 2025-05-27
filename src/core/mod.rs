@@ -17,6 +17,7 @@ mod ui;
 use crate::core::audio::{PlayAudioEv, play_audio_event, toggle_music_keyboard};
 use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
+use crate::core::messages::MessageEv;
 use crate::core::pause::toggle_pause_keyboard;
 use crate::core::persistence::{LoadGameEv, SaveGameEv, load_game, save_game};
 use crate::core::player::Player;
@@ -57,6 +58,7 @@ impl Plugin for GamePlugin {
             .add_event::<LoadGameEv>()
             .add_event::<SaveGameEv>()
             .add_event::<PlayAudioEv>()
+            .add_event::<MessageEv>()
             // Sets
             .configure_sets(Update, InGameSet.run_if(in_state(AppState::Game)))
             .configure_sets(

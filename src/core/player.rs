@@ -44,6 +44,7 @@ impl Player {
             } else {
                 self.cash.amount -= loan.next_installment_amount();
                 loan.outstanding -= loan.next_principal_component();
+                loan.n_installments += 1;
             }
         }
 

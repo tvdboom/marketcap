@@ -65,6 +65,22 @@ impl CurrencyTab {
 }
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
+pub enum CommodityTab {
+    #[default]
+    Overview,
+    Market,
+}
+
+impl CommodityTab {
+    pub fn emoji(&self) -> &str {
+        match self {
+            CommodityTab::Overview => "🗺",
+            CommodityTab::Market => "🌾",
+        }
+    }
+}
+
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum CreditTab {
     #[default]
     Overview,
@@ -81,6 +97,7 @@ impl CreditTab {
         }
     }
 }
+
 #[derive(Clone)]
 pub struct CreditState {
     pub tab: CreditTab,
@@ -113,5 +130,6 @@ pub struct UiState {
     pub tab: Tab,
     pub bonds: BondTab,
     pub currencies: CurrencyTab,
+    pub commodities: CommodityTab,
     pub credit: CreditState,
 }

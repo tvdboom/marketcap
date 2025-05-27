@@ -2,7 +2,7 @@ use crate::core::constants::{DATE_FORMAT, LOAN_STEP};
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::loans::{Loan, LoanKind, LoanProvider, LoanTerm};
-use crate::core::messages::Messages;
+use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::player::Player;
 use crate::core::ui::state::{CreditTab, UiState};
 use crate::core::ui::utils::{CustomUi, TextSizes, add_text, toggle};
@@ -18,7 +18,7 @@ pub fn credit_panel(
     ui_state: &mut UiState,
     player: &mut Player,
     economy: &GlobalEconomy,
-    messages: &mut Messages,
+    message: &mut EventWriter<MessageEv>,
     window: &Window,
 ) {
     ui.horizontal(|ui| {
@@ -71,7 +71,7 @@ pub fn credit_panel(
             } else {
                 ui.horizontal(|ui| {
                     ui.vertical(|ui| {
-                        ui.set_width(ui.available_width() * 0.75);
+                        ui.set_width(ui.available_width() * 0.78);
 
                         ui.add_text("Outstanding loans", window.l_size());
 
@@ -82,7 +82,7 @@ pub fn credit_panel(
                         ui.add_text("Click on a row to repay the loan early.", window.xs_size());
                     });
 
-                    ui.add_space(window.width() * 0.03);
+                    ui.add_space(window.width() * 0.02);
 
                     ui.vertical(|ui| {
                         if let Some(id) = &ui_state.credit.repay {
@@ -112,7 +112,7 @@ pub fn credit_panel(
 
                                 ui.add_text("Amount", window.m_size());
                                 
-                                ui.spacing_mut().slider_width = window.width() * 0.1;
+                                ui.spacing_mut().slider_width = window.width() * 0.09;
                                 ui.add(
                                     Slider::new(
                                         &mut ui_state.credit.repay_amount,
@@ -159,10 +159,10 @@ pub fn credit_panel(
                                     player.cash.amount -= costs;
                                     loan.outstanding -= ui_state.credit.repay_amount as f32;
 
-                                    messages.info(format!(
-                                        "You repaid {} of loan {}.",
-                                        ui_state.credit.repay_amount, loan.id
-                                    ));
+                                    message.write(MessageEv {
+                                        message: format!("You repaid {} of loan {}.", ui_state.credit.repay_amount, loan.id),
+                                        level: MessageLevel::Info,
+                                    });
                                 }
                             } else {
                                 ui_state.credit.repay = None;
@@ -181,6 +181,7 @@ pub fn credit_panel(
                 provider: ui_state.credit.provider,
                 principal: ui_state.credit.principal as f32,
                 outstanding: ui_state.credit.principal as f32,
+                n_installments: 0,
                 interest_rate: ui_state.credit.provider.interest(
                     economy.interest.current(),
                     player.credit_score.current(),
@@ -283,7 +284,10 @@ pub fn credit_panel(
                         player.loans.push(loan.clone());
                         player.loans.sort_by_key(|loan| loan.maturity_date());
                         player.cash.amount += loan.principal;
-                        messages.info(format!("Loan {} acquired!", loan.id));
+                        message.write(MessageEv {
+                            message: format!("Loan {} acquired!", loan.id),
+                            level: MessageLevel::Info,
+                        });
                     }
                 });
 
@@ -355,7 +359,8 @@ pub fn credit_overview(ui: &mut Ui, ui_state: &mut UiState, loans: &Vec<Loan>, w
             TableBuilder::new(ui)
                 .striped(false)
                 .sense(Sense::click())
-                .columns(Column::remainder(), columns.len())
+                .columns(Column::auto(), 1)
+                .columns(Column::remainder(), columns.len() - 1)
                 .header(30., |mut header| {
                     for col in columns {
                         header.col(|ui| {

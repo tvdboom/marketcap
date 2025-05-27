@@ -1,6 +1,6 @@
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::messages::Messages;
+use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::player::Player;
 use bevy::prelude::*;
 use chrono::Datelike;
@@ -8,7 +8,7 @@ use chrono::Datelike;
 pub fn time_pass(
     mut global_economy: ResMut<GlobalEconomy>,
     mut player: ResMut<Player>,
-    mut messages: ResMut<Messages>,
+    mut message: EventWriter<MessageEv>,
     time: Res<Time>,
 ) {
     global_economy.clock.tick(time.delta());
@@ -23,6 +23,17 @@ pub fn time_pass(
 
         player.cash.bump(global_economy.interest.current());
 
+        // Warning checks at day 20
+
+        if global_economy.date.day() == 20 {
+            if player.outflow() > player.cash.current() {
+                message.write(MessageEv {
+                    message: "You're outflow is larger than your cash reserve!".to_string(),
+                    level: MessageLevel::Warning,
+                });
+            }
+        }
+
         // Monthly operations =================================== >>
 
         if global_economy.date.day() == 1 {
@@ -35,7 +46,10 @@ pub fn time_pass(
 
             // Loans are paid
             if !player.resolve_loans() {
-                messages.error("You defaulted on a loan!");
+                message.write(MessageEv {
+                    message: "You defaulted on a loan!".to_string(),
+                    level: MessageLevel::Error,
+                });
             }
         }
     }

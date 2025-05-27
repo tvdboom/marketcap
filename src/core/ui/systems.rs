@@ -3,7 +3,7 @@ use crate::core::constants::{DATE_FORMAT, GREEN, LEFT_LABEL_FRAC, TOP_LABEL_FRAC
 use crate::core::factors::Factor;
 use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::messages::Messages;
+use crate::core::messages::MessageEv;
 use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::GameState;
@@ -22,6 +22,7 @@ use bevy_egui::egui::{
     TopBottomPanel,
 };
 use strum::IntoEnumIterator;
+use crate::core::ui::commodities::commodities_panel;
 
 pub fn set_egui_style(mut contexts: EguiContexts, game_settings: Res<GameSettings>) {
     let context = contexts.ctx_mut();
@@ -238,7 +239,7 @@ pub fn central_panel(
     game_settings: Res<GameSettings>,
     economy: Res<GlobalEconomy>,
     mut player: ResMut<Player>,
-    mut messages: ResMut<Messages>,
+    mut messages: EventWriter<MessageEv>,
     window: Single<&Window>,
 ) {
     CentralPanel::default()
@@ -261,9 +262,11 @@ pub fn central_panel(
             }
             Tab::Bonds => bonds_panel(ui, &mut ui_state, &window),
             Tab::Currencies => currencies_panel(ui, &mut ui_state, &window),
-            Tab::Commodities => {
-                ui.heading("Commodities");
-            }
+            Tab::Commodities => commodities_panel(
+                ui,
+                &mut ui_state,
+                &window,
+            ),
             Tab::Credit => credit_panel(
                 ui,
                 &mut ui_state,
