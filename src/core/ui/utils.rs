@@ -62,8 +62,8 @@ impl CustomUi for Ui {
 
     fn add_button(&mut self, text: impl Into<String>, window: &Window) -> Response {
         self.add_sized(
-            [window.width() * 0.25, window.height() * 0.1],
-            Button::new(add_text(text, window.xxl_size())),
+            [window.width() * 0.2, window.height() * 0.075],
+            Button::new(add_text(text, window.xl_size())),
         )
     }
 

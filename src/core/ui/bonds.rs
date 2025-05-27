@@ -1,6 +1,3 @@
-use crate::core::global_economy::GlobalEconomy;
-use crate::core::messages::Messages;
-use crate::core::player::Player;
 use crate::core::ui::state::{BondTab, UiState};
 use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
 use crate::utils::NameFromEnum;
@@ -8,14 +5,7 @@ use bevy::prelude::Window;
 use bevy_egui::egui::Ui;
 use strum::IntoEnumIterator;
 
-pub fn bonds_panel(
-    ui: &mut Ui,
-    ui_state: &mut UiState,
-    player: &mut Player,
-    economy: &GlobalEconomy,
-    messages: &mut Messages,
-    window: &Window,
-) {
+pub fn bonds_panel(ui: &mut Ui, ui_state: &mut UiState, window: &Window) {
     ui.horizontal(|ui| {
         for tab in BondTab::iter() {
             ui.selectable_value(

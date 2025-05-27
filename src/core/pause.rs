@@ -1,7 +1,7 @@
 use crate::core::constants::{GAME_SPEED_STEP, MAX_GAME_SPEED};
 use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::states::{AppState, GameState};
+use crate::core::states::GameState;
 use bevy::prelude::*;
 use std::time::Duration;
 
@@ -27,16 +27,18 @@ pub fn toggle_pause_keyboard(
             if game_settings.speed == 0. {
                 next_game_state.set(GameState::Paused);
             } else {
-                let duration = Duration::from_secs_f32(1. / game_settings.speed);
-                economy.clock.set_duration(duration);
+                economy
+                    .clock
+                    .set_duration(Duration::from_secs_f32(1. / game_settings.speed));
             }
         }
 
         if keyboard.just_pressed(KeyCode::ArrowRight) && game_settings.speed < MAX_GAME_SPEED {
             game_settings.speed += GAME_SPEED_STEP;
 
-            let duration = Duration::from_secs_f32(1. / game_settings.speed);
-            economy.clock.set_duration(duration);
+            economy
+                .clock
+                .set_duration(Duration::from_secs_f32(1. / game_settings.speed));
 
             next_game_state.set(GameState::Running);
         }

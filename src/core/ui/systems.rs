@@ -75,9 +75,16 @@ pub fn top_panel(
     economy: Res<GlobalEconomy>,
     player: Res<Player>,
     game_state: Res<State<GameState>>,
+    game_settings: Res<GameSettings>,
     images: Res<ImageIds>,
     window: Single<&Window>,
 ) {
+    let text_color = game_settings
+        .theme
+        .get()
+        .fg_primary_text_color_visuals()
+        .unwrap();
+
     TopBottomPanel::top("top_panel")
         .exact_height(window.height() * TOP_LABEL_FRAC)
         .show_separator_line(false)
@@ -131,7 +138,7 @@ pub fn top_panel(
                     match player.netflow() {
                         n if n <= -1. => Color32::RED,
                         n if n >= 1. => GREEN,
-                        _ => Color32::WHITE,
+                        _ => text_color,
                     },
                     window.xxl_size(),
                 );
@@ -145,7 +152,7 @@ pub fn top_panel(
                     match player.credit_score.current() {
                         n if n < 30. => Color32::RED,
                         n if n > 70. => GREEN,
-                        _ => Color32::WHITE,
+                        _ => text_color,
                     },
                     window.xxl_size(),
                 );
@@ -156,7 +163,7 @@ pub fn top_panel(
                     economy.economy.to_string(),
                     economy.economy.description(),
                     images.get(economy.economy.image()),
-                    Color32::WHITE,
+                    text_color,
                     window.xxl_size(),
                 );
 
@@ -166,7 +173,7 @@ pub fn top_panel(
                     economy.inflation.to_string(),
                     economy.inflation.description(),
                     images.get(economy.inflation.image()),
-                    Color32::WHITE,
+                    text_color,
                     window.xxl_size(),
                 );
 
@@ -176,7 +183,7 @@ pub fn top_panel(
                     economy.interest.to_string(),
                     economy.interest.description(),
                     images.get(economy.interest.image()),
-                    Color32::WHITE,
+                    text_color,
                     window.xxl_size(),
                 );
 
@@ -193,7 +200,7 @@ pub fn top_panel(
                     } else {
                         "time-paused"
                     }),
-                    Color32::WHITE,
+                    text_color,
                     window.xxl_size(),
                 );
             });
@@ -252,22 +259,8 @@ pub fn central_panel(
             Tab::Stocks => {
                 ui.heading("Stocks");
             }
-            Tab::Bonds => bonds_panel(
-                ui,
-                &mut ui_state,
-                &mut player,
-                &economy,
-                &mut messages,
-                &window,
-            ),
-            Tab::Currencies => currencies_panel(
-                ui,
-                &mut ui_state,
-                &mut player,
-                &economy,
-                &mut messages,
-                &window,
-            ),
+            Tab::Bonds => bonds_panel(ui, &mut ui_state, &window),
+            Tab::Currencies => currencies_panel(ui, &mut ui_state, &window),
             Tab::Commodities => {
                 ui.heading("Commodities");
             }

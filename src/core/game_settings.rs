@@ -1,8 +1,9 @@
-use crate::core::states::AudioState;
 use crate::core::ui::themes::{Aesthetics, NordDark, NordLight};
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
 
-#[derive(Clone, Default)]
+#[derive(EnumIter, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum Theme {
     #[default]
     Dark,
@@ -10,6 +11,13 @@ pub enum Theme {
 }
 
 impl Theme {
+    pub fn emoji(&self) -> &str {
+        match self {
+            Theme::Dark => "🌙",
+            Theme::Light => "☀",
+        }
+    }
+
     pub fn get(&self) -> Box<dyn Aesthetics> {
         match self {
             Theme::Dark => Box::new(NordDark),
@@ -18,24 +26,42 @@ impl Theme {
     }
 }
 
-#[derive(Resource, Clone)]
+#[derive(EnumIter, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub enum AudioSetting {
+    Mute,
+    #[default]
+    NoMusic,
+    Sound,
+}
+
+impl AudioSetting {
+    pub fn emoji(&self) -> &str {
+        match self {
+            AudioSetting::Mute => "🔕",
+            AudioSetting::NoMusic => "🔇",
+            AudioSetting::Sound => "🔊",
+        }
+    }
+}
+
+#[derive(Resource, Clone, Serialize, Deserialize)]
 pub struct GameSettings {
-    /// Audio setting
-    pub audio: AudioState,
+    /// Ui theme
+    pub theme: Theme,
 
     /// Game speed (1-5)
     pub speed: f32,
 
-    /// Ui theme
-    pub theme: Theme,
+    /// Audio setting
+    pub audio: AudioSetting,
 }
 
 impl Default for GameSettings {
     fn default() -> Self {
         Self {
-            audio: AudioState::default(),
-            speed: 1.,
             theme: Theme::default(),
+            speed: 1.,
+            audio: AudioSetting::default(),
         }
     }
 }

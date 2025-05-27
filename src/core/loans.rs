@@ -2,9 +2,10 @@ use crate::core::constants::LOAN_STEP;
 use crate::core::factors::credit_score::CreditScore;
 use crate::utils::Round1;
 use chrono::{Months, NaiveDate};
+use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
-#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum LoanProvider {
     #[default]
     Bank,
@@ -71,7 +72,7 @@ impl LoanProvider {
     }
 }
 
-#[derive(EnumIter, Clone, Debug, Default, PartialEq)]
+#[derive(EnumIter, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum LoanKind {
     #[default]
     Annuity,
@@ -94,7 +95,7 @@ impl LoanKind {
     }
 }
 
-#[derive(EnumIter, Clone, Debug, Default, PartialEq)]
+#[derive(EnumIter, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum LoanTerm {
     OneYear,
     ThreeYears,
@@ -116,7 +117,7 @@ impl LoanTerm {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Loan {
     /// Loan identifier
     pub id: String,

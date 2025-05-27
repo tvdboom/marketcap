@@ -5,9 +5,10 @@ use crate::core::factors::inflation::Inflation;
 use crate::core::factors::interest::Interest;
 use bevy::prelude::*;
 use chrono::{Local, NaiveDate};
+use serde::{Deserialize, Serialize};
 use std::time::Duration;
 
-#[derive(Resource, Clone)]
+#[derive(Resource, Clone, Serialize, Deserialize)]
 pub struct GlobalEconomy {
     /// Current in-game date
     pub date: NaiveDate,

@@ -1,9 +1,10 @@
 use crate::core::factors::Factor;
 use crate::core::factors::inflation::Inflation;
 use crate::utils::Round1;
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter, Result};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Interest {
     pub rate: Vec<f32>,
     pub next_rate: Option<f32>,

@@ -22,10 +22,6 @@ impl WorldAssets {
     pub fn audio(&self, name: &str) -> Handle<AudioSource> {
         self.get_asset(&self.audio, name, "audio").clone_weak()
     }
-
-    pub fn image(&self, name: &str) -> &Handle<Image> {
-        self.get_asset(&self.images, name, "image")
-    }
 }
 
 impl FromWorld for WorldAssets {

@@ -1,8 +1,9 @@
 use crate::core::factors::Factor;
 use rand::{Rng, rng};
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter, Result};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Economy(Vec<f32>);
 
 impl Default for Economy {

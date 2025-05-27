@@ -1,25 +1,17 @@
 use bevy::prelude::*;
 
-#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
+#[derive(States, Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub enum AppState {
     #[default]
     Game,
     MainMenu,
 }
 
-#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
+#[derive(States, Clone, Copy, Debug, Default, Eq, Hash, PartialEq)]
 pub enum GameState {
     #[default]
     Running,
     Paused,
     InGameMenu,
     Settings,
-}
-
-#[derive(States, Debug, Clone, Copy, Eq, PartialEq, Hash, Default)]
-pub enum AudioState {
-    Mute,
-    #[default]
-    NoMusic,
-    Sound,
 }

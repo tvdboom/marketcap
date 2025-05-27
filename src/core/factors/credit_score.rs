@@ -1,7 +1,8 @@
 use crate::core::factors::Factor;
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct CreditScore {
     pub score: u8,
 }
