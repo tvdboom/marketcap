@@ -1,6 +1,7 @@
+use std::collections::HashMap;
+
 use bevy::prelude::Resource;
 use bevy_egui::egui::TextureId;
-use std::collections::HashMap;
 
 #[derive(Resource, Default)]
 pub struct ImageIds(pub HashMap<&'static str, TextureId>);

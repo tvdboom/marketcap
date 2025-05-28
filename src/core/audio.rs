@@ -1,7 +1,8 @@
-use crate::core::assets::WorldAssets;
-use crate::core::game_settings::{AudioSetting, GameSettings};
 use bevy::prelude::*;
 use bevy_kira_audio::{Audio, AudioControl};
+
+use crate::core::assets::WorldAssets;
+use crate::core::game_settings::{AudioSetting, GameSettings};
 
 #[derive(Event)]
 pub struct PlayAudioEv {

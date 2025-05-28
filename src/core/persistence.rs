@@ -1,16 +1,18 @@
-use crate::core::game_settings::GameSettings;
-use crate::core::global_economy::GlobalEconomy;
-use crate::core::player::Player;
-use crate::core::states::AppState;
+use std::fs::File;
+use std::io;
+use std::io::{Read, Write};
+
 use bevy::prelude::*;
 use bincode::config::standard;
 use bincode::serde::{decode_from_slice, encode_into_slice};
 #[cfg(not(target_arch = "wasm32"))]
 use rfd::FileDialog;
 use serde::{Deserialize, Serialize};
-use std::fs::File;
-use std::io;
-use std::io::{Read, Write};
+
+use crate::core::game_settings::GameSettings;
+use crate::core::global_economy::GlobalEconomy;
+use crate::core::player::Player;
+use crate::core::states::AppState;
 
 #[derive(Event)]
 pub struct LoadGameEv;

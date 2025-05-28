@@ -3,16 +3,16 @@
 mod core;
 mod utils;
 
-use self::core::messages::MessagesPlugin;
-use crate::core::GamePlugin;
 use bevy::asset::AssetMetaCheck;
-use bevy::prelude::NonSend;
-use bevy::prelude::*;
+use bevy::prelude::{NonSend, *};
 use bevy::window::{WindowMode, WindowResolution};
 use bevy::winit::WinitWindows;
 use bevy_egui::EguiPlugin;
 use bevy_kira_audio::prelude::*;
 use winit::window::Icon;
+
+use self::core::messages::MessagesPlugin;
+use crate::core::GamePlugin;
 
 pub const TITLE: &str = "MarketCap";
 

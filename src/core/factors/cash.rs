@@ -1,6 +1,8 @@
-use crate::core::factors::Factor;
-use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter, Result};
+
+use serde::{Deserialize, Serialize};
+
+use crate::core::factors::Factor;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Cash {

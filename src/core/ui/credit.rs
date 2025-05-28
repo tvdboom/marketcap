@@ -1,3 +1,9 @@
+use bevy::prelude::*;
+use bevy_egui::egui::{Button, Frame, Sense, Separator, Slider, Ui};
+use chrono::Months;
+use egui_extras::{Column, TableBuilder};
+use strum::IntoEnumIterator;
+
 use crate::core::constants::{DATE_FORMAT, LOAN_STEP};
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
@@ -7,11 +13,6 @@ use crate::core::player::Player;
 use crate::core::ui::state::{CreditTab, UiState};
 use crate::core::ui::utils::{CustomUi, TextSizes, add_text, toggle};
 use crate::utils::{NameFromEnum, create_guid, first_day_in_two_months};
-use bevy::prelude::*;
-use bevy_egui::egui::{Button, Frame, Sense, Separator, Slider, Ui};
-use chrono::Months;
-use egui_extras::{Column, TableBuilder};
-use strum::IntoEnumIterator;
 
 pub fn credit_panel(
     ui: &mut Ui,
@@ -174,7 +175,7 @@ pub fn credit_panel(
                     });
                 });
             }
-        }
+        },
         CreditTab::NewLoan => {
             let loan = Loan {
                 id: create_guid(),
@@ -259,7 +260,7 @@ pub fn credit_panel(
                     ui.add(toggle(&mut ui_state.credit.no_fee)).on_hover_text(
                         "No early repayment fee for an increase in interest.",
                     );
-                    
+
                     // Check if the player has active loan with >50% outstanding
                     let has_loans = player
                         .loans
@@ -333,8 +334,8 @@ pub fn credit_panel(
                         .on_hover_text("Date on which the loan is fully repaid.");
                 });
             });
-        }
-        CreditTab::P2P => {}
+        },
+        CreditTab::P2P => {},
     }
 }
 

@@ -1,3 +1,13 @@
+use bevy::prelude::*;
+use bevy_egui::EguiContexts;
+use bevy_egui::egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
+use bevy_egui::egui::widget_text::RichText;
+use bevy_egui::egui::{
+    Align, CentralPanel, Color32, FontData, FontFamily, Frame, Layout, Margin, SidePanel,
+    TopBottomPanel,
+};
+use strum::IntoEnumIterator;
+
 use crate::core::assets::WorldAssets;
 use crate::core::constants::{DATE_FORMAT, GREEN, LEFT_LABEL_FRAC, TOP_LABEL_FRAC};
 use crate::core::factors::Factor;
@@ -8,21 +18,12 @@ use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::GameState;
 use crate::core::ui::bonds::bonds_panel;
+use crate::core::ui::commodities::commodities_panel;
 use crate::core::ui::credit::credit_panel;
 use crate::core::ui::currencies::currencies_panel;
 use crate::core::ui::state::{Tab, UiState};
-use crate::core::ui::utils::{CustomUi, TextSizes};
+use crate::core::ui::utils::{CustomUi, TextSizes, line_plot};
 use crate::utils::NameFromEnum;
-use bevy::prelude::*;
-use bevy_egui::EguiContexts;
-use bevy_egui::egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
-use bevy_egui::egui::widget_text::RichText;
-use bevy_egui::egui::{
-    Align, CentralPanel, Color32, FontData, FontFamily, Frame, Layout, Margin, SidePanel,
-    TopBottomPanel,
-};
-use strum::IntoEnumIterator;
-use crate::core::ui::commodities::commodities_panel;
 
 pub fn set_egui_style(mut contexts: EguiContexts, game_settings: Res<GameSettings>) {
     let context = contexts.ctx_mut();
@@ -166,7 +167,8 @@ pub fn top_panel(
                     images.get(economy.economy.image()),
                     text_color,
                     window.xxl_size(),
-                );
+                )
+                .on_hover_ui(|ui| line_plot(ui, &economy.economy.0, text_color));
 
                 ui.add_space(window.width() * 0.01);
 
@@ -176,7 +178,8 @@ pub fn top_panel(
                     images.get(economy.inflation.image()),
                     text_color,
                     window.xxl_size(),
-                );
+                )
+                .on_hover_ui(|ui| line_plot(ui, &economy.inflation.0, text_color));
 
                 ui.add_space(window.width() * 0.01);
 
@@ -186,7 +189,8 @@ pub fn top_panel(
                     images.get(economy.interest.image()),
                     text_color,
                     window.xxl_size(),
-                );
+                )
+                .on_hover_ui(|ui| line_plot(ui, &economy.interest.rate, text_color));
 
                 ui.add_space(window.width() * 0.04);
 
@@ -256,17 +260,13 @@ pub fn central_panel(
         .show(contexts.ctx_mut(), |ui| match ui_state.tab {
             Tab::Home => {
                 ui.heading("Home");
-            }
+            },
             Tab::Stocks => {
                 ui.heading("Stocks");
-            }
+            },
             Tab::Bonds => bonds_panel(ui, &mut ui_state, &window),
             Tab::Currencies => currencies_panel(ui, &mut ui_state, &window),
-            Tab::Commodities => commodities_panel(
-                ui,
-                &mut ui_state,
-                &window,
-            ),
+            Tab::Commodities => commodities_panel(ui, &mut ui_state, &window),
             Tab::Credit => credit_panel(
                 ui,
                 &mut ui_state,
@@ -277,7 +277,7 @@ pub fn central_panel(
             ),
             Tab::Policies => {
                 ui.heading("Policies");
-            }
+            },
         });
 }
 

@@ -1,5 +1,6 @@
-use crate::core::ui::themes::aesthetics::Aesthetics;
 use bevy_egui::egui::{Color32, Vec2};
+
+use crate::core::ui::themes::aesthetics::Aesthetics;
 
 pub struct NordDark;
 

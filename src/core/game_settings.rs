@@ -1,7 +1,8 @@
-use crate::core::ui::themes::{Aesthetics, NordDark, NordLight};
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
+
+use crate::core::ui::themes::{Aesthetics, NordDark, NordLight};
 
 #[derive(EnumIter, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum Theme {

@@ -1,6 +1,7 @@
 use bevy_egui;
 use bevy_egui::egui::FontFamily::{Monospace, Proportional};
-use bevy_egui::egui::{style::*, *};
+use bevy_egui::egui::style::*;
+use bevy_egui::egui::*;
 
 pub trait Aesthetics {
     /// The name of the theme for debugging and comparison purposes.

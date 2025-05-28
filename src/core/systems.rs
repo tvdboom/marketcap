@@ -1,9 +1,10 @@
+use bevy::prelude::*;
+use chrono::Datelike;
+
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::player::Player;
-use bevy::prelude::*;
-use chrono::Datelike;
 
 pub fn time_pass(
     mut global_economy: ResMut<GlobalEconomy>,

@@ -1,3 +1,12 @@
+use std::time::Duration;
+
+use bevy::prelude::*;
+use bevy_egui::EguiContexts;
+use bevy_egui::egui::{Id, Modal, Separator, Slider};
+use bevy_kira_audio::AudioControl;
+use bevy_kira_audio::prelude::Audio;
+use strum::IntoEnumIterator;
+
 use crate::core::constants::{GAME_SPEED_STEP, MAX_GAME_SPEED};
 use crate::core::game_settings::{AudioSetting, GameSettings, Theme};
 use crate::core::global_economy::GlobalEconomy;
@@ -5,13 +14,6 @@ use crate::core::persistence::SaveGameEv;
 use crate::core::states::{AppState, GameState};
 use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
 use crate::utils::NameFromEnum;
-use bevy::prelude::*;
-use bevy_egui::EguiContexts;
-use bevy_egui::egui::{Id, Modal, Separator, Slider};
-use bevy_kira_audio::AudioControl;
-use bevy_kira_audio::prelude::Audio;
-use std::time::Duration;
-use strum::IntoEnumIterator;
 
 pub fn in_game_menu(
     mut contexts: EguiContexts,
@@ -56,7 +58,7 @@ pub fn in_game_menu(
                     }
 
                     ui.add_space(window.height() * 0.05);
-                }
+                },
                 GameState::Settings => {
                     ui.add_space(window.height() * 0.02);
 
@@ -126,8 +128,8 @@ pub fn in_game_menu(
                     }
 
                     ui.add_space(window.height() * 0.02);
-                }
-                _ => {}
+                },
+                _ => {},
             });
         });
 

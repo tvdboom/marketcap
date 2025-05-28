@@ -1,9 +1,10 @@
-use crate::core::ui::state::{BondTab, UiState};
-use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
-use crate::utils::NameFromEnum;
 use bevy::prelude::Window;
 use bevy_egui::egui::Ui;
 use strum::IntoEnumIterator;
+
+use crate::core::ui::state::{BondTab, UiState};
+use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
+use crate::utils::NameFromEnum;
 
 pub fn bonds_panel(ui: &mut Ui, ui_state: &mut UiState, window: &Window) {
     ui.horizontal(|ui| {
@@ -28,16 +29,16 @@ pub fn bonds_panel(ui: &mut Ui, ui_state: &mut UiState, window: &Window) {
             ui.add_text("", window.m_size());
 
             ui.separator();
-        }
+        },
         BondTab::Government => {
             ui.add_text("", window.m_size());
 
             ui.separator();
-        }
+        },
         BondTab::Corporate => {
             ui.add_text("", window.m_size());
 
             ui.separator();
-        }
+        },
     }
 }

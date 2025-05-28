@@ -1,12 +1,14 @@
+use std::fmt::{Display, Formatter, Result};
+
+use serde::{Deserialize, Serialize};
+
 use crate::core::factors::Factor;
 use crate::core::factors::economy::Economy;
 use crate::core::factors::interest::Interest;
 use crate::utils::Round1;
-use serde::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter, Result};
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct Inflation(Vec<f32>);
+pub struct Inflation(pub Vec<f32>);
 
 impl Default for Inflation {
     fn default() -> Self {

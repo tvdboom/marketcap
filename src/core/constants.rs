@@ -13,6 +13,7 @@ pub const GREEN: Color32 = Color32::from_rgb(79, 170, 102);
 pub const TOP_LABEL_FRAC: f32 = 0.1; // Fraction of the screen height for the top label
 pub const LEFT_LABEL_FRAC: f32 = 0.14; // Fraction of the screen height for the left label
 pub const DATE_FORMAT: &str = "%d-%m-%Y";
+pub const LINE_WIDTH: f32 = 2.0; // Width of lines in plots
 
 /// Credit
 pub const LOAN_STEP: u32 = 1_000;

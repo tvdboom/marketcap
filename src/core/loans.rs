@@ -1,9 +1,10 @@
-use crate::core::constants::LOAN_STEP;
-use crate::core::factors::credit_score::CreditScore;
-use crate::utils::Round1;
 use chrono::{Months, NaiveDate};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
+
+use crate::core::constants::LOAN_STEP;
+use crate::core::factors::credit_score::CreditScore;
+use crate::utils::Round1;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum LoanProvider {
@@ -20,14 +21,14 @@ impl LoanProvider {
                 Banks are the standard credit providers for companies. They use a company's \
                 credit score to calculate the maximum principal and the loan's interest rate. \
                 For decent credit scores, they offer better terms than alternative lenders."
-            }
+            },
             LoanProvider::AlternativeLender => {
                 "\
                 Alternative credit providers offer loans were traditional institutions like \
                 banks may hesitate, usually against a higher interest rate. Contrary to banks,\
                 the credit score is not used in the calculations for the maximum principal nor \
                 the interest rate."
-            }
+            },
         }
     }
 
@@ -37,10 +38,10 @@ impl LoanProvider {
                 ((enterprise_value * (0.3 + 0.7 * credit_score / CreditScore::MAX as f32)) as u32
                     / LOAN_STEP)
                     * LOAN_STEP
-            }
+            },
             LoanProvider::AlternativeLender => {
                 ((enterprise_value * 0.5) as u32 / LOAN_STEP) * LOAN_STEP
-            }
+            },
         }
     }
 
@@ -56,12 +57,12 @@ impl LoanProvider {
                 global_interest_rate
                     + 0.8 * global_interest_rate * (1. - credit_score / CreditScore::MAX as f32)
                     + 0.1 * global_interest_rate * (5. - term.years() as f32)
-            }
+            },
             LoanProvider::AlternativeLender => {
                 global_interest_rate
                     + 0.6 * global_interest_rate
                     + 0.1 * global_interest_rate * (5. - term.years() as f32)
-            }
+            },
         };
 
         if no_fee {
@@ -86,11 +87,11 @@ impl LoanKind {
                 "\
                 Monthly payment is the same every month. Early payments are mostly interest, \
                 later payments are mostly principal."
-            }
+            },
             LoanKind::StraightLine => {
                 "Principal repayment portion is the same each month. The interest \
                 shrinks over time, thus the payments decrease each month."
-            }
+            },
         }
     }
 }
@@ -174,13 +175,13 @@ impl Loan {
         match self.kind {
             LoanKind::StraightLine => {
                 self.next_principal_component() + self.next_interest_component()
-            }
+            },
             LoanKind::Annuity => {
                 let interest = self.interest_rate / 100. / 12.;
                 let installments = (self.term.n_installments() - self.n_installments) as f32;
 
                 self.outstanding * interest / (1. - (1. + interest).powf(-installments))
-            }
+            },
         }
     }
 

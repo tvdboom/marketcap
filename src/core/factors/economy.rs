@@ -1,10 +1,12 @@
-use crate::core::factors::Factor;
-use rand::{Rng, rng};
-use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter, Result};
 
+use rand::{Rng, rng};
+use serde::{Deserialize, Serialize};
+
+use crate::core::factors::Factor;
+
 #[derive(Clone, Serialize, Deserialize)]
-pub struct Economy(Vec<f32>);
+pub struct Economy(pub Vec<f32>);
 
 impl Default for Economy {
     fn default() -> Self {

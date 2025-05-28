@@ -14,6 +14,8 @@ mod states;
 mod systems;
 mod ui;
 
+use bevy::prelude::*;
+
 use crate::core::audio::{PlayAudioEv, play_audio_event, toggle_music_keyboard};
 use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
@@ -29,7 +31,6 @@ use crate::core::ui::state::UiState;
 use crate::core::ui::systems::{
     add_egui_images, central_panel, check_keys, left_panel, set_egui_style, top_panel,
 };
-use bevy::prelude::*;
 
 pub struct GamePlugin;
 

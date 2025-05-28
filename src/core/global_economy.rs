@@ -1,12 +1,13 @@
-use crate::core::constants::DEFAULT_SPEED;
-use crate::core::factors::Factor;
-use crate::core::factors::economy::Economy;
-use crate::core::factors::inflation::Inflation;
-use crate::core::factors::interest::Interest;
+use std::time::Duration;
+
 use bevy::prelude::*;
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
-use std::time::Duration;
+
+use crate::core::constants::DEFAULT_SPEED;
+use crate::core::factors::economy::Economy;
+use crate::core::factors::inflation::Inflation;
+use crate::core::factors::interest::Interest;
 
 #[derive(Resource, Clone, Serialize, Deserialize)]
 pub struct GlobalEconomy {
@@ -30,7 +31,7 @@ impl GlobalEconomy {
     /// Daily changes in the global economy
     pub fn bump(&mut self) {
         let economy = self.economy.bump();
-        let interest = self.interest.current();
+        let interest = self.interest.bump();
         self.inflation.bump(economy, interest);
     }
 }

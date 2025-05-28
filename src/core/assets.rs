@@ -1,7 +1,8 @@
+use std::collections::HashMap;
+
 use bevy::asset::{AssetServer, Handle};
 use bevy::prelude::*;
 use bevy_kira_audio::AudioSource;
-use std::collections::HashMap;
 
 pub struct WorldAssets {
     pub audio: HashMap<&'static str, Handle<AudioSource>>,

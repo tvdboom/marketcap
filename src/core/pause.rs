@@ -1,9 +1,11 @@
+use std::time::Duration;
+
+use bevy::prelude::*;
+
 use crate::core::constants::{GAME_SPEED_STEP, MAX_GAME_SPEED};
 use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::states::GameState;
-use bevy::prelude::*;
-use std::time::Duration;
 
 pub fn toggle_pause_keyboard(
     keyboard: Res<ButtonInput<KeyCode>>,

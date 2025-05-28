@@ -1,9 +1,10 @@
-use crate::core::ui::state::{CommodityTab, UiState};
-use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
-use crate::utils::NameFromEnum;
 use bevy::prelude::Window;
 use bevy_egui::egui::Ui;
 use strum::IntoEnumIterator;
+
+use crate::core::ui::state::{CommodityTab, UiState};
+use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
+use crate::utils::NameFromEnum;
 
 pub fn commodities_panel(ui: &mut Ui, ui_state: &mut UiState, window: &Window) {
     ui.horizontal(|ui| {
@@ -34,17 +35,17 @@ pub fn commodities_panel(ui: &mut Ui, ui_state: &mut UiState, window: &Window) {
     ui.separator();
 
     ui.add_space(window.height() * 0.02);
-    
+
     match ui_state.commodities {
         CommodityTab::Overview => {
             ui.add_text("", window.m_size());
 
             ui.separator();
-        }
+        },
         CommodityTab::Market => {
             ui.add_text("", window.m_size());
 
             ui.separator();
-        }
+        },
     }
 }

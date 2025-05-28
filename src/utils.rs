@@ -1,8 +1,9 @@
+use std::fmt::Debug;
+
 use chrono::{Datelike, NaiveDate};
 use rand::distr::Alphanumeric;
 use rand::{Rng, rng};
 use regex::Regex;
-use std::fmt::Debug;
 
 /// Create a random 4-character GUID
 pub fn create_guid() -> String {

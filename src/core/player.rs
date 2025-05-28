@@ -1,9 +1,10 @@
+use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
+
 use crate::core::factors::Factor;
 use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
 use crate::core::loans::Loan;
-use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
 
 #[derive(Resource, Clone, Default, Serialize, Deserialize)]
 pub struct Player {

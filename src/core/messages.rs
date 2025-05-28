@@ -1,10 +1,12 @@
-use crate::core::audio::PlayAudioEv;
-use crate::core::constants::MESSAGE_DURATION;
+use std::time::Duration;
+
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::WidgetText;
 use egui_notify::{Anchor, Toast, Toasts};
-use std::time::Duration;
+
+use crate::core::audio::PlayAudioEv;
+use crate::core::constants::MESSAGE_DURATION;
 
 pub enum MessageLevel {
     Info,
@@ -53,15 +55,15 @@ fn check_messages(
             MessageLevel::Info => {
                 play_audio_ev.write(PlayAudioEv::new("message"));
                 messages.info(message)
-            }
+            },
             MessageLevel::Warning => {
                 play_audio_ev.write(PlayAudioEv::new("warning"));
                 messages.warning(message)
-            }
+            },
             MessageLevel::Error => {
                 play_audio_ev.write(PlayAudioEv::new("error"));
                 messages.error(message)
-            }
+            },
         };
     }
 

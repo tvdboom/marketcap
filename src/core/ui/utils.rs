@@ -1,5 +1,11 @@
 use bevy::prelude::Window;
-use bevy_egui::egui::{load::SizedTexture, *};
+use bevy_egui::egui::load::SizedTexture;
+use bevy_egui::egui::*;
+use chrono::{Datelike, Duration};
+use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
+
+use crate::core::constants::LINE_WIDTH;
+use crate::core::global_economy::GlobalEconomy;
 
 /// Add text widget with custom size
 pub fn add_text(text: impl Into<String>, size: f32) -> RichText {
@@ -41,6 +47,38 @@ pub fn toggle(on: &mut bool) -> impl Widget + '_ {
     }
 }
 
+/// Make a line plot with the last 6 months of data
+pub fn line_plot(ui: &mut Ui, data: &Vec<f32>, color: Color32) {
+    let start = data.len().saturating_sub(190); // 6 months approx.
+    let sin: PlotPoints = data
+        .iter()
+        .skip(start)
+        .enumerate()
+        .map(|(i, &v)| [(start + i) as f64, v as f64])
+        .collect();
+
+    Plot::new("plot")
+        .show_background(false)
+        .x_grid_spacer(|grid| {
+            (grid.bounds.0 as i64..grid.bounds.1 as i64)
+                .map(|x| {
+                    let d = GlobalEconomy::default().date + Duration::days(x);
+                    GridMark {
+                        value: x as f64,
+                        step_size: if d.day() == 1 { 30. } else { 0. },
+                    }
+                })
+                .collect()
+        })
+        .custom_x_axes(vec![AxisHints::new_x().formatter(|mark, _| {
+            let d = GlobalEconomy::default().date + Duration::days(mark.value as i64);
+            format!("{:02}-{}", d.month(), d.year())
+        })])
+        .show(ui, |plot_ui| {
+            plot_ui.line(Line::new("line", sin).width(LINE_WIDTH).color(color))
+        });
+}
+
 /// Custom syntactic sugar for repetitive UI elements
 pub trait CustomUi {
     fn add_text(&mut self, text: impl Into<String>, size: f32) -> Response;
@@ -52,7 +90,7 @@ pub trait CustomUi {
         texture_id: TextureId,
         text_color: impl Into<Color32>,
         size: f32,
-    );
+    ) -> Response;
 }
 
 impl CustomUi for Ui {
@@ -74,13 +112,13 @@ impl CustomUi for Ui {
         texture_id: TextureId,
         color: impl Into<Color32>,
         size: f32,
-    ) {
+    ) -> Response {
         self.horizontal_centered(|ui| {
             ui.add(Image::new(SizedTexture::new(texture_id, [size; 2])));
             ui.label(add_text(text, size).color(color))
         })
         .response
-        .on_hover_text(hover_text);
+        .on_hover_text(hover_text)
     }
 }
 
