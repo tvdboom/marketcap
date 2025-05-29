@@ -1,21 +1,46 @@
 use bevy::prelude::*;
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use crate::core::factors::Factor;
 use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
+use crate::core::global_economy::GlobalEconomy;
 use crate::core::loans::Loan;
+use crate::core::securities::commodities::CommodityKind;
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct OwnedCommodity {
+    pub kind: CommodityKind,
+    pub amount: u32,
+    pub buy_date: NaiveDate,
+    pub buy_price: f32,
+}
 
 #[derive(Resource, Clone, Default, Serialize, Deserialize)]
 pub struct Player {
     pub cash: Cash,
     pub credit_score: CreditScore,
     pub loans: Vec<Loan>,
+    pub commodities: Vec<OwnedCommodity>,
 }
 
 impl Player {
-    pub fn enterprise_value(&self) -> f32 {
-        self.cash.amount - self.loans.iter().map(|l| l.outstanding).sum::<f32>()
+    pub fn enterprise_value(&self, economy: &GlobalEconomy) -> f32 {
+        self.cash.amount
+            + self
+                .commodities
+                .iter()
+                .map(|c1| {
+                    economy
+                        .commodities
+                        .iter()
+                        .find(|c2| c1.kind == c2.kind)
+                        .map(|c2| c1.amount as f32 * c2.current())
+                        .unwrap()
+                })
+                .sum::<f32>()
+            - self.loans.iter().map(|l| l.outstanding).sum::<f32>()
     }
 
     pub fn inflow(&self) -> f32 {

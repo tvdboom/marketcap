@@ -1,6 +1,7 @@
 mod assets;
 mod audio;
 mod constants;
+mod countries;
 pub mod factors;
 mod game_settings;
 mod global_economy;
@@ -10,11 +11,10 @@ mod pause;
 mod persistence;
 mod player;
 mod resources;
+mod securities;
 mod states;
 mod systems;
 mod ui;
-mod countries;
-mod securities;
 
 use bevy::prelude::*;
 

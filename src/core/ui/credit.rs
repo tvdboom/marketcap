@@ -215,7 +215,7 @@ pub fn credit_panel(
                     let max_principal = ui_state
                         .credit
                         .provider
-                        .max_principal(player.enterprise_value(), player.credit_score.current());
+                        .max_principal(player.enterprise_value(&economy), player.credit_score.current());
 
                     ui.spacing_mut().slider_width = window.width() * 0.13;
                     let principal = ui_state.credit.principal;
