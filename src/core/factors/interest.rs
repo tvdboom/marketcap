@@ -3,7 +3,6 @@ use std::fmt::{Display, Formatter, Result};
 use serde::{Deserialize, Serialize};
 
 use crate::core::factors::Factor;
-use crate::core::factors::inflation::Inflation;
 use crate::utils::Round1;
 
 #[derive(Clone, Serialize, Deserialize)]

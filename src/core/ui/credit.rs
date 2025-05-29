@@ -199,6 +199,18 @@ pub fn credit_panel(
 
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
+                    ui.add_text("Provider", window.m_size());
+                    ui.horizontal(|ui| {
+                        for item in LoanProvider::iter() {
+                            ui.selectable_value(
+                                &mut ui_state.credit.provider,
+                                item.clone(),
+                                add_text(item.to_name(), window.s_size()),
+                            )
+                                .on_hover_text(item.description());
+                        }
+                    });
+
                     ui.add_text("Principal", window.m_size());
                     let max_principal = ui_state
                         .credit
@@ -218,19 +230,7 @@ pub fn credit_panel(
                             can borrow is determined by the credit provider and the company's \
                             enterprise value.",
                         );
-
-                    ui.add_text("Provider", window.m_size());
-                    ui.horizontal(|ui| {
-                        for item in LoanProvider::iter() {
-                            ui.selectable_value(
-                                &mut ui_state.credit.provider,
-                                item.clone(),
-                                add_text(item.to_name(), window.s_size()),
-                            )
-                                .on_hover_text(item.description());
-                        }
-                    });
-
+                    
                     ui.add_text("Kind", window.m_size());
                     ui.horizontal(|ui| {
                         for item in LoanKind::iter() {
@@ -343,11 +343,11 @@ pub fn credit_overview(ui: &mut Ui, ui_state: &mut UiState, loans: &Vec<Loan>, w
     let columns = [
         "Id",
         "Maturity",
-        "Installment",
-        "Outstanding",
-        "Principal",
-        "Interest",
         "Provider",
+        "Principal",
+        "Outstanding",
+        "Installment",
+        "Interest",
         "Kind",
         "No fee",
         "Defaults",
@@ -374,11 +374,11 @@ pub fn credit_overview(ui: &mut Ui, ui_state: &mut UiState, loans: &Vec<Loan>, w
                         let content = [
                             &loan.id,
                             &loan.maturity_date().format(DATE_FORMAT).to_string(),
-                            &loan.next_installment_amount().floor().to_string(),
-                            &loan.outstanding.floor().to_string(),
-                            &loan.principal.to_string(),
-                            &format!("{}%", loan.interest_rate.to_string()),
                             &loan.provider.to_name(),
+                            &loan.principal.to_string(),
+                            &loan.outstanding.floor().to_string(),
+                            &loan.next_installment_amount().floor().to_string(),
+                            &format!("{}%", loan.interest_rate.to_string()),
                             &loan.kind.to_name(),
                             &loan.no_fee.to_string(),
                             &loan.defaults.to_string(),
