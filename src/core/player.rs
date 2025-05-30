@@ -7,24 +7,22 @@ use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::loans::Loan;
-use crate::core::securities::commodities::CommodityKind;
+use crate::core::securities::SecurityName;
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct OwnedCommodity {
-    pub kind: CommodityKind,
+pub struct OwnedSecurity {
+    pub name: SecurityName,
     pub amount: u32,
     pub buy_date: NaiveDate,
     pub buy_price: f32,
     pub warning: bool,
 }
 
-impl OwnedCommodity {
+impl OwnedSecurity {
     pub fn maturity_date(&self, economy: &GlobalEconomy) -> Option<NaiveDate> {
         economy
-            .commodities
-            .iter()
-            .find_map(|c| (c.kind == self.kind).then_some(c.maturity))
-            .unwrap()
+            .get(&self.name)
+            .maturity
             .and_then(|m| Some(self.buy_date + Duration::days(m as i64)))
     }
 }
@@ -34,24 +32,16 @@ pub struct Player {
     pub cash: Cash,
     pub credit_score: CreditScore,
     pub loans: Vec<Loan>,
-    pub commodities: Vec<OwnedCommodity>,
+    pub securities: Vec<OwnedSecurity>,
 }
 
 impl Player {
     pub fn enterprise_value(&self, economy: &GlobalEconomy) -> f32 {
         self.cash.amount
             + self
-                .commodities
+                .securities
                 .iter()
-                .map(|c1| {
-                    economy
-                        .commodities
-                        .iter()
-                        .find_map(|c2| {
-                            (c1.kind == c2.kind).then_some(c1.amount as f32 * c2.current())
-                        })
-                        .unwrap()
-                })
+                .map(|owned| owned.amount as f32 * economy.get(&owned.name).current())
                 .sum::<f32>()
             - self.loans.iter().map(|l| l.outstanding).sum::<f32>()
     }

@@ -31,7 +31,7 @@ use crate::core::systems::time_pass;
 use crate::core::ui::menu::{in_game_menu, toggle_menu_keyboard};
 use crate::core::ui::state::UiState;
 use crate::core::ui::systems::{
-    add_egui_images, central_panel, check_keys, left_panel, set_egui_style, top_panel,
+    add_egui_images, central_panel, check_keys, left_panel, set_egui_style, top_panel, trade_modal,
 };
 
 pub struct GamePlugin;
@@ -84,7 +84,13 @@ impl Plugin for GamePlugin {
             .add_systems(Startup, (set_egui_style, add_egui_images))
             .add_systems(
                 Update,
-                (top_panel, left_panel, central_panel, in_game_menu)
+                (
+                    top_panel,
+                    left_panel,
+                    central_panel,
+                    in_game_menu,
+                    trade_modal,
+                )
                     .chain()
                     .in_set(InGameSet),
             )

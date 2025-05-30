@@ -4,41 +4,52 @@ use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
 #[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum CommodityKind {
+pub enum SecurityName {
     Gold,
     Oil,
     Wheat,
 }
 
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Commodity {
-    /// The kind of commodity
-    pub kind: CommodityKind,
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+pub enum SecurityKind {
+    Stock,
+    Bond,
+    Currency,
+    Commodity,
+}
 
-    /// The prices of the commodity over time
+#[derive(Clone, Serialize, Deserialize)]
+pub struct Security {
+    /// The name of the security
+    pub name: SecurityName,
+
+    /// The kind of security
+    pub kind: SecurityKind,
+
+    /// The prices of the security over time
     pub prices: Vec<f32>,
 
     /// Percentage of price that can change daily
     pub volatility: f32,
 
-    /// How many days the commodity can be held before it degrades
+    /// How many days before it matures
     pub maturity: Option<u32>,
 
     /// Countries where the commodity is produced
     pub production: Vec<Country>,
 }
 
-impl Commodity {
+impl Security {
     pub fn description(&self) -> &str {
-        match self.kind {
-            CommodityKind::Gold => {
+        match self.name {
+            SecurityName::Gold => {
                 "A precious metal valued for its rarity, durability, and historical role as \
                 a store of value. Gold serves as a stable but slow-growing investment, and \
                 a hedge against inflation. While not highly volatile, gold retains value \
                 even during market crashes, making it a strategic asset in times of crisis. \
                 Gold doesn't degrade over time, allowing it to be held indefinitely."
             },
-            CommodityKind::Oil => {
+            SecurityName::Oil => {
                 "A high-demand fossil fuel crucial to the energy sector. Oil is a volatile \
                 commodity influenced by geopolitical tensions, supply disruptions, OPEC \
                 decisions, and economic cycles. Its price can spike during conflicts or \
@@ -47,7 +58,7 @@ impl Commodity {
                 quickly, making it ideal for aggressive traders or those hedging industrial \
                 operations."
             },
-            CommodityKind::Wheat => {
+            SecurityName::Wheat => {
                 "A staple agricultural commodity essential for global food supply. Wheat \
                 represents a relatively stable but seasonally influenced asset. Its price \
                 is affected by weather patterns, crop yields and trade policies. Wheat is a \
@@ -66,7 +77,7 @@ impl Commodity {
             * (1. + rng().random_range(-self.volatility / 100. ..self.volatility / 100.));
 
         // Gold is a special case since its price moves with the inflation
-        if self.kind == CommodityKind::Gold {
+        if self.name == SecurityName::Gold {
             if inflation > 6. {
                 // If inflation is high, gold's price increases significantly
                 new_price *= 1. + inflation / 200.;
@@ -83,10 +94,11 @@ impl Commodity {
     }
 }
 
-pub fn start_commodities() -> Vec<Commodity> {
+pub fn start_securities() -> Vec<Security> {
     vec![
-        Commodity {
-            kind: CommodityKind::Gold,
+        Security {
+            name: SecurityName::Gold,
+            kind: SecurityKind::Commodity,
             prices: vec![93.],
             volatility: 1.,
             maturity: None,
@@ -98,8 +110,9 @@ pub fn start_commodities() -> Vec<Commodity> {
                 Country::Canada,
             ],
         },
-        Commodity {
-            kind: CommodityKind::Oil,
+        Security {
+            name: SecurityName::Oil,
+            kind: SecurityKind::Commodity,
             prices: vec![65.],
             volatility: 5.,
             maturity: Some(365),
@@ -110,8 +123,9 @@ pub fn start_commodities() -> Vec<Commodity> {
                 Country::Venezuela,
             ],
         },
-        Commodity {
-            kind: CommodityKind::Wheat,
+        Security {
+            name: SecurityName::Wheat,
+            kind: SecurityKind::Commodity,
             prices: vec![7.],
             volatility: 2.3,
             maturity: Some(280),

@@ -3,8 +3,8 @@ use bevy_egui::EguiContexts;
 use bevy_egui::egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
 use bevy_egui::egui::widget_text::RichText;
 use bevy_egui::egui::{
-    Align, CentralPanel, Color32, FontData, FontFamily, Frame, Layout, Margin, SidePanel,
-    TopBottomPanel,
+    Align, CentralPanel, Color32, FontData, FontFamily, Frame, Id, Layout, Margin, Modal,
+    SidePanel, TopBottomPanel,
 };
 use strum::IntoEnumIterator;
 
@@ -291,6 +291,39 @@ pub fn central_panel(
                 ui.heading("Policies");
             },
         });
+}
+
+pub fn trade_modal(
+    mut contexts: EguiContexts,
+    mut ui_state: ResMut<UiState>,
+    game_settings: Res<GameSettings>,
+    economy: Res<GlobalEconomy>,
+    mut player: ResMut<Player>,
+    mut messages: EventWriter<MessageEv>,
+    images: Res<ImageIds>,
+    window: Single<&Window>,
+) {
+    if let Some(security) = &ui_state.trade_modal {
+        let modal = Modal::new(Id::new("trade")).show(contexts.ctx_mut(), |ui| {
+            ui.set_width(window.width() * 0.4);
+
+            ui.add_space(window.height() * 0.05);
+
+            // match security {
+            //     SecurityName::Commodity(commodity) => {
+            //         let commodity = economy.get_commodity(*commodity);
+            //
+            //         ui.add_text(commodity.kind.to_name(), window.l_size());
+            //     },
+            // }
+
+            ui.add_space(window.height() * 0.05);
+        });
+
+        if modal.should_close() {
+            ui_state.trade_modal = None;
+        }
+    }
 }
 
 pub fn check_keys(keyboard: Res<ButtonInput<KeyCode>>, mut ui_state: ResMut<UiState>) {

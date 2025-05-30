@@ -1,7 +1,7 @@
+use crate::core::loans::{LoanKind, LoanProvider, LoanTerm};
+use crate::core::securities::SecurityName;
 use bevy::prelude::*;
 use strum_macros::EnumIter;
-
-use crate::core::loans::{LoanKind, LoanProvider, LoanTerm};
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum Tab {
@@ -126,11 +126,12 @@ impl Default for CreditState {
     }
 }
 
-#[derive(Resource, Clone, Default)]
+#[derive(Resource, Default)]
 pub struct UiState {
     pub tab: Tab,
     pub bonds: BondTab,
     pub currencies: CurrencyTab,
     pub commodities: CommodityTab,
     pub credit: CreditState,
+    pub trade_modal: Option<SecurityName>,
 }

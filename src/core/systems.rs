@@ -5,6 +5,7 @@ use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::player::Player;
+use crate::core::securities::SecurityKind;
 use crate::utils::NameFromEnum;
 
 pub fn time_pass(
@@ -25,31 +26,37 @@ pub fn time_pass(
 
         player.cash.bump(economy.interest.current());
 
-        player.commodities.retain_mut(|commodity| {
-            if let Some(maturity) = commodity.maturity_date(&economy) {
+        player.securities.retain_mut(|owned| {
+            if let Some(maturity) = owned.maturity_date(&economy) {
+                let security = economy.get(&owned.name);
+
                 if maturity <= economy.date {
-                    // Commodity has degraded -> remove it
-                    message.write(MessageEv {
-                        message: format!(
-                            "{} units of {} have degraded and have been removed!",
-                            commodity.amount,
-                            commodity.kind.to_lowername()
-                        ),
-                        level: MessageLevel::Error,
-                    });
+                    if security.kind == SecurityKind::Commodity {
+                        // Commodity has degraded -> remove it
+                        message.write(MessageEv {
+                            message: format!(
+                                "{} units of {} have degraded and have been removed!",
+                                owned.amount,
+                                owned.name.to_lowername()
+                            ),
+                            level: MessageLevel::Error,
+                        });
+                    }
 
                     return false; // Remove commodity
-                } else if !commodity.warning && maturity <= economy.date + Duration::days(30) {
-                    // Commodity is about to degrade -> warn player
-                    commodity.warning = true;
-                    message.write(MessageEv {
-                        message: format!(
-                            "{} units of {} are degrading in 30 days!",
-                            commodity.amount,
-                            commodity.kind.to_lowername()
-                        ),
-                        level: MessageLevel::Warning,
-                    });
+                } else if !owned.warning && maturity <= economy.date + Duration::days(30) {
+                    if security.kind == SecurityKind::Commodity {
+                        // Commodity is about to degrade -> warn player
+                        owned.warning = true;
+                        message.write(MessageEv {
+                            message: format!(
+                                "{} units of {} are degrading in 30 days!",
+                                owned.amount,
+                                owned.name.to_lowername()
+                            ),
+                            level: MessageLevel::Warning,
+                        });
+                    }
                 }
             }
 

@@ -1,8 +1,11 @@
 use std::collections::HashMap;
 
+use crate::core::securities::SecurityName;
+use crate::utils::NameFromEnum;
 use bevy::asset::{AssetServer, Handle};
 use bevy::prelude::*;
 use bevy_kira_audio::AudioSource;
+use strum::IntoEnumIterator;
 
 pub struct WorldAssets {
     pub audio: HashMap<&'static str, Handle<AudioSource>>,
@@ -38,7 +41,7 @@ impl FromWorld for WorldAssets {
             ("music", assets.load("audio/music.ogg")),
         ]);
 
-        let images: HashMap<&'static str, Handle<Image>> = HashMap::from([
+        let mut images: HashMap<&'static str, Handle<Image>> = HashMap::from([
             // Icons
             ("cash", assets.load("images/icons/cash.png")),
             ("credit-score", assets.load("images/icons/credit-score.png")),
@@ -51,11 +54,12 @@ impl FromWorld for WorldAssets {
             ("netflow", assets.load("images/icons/netflow.png")),
             ("time", assets.load("images/icons/time.png")),
             ("time-paused", assets.load("images/icons/time-paused.png")),
-            // Commodities
-            ("gold", assets.load("images/commodities/gold.png")),
-            ("oil", assets.load("images/commodities/oil.png")),
-            ("wheat", assets.load("images/commodities/wheat.png")),
         ]);
+
+        for security in SecurityName::iter() {
+            let name = Box::leak(Box::new(security.to_lowername())).as_str();
+            images.insert(name, assets.load(format!("images/securities/{}.png", name)));
+        }
 
         Self { audio, images }
     }

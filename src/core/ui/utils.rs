@@ -7,7 +7,7 @@ use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
 use crate::core::constants::{HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::resources::ImageIds;
-use crate::core::securities::commodities::Commodity;
+use crate::core::securities::Security;
 use crate::utils::NameFromEnum;
 
 /// Add text widget with custom size
@@ -116,12 +116,8 @@ pub trait CustomUi {
         plot: Option<&Vec<f32>>,
         window: &Window,
     ) -> Response;
-    fn add_commodity(
-        &mut self,
-        commodity: &Commodity,
-        images: &ImageIds,
-        window: &Window,
-    ) -> Response;
+    fn add_security(&mut self, security: &Security, images: &ImageIds, window: &Window)
+    -> Response;
 }
 
 impl CustomUi for Ui {
@@ -167,39 +163,36 @@ impl CustomUi for Ui {
         })
     }
 
-    fn add_commodity(
+    fn add_security(
         &mut self,
-        commodity: &Commodity,
+        security: &Security,
         images: &ImageIds,
         window: &Window,
     ) -> Response {
         self.horizontal(|ui| {
             ui.add(Image::new(SizedTexture::new(
-                images.get(commodity.kind.to_lowername().as_str()),
+                images.get(security.name.to_lowername().as_str()),
                 [window.height() * 0.2; 2],
             )))
             .on_hover_ui(|ui| {
                 ui.set_min_width(window.width() * 0.4);
 
-                ui.add_text(commodity.kind.to_name(), window.l_size());
+                ui.add_text(security.name.to_name(), window.l_size());
                 ui.add_space(window.height() * 0.01);
-                ui.add_text(commodity.description(), window.m_size());
+                ui.add_text(security.description(), window.m_size());
                 ui.add_space(window.height() * 0.01);
-                line_plot(ui, &commodity.prices);
+                line_plot(ui, &security.prices);
             });
 
             ui.vertical(|ui| {
                 ui.add_space(window.height() * 0.02);
 
-                ui.add_text(commodity.kind.to_name(), window.l_size());
-                ui.add_text(
-                    format!("Price: {:.0}", commodity.current()),
-                    window.m_size(),
-                )
-                .on_hover("Current price of the commodity.", window.m_size());
+                ui.add_text(security.kind.to_name(), window.l_size());
+                ui.add_text(format!("Price: {:.0}", security.current()), window.m_size())
+                    .on_hover("Current price of the commodity.", window.m_size());
 
                 ui.add_text(
-                    format!("Volatility: {:.1}%", commodity.volatility),
+                    format!("Volatility: {:.1}%", security.volatility),
                     window.m_size(),
                 )
                 .on_hover(
@@ -210,7 +203,7 @@ impl CustomUi for Ui {
                 ui.add_text(
                     format!(
                         "Maturity: {}",
-                        commodity
+                        security
                             .maturity
                             .map_or("--".to_string(), |m| format!("{m} days"))
                     ),
@@ -224,7 +217,7 @@ impl CustomUi for Ui {
                 ui.add_text(
                     format!(
                         "Production: {}",
-                        commodity
+                        security
                             .production
                             .iter()
                             .map(|c| c.to_name())

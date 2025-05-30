@@ -1,6 +1,6 @@
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::resources::ImageIds;
-use crate::core::securities::commodities::CommodityKind;
+use crate::core::securities::SecurityKind;
 use crate::core::ui::state::{CommodityTab, UiState};
 use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
 use crate::utils::NameFromEnum;
@@ -52,16 +52,17 @@ pub fn commodities_panel(
         },
         CommodityTab::Market => {
             ScrollArea::vertical().show(ui, |ui| {
-                for commodity in CommodityKind::iter() {
-                    ui.add_commodity(
-                        economy
-                            .commodities
-                            .iter()
-                            .find(|c| c.kind == commodity)
-                            .unwrap(),
-                        images,
-                        window,
-                    );
+                for security in economy
+                    .securities
+                    .iter()
+                    .filter(|k| k.kind == SecurityKind::Commodity)
+                {
+                    let response = ui.add_security(security, images, window);
+
+                    if response.clicked() {
+                        println!("Clicked on commodity: {}", security.name.to_lowername());
+                        ui_state.trade_modal = Some(security.name);
+                    }
                 }
             });
         },

@@ -12,6 +12,7 @@ use crate::core::game_settings::{AudioSetting, GameSettings, Theme};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::persistence::SaveGameEv;
 use crate::core::states::{AppState, GameState};
+use crate::core::ui::state::UiState;
 use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
 use crate::utils::NameFromEnum;
 
@@ -157,14 +158,21 @@ pub fn in_game_menu(
 
 pub fn toggle_menu_keyboard(
     keyboard: Res<ButtonInput<KeyCode>>,
+    mut ui_state: ResMut<UiState>,
     game_state: Res<State<GameState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
 ) {
     if keyboard.just_pressed(KeyCode::Escape) {
-        next_game_state.set(match *game_state.get() {
-            GameState::Running | GameState::Paused => GameState::InGameMenu,
-            GameState::InGameMenu => GameState::Running,
-            GameState::Settings => GameState::InGameMenu,
-        });
+        match *game_state.get() {
+            GameState::Running | GameState::Paused => {
+                if ui_state.trade_modal.is_some() {
+                    ui_state.trade_modal = None;
+                } else {
+                    next_game_state.set(GameState::InGameMenu);
+                }
+            },
+            GameState::InGameMenu => next_game_state.set(GameState::Running),
+            GameState::Settings => next_game_state.set(GameState::InGameMenu),
+        }
     }
 }
