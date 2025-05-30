@@ -5,7 +5,7 @@ use crate::core::ui::state::{CommodityTab, UiState};
 use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
 use crate::utils::NameFromEnum;
 use bevy::prelude::Window;
-use bevy_egui::egui::{ScrollArea, Ui};
+use bevy_egui::egui::{ScrollArea, Sense, Ui};
 use strum::IntoEnumIterator;
 
 pub fn commodities_panel(
@@ -57,10 +57,11 @@ pub fn commodities_panel(
                     .iter()
                     .filter(|k| k.kind == SecurityKind::Commodity)
                 {
-                    let response = ui.add_security(security, images, window);
+                    let response = ui
+                        .add_security(security, images, window)
+                        .interact(Sense::click());
 
                     if response.clicked() {
-                        println!("Clicked on commodity: {}", security.name.to_lowername());
                         ui_state.trade_modal = Some(security.name);
                     }
                 }

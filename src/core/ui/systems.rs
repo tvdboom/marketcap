@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
+use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::widget_text::RichText;
 use bevy_egui::egui::{
-    Align, CentralPanel, Color32, FontData, FontFamily, Frame, Id, Layout, Margin, Modal,
+    Align, CentralPanel, Color32, FontData, FontFamily, Frame, Id, Image, Layout, Margin, Modal,
     SidePanel, TopBottomPanel,
 };
 use strum::IntoEnumIterator;
@@ -296,26 +297,45 @@ pub fn central_panel(
 pub fn trade_modal(
     mut contexts: EguiContexts,
     mut ui_state: ResMut<UiState>,
-    game_settings: Res<GameSettings>,
     economy: Res<GlobalEconomy>,
     mut player: ResMut<Player>,
     mut messages: EventWriter<MessageEv>,
     images: Res<ImageIds>,
     window: Single<&Window>,
 ) {
-    if let Some(security) = &ui_state.trade_modal {
+    if let Some(name) = &ui_state.trade_modal {
+        let security = economy.get(&name);
         let modal = Modal::new(Id::new("trade")).show(contexts.ctx_mut(), |ui| {
             ui.set_width(window.width() * 0.4);
 
             ui.add_space(window.height() * 0.05);
 
-            // match security {
-            //     SecurityName::Commodity(commodity) => {
-            //         let commodity = economy.get_commodity(*commodity);
-            //
-            //         ui.add_text(commodity.kind.to_name(), window.l_size());
-            //     },
-            // }
+            ui.horizontal(|ui| {
+                ui.add(Image::new(SizedTexture::new(
+                    images.get(security.name.to_lowername().as_str()),
+                    [window.height() * 0.2; 2],
+                )));
+
+                ui.vertical(|ui| {
+                    ui.add_space(window.height() * 0.02);
+
+                    ui.add_text(security.name.to_name(), window.l_size());
+
+                    ui.add_text(format!("Price: {:.0}", security.current()), window.m_size());
+
+                    ui.add_text(
+                        format!(
+                            "Owned: {}",
+                            player
+                                .securities
+                                .iter()
+                                .filter_map(|s| (s.name == security.name).then_some(s.amount))
+                                .sum::<u32>()
+                        ),
+                        window.m_size(),
+                    );
+                });
+            });
 
             ui.add_space(window.height() * 0.05);
         });

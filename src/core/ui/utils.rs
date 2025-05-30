@@ -188,6 +188,7 @@ impl CustomUi for Ui {
                 ui.add_space(window.height() * 0.02);
 
                 ui.add_text(security.name.to_name(), window.l_size());
+
                 ui.add_text(format!("Price: {:.0}", security.current()), window.m_size())
                     .on_hover("Current price of the security.", window.m_size());
 
