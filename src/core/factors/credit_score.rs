@@ -34,8 +34,7 @@ impl Factor for CreditScore {
     }
 
     fn description(&self) -> String {
-        "Credit score\n\n\
-        The credit score (0-100) is a measure of the company's creditworthiness, which is used \
+        "The credit score (0-100) is a measure of the company's creditworthiness, which is used \
         by banks and brokers to determine the maximum principal and interest rate for loans. A \
         higher score means better loan conditions.\n\n\
         If the company has active loans and pays the installments, the credit score increases \

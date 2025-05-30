@@ -51,6 +51,10 @@ impl FromWorld for WorldAssets {
             ("netflow", assets.load("images/icons/netflow.png")),
             ("time", assets.load("images/icons/time.png")),
             ("time-paused", assets.load("images/icons/time-paused.png")),
+            // Commodities
+            ("gold", assets.load("images/commodities/gold.png")),
+            ("oil", assets.load("images/commodities/oil.png")),
+            ("wheat", assets.load("images/commodities/wheat.png")),
         ]);
 
         Self { audio, images }

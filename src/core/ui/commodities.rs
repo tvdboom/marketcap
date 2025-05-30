@@ -1,12 +1,20 @@
-use bevy::prelude::Window;
-use bevy_egui::egui::Ui;
-use strum::IntoEnumIterator;
-
+use crate::core::global_economy::GlobalEconomy;
+use crate::core::resources::ImageIds;
+use crate::core::securities::commodities::CommodityKind;
 use crate::core::ui::state::{CommodityTab, UiState};
 use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
 use crate::utils::NameFromEnum;
+use bevy::prelude::Window;
+use bevy_egui::egui::{ScrollArea, Ui};
+use strum::IntoEnumIterator;
 
-pub fn commodities_panel(ui: &mut Ui, ui_state: &mut UiState, window: &Window) {
+pub fn commodities_panel(
+    ui: &mut Ui,
+    ui_state: &mut UiState,
+    economy: &GlobalEconomy,
+    images: &ImageIds,
+    window: &Window,
+) {
     ui.horizontal(|ui| {
         for tab in CommodityTab::iter() {
             ui.selectable_value(
@@ -26,9 +34,9 @@ pub fn commodities_panel(ui: &mut Ui, ui_state: &mut UiState, window: &Window) {
         "Commodities are raw materials or primary agricultural products that can be \
         bought, sold and traded. They serve as the building blocks of the global economy,\
         their prices often having a direct impact on stock prices.\n\n\
-        Commodities typically present volatile price movements. Be aware, commodities \
-        are natural products that degrade over time. Be sure to sell them before they lose \
-        their value.",
+        Commodities typically present volatile price movements. Be aware, commodities are \
+        natural products that degrade over time. Be sure to sell them before they lose their \
+        value.",
         window.m_size(),
     );
 
@@ -43,9 +51,19 @@ pub fn commodities_panel(ui: &mut Ui, ui_state: &mut UiState, window: &Window) {
             ui.separator();
         },
         CommodityTab::Market => {
-            ui.add_text("", window.m_size());
-
-            ui.separator();
+            ScrollArea::vertical().show(ui, |ui| {
+                for commodity in CommodityKind::iter() {
+                    ui.add_commodity(
+                        economy
+                            .commodities
+                            .iter()
+                            .find(|c| c.kind == commodity)
+                            .unwrap(),
+                        images,
+                        window,
+                    );
+                }
+            });
         },
     }
 }

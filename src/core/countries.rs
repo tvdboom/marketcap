@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Country {
+    Australia,
     Brazil,
     Canada,
     EU,
@@ -10,4 +11,5 @@ pub enum Country {
     Russia,
     Ukraine,
     USA,
+    Venezuela,
 }

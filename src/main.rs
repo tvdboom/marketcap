@@ -3,6 +3,9 @@
 mod core;
 mod utils;
 
+use self::core::messages::MessagesPlugin;
+use crate::core::GamePlugin;
+use crate::core::constants::{HEIGHT, WIDTH};
 use bevy::asset::AssetMetaCheck;
 use bevy::prelude::{NonSend, *};
 use bevy::window::{WindowMode, WindowResolution};
@@ -10,9 +13,6 @@ use bevy::winit::WinitWindows;
 use bevy_egui::EguiPlugin;
 use bevy_kira_audio::prelude::*;
 use winit::window::Icon;
-
-use self::core::messages::MessagesPlugin;
-use crate::core::GamePlugin;
 
 pub const TITLE: &str = "MarketCap";
 
@@ -27,7 +27,7 @@ fn main() {
                     title: TITLE.into(),
                     mode: WindowMode::Windowed,
                     position: WindowPosition::Centered(MonitorSelection::Primary),
-                    resolution: WindowResolution::new(1600., 900.),
+                    resolution: WindowResolution::new(WIDTH, HEIGHT),
 
                     // Tells Wasm to resize the window according to the available canvas
                     fit_canvas_to_parent: true,

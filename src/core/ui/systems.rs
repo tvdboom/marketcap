@@ -9,7 +9,7 @@ use bevy_egui::egui::{
 use strum::IntoEnumIterator;
 
 use crate::core::assets::WorldAssets;
-use crate::core::constants::{DATE_FORMAT, GREEN, LEFT_LABEL_FRAC, TOP_LABEL_FRAC};
+use crate::core::constants::{DATE_FORMAT, GREEN, LEFT_LABEL_FRAC, TOP_LABEL_FRAC, WIDTH};
 use crate::core::factors::Factor;
 use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
@@ -22,7 +22,7 @@ use crate::core::ui::commodities::commodities_panel;
 use crate::core::ui::credit::credit_panel;
 use crate::core::ui::currencies::currencies_panel;
 use crate::core::ui::state::{Tab, UiState};
-use crate::core::ui::utils::{CustomUi, TextSizes, line_plot};
+use crate::core::ui::utils::{CustomUi, TextSizes};
 use crate::utils::NameFromEnum;
 
 pub fn set_egui_style(mut contexts: EguiContexts, game_settings: Res<GameSettings>) {
@@ -94,11 +94,13 @@ pub fn top_panel(
             ui.horizontal_centered(|ui| {
                 ui.add_space(window.width() * 0.095);
 
-                ui.add_block(
-                    format!("{:.0}", player.enterprise_value().floor()),
+                ui.add_factor(
+                    "Enterprise value",
+                    format!("{:.0}", player.enterprise_value(&economy).floor()),
+                    GREEN,
+                    images.get("enterprise"),
                     format!(
-                        "Enterprise value\n\n\
-                        The enterprise value is a comprehensive measure of a company's total \
+                        "The enterprise value is a comprehensive measure of a company's total \
                         worth. This includes any kind of assets, investments and cash deposits, \
                         minus debts.\n\n\
                         In the game, the enterprise value represents a measure of the success \
@@ -108,105 +110,114 @@ pub fn top_panel(
                         player.cash,
                         player.loans.iter().map(|l| l.outstanding).sum::<f32>()
                     ),
-                    images.get("enterprise"),
-                    GREEN,
-                    window.xxl_size(),
+                    None,
+                    &window,
                 );
 
                 ui.add_space(window.width() * 0.01);
 
-                ui.add_block(
+                ui.add_factor(
+                    "Cash",
                     player.cash.to_string(),
-                    player.cash.description(),
-                    images.get(player.cash.image()),
                     GREEN,
-                    window.xxl_size(),
+                    images.get(player.cash.image()),
+                    player.cash.description(),
+                    None,
+                    &window,
                 );
 
                 ui.add_space(window.width() * 0.01);
 
-                ui.add_block(
+                ui.add_factor(
+                    "Net flow",
                     format!("{:+.0}", player.netflow().floor()),
+                    match player.netflow() {
+                        n if n <= -1. => Color32::RED,
+                        n if n >= 1. => GREEN,
+                        _ => text_color,
+                    },
+                    images.get("netflow"),
                     format!(
-                        "Net flow\n\n\
-                        The net flow represents the total financial movement at the end of \
+                        "The net flow represents the total financial movement at the end of \
                         each month, calculated as income minus debt repayments and expenses. \
                         It shows whether the player will gain or lose money this month.\n\n\
                         Inflow: {:+.0}\nOutflow: {:+.0}",
                         player.inflow().floor(),
                         -player.outflow().floor(),
                     ),
-                    images.get("netflow"),
-                    match player.netflow() {
-                        n if n <= -1. => Color32::RED,
-                        n if n >= 1. => GREEN,
-                        _ => text_color,
-                    },
-                    window.xxl_size(),
+                    None,
+                    &window,
                 );
 
                 ui.add_space(window.width() * 0.01);
 
-                ui.add_block(
+                ui.add_factor(
+                    "Credit score",
                     player.credit_score.to_string(),
-                    player.credit_score.description(),
-                    images.get(player.credit_score.image()),
                     match player.credit_score.current() {
                         n if n < 30. => Color32::RED,
                         n if n > 70. => GREEN,
                         _ => text_color,
                     },
-                    window.xxl_size(),
+                    images.get(player.credit_score.image()),
+                    player.credit_score.description(),
+                    None,
+                    &window,
                 );
 
                 ui.add_space(window.width() * 0.04);
 
-                ui.add_block(
+                ui.add_factor(
+                    "Global economic factor",
                     economy.economy.to_string(),
-                    economy.economy.description(),
+                    text_color,
                     images.get(economy.economy.image()),
-                    text_color,
-                    window.xxl_size(),
-                )
-                .on_hover_ui(|ui| line_plot(ui, &economy.economy.0, text_color));
+                    economy.economy.description(),
+                    Some(&economy.economy.0),
+                    &window,
+                );
 
                 ui.add_space(window.width() * 0.01);
 
-                ui.add_block(
+                ui.add_factor(
+                    "Inflation",
                     economy.inflation.to_string(),
-                    economy.inflation.description(),
-                    images.get(economy.inflation.image()),
                     text_color,
-                    window.xxl_size(),
-                )
-                .on_hover_ui(|ui| line_plot(ui, &economy.inflation.0, text_color));
+                    images.get(economy.inflation.image()),
+                    economy.inflation.description(),
+                    Some(&economy.inflation.0),
+                    &window,
+                );
 
                 ui.add_space(window.width() * 0.01);
 
-                ui.add_block(
+                ui.add_factor(
+                    "Global interest rate",
                     economy.interest.to_string(),
-                    economy.interest.description(),
-                    images.get(economy.interest.image()),
                     text_color,
-                    window.xxl_size(),
-                )
-                .on_hover_ui(|ui| line_plot(ui, &economy.interest.rate, text_color));
+                    images.get(economy.interest.image()),
+                    economy.interest.description(),
+                    Some(&economy.interest.rate),
+                    &window,
+                );
 
                 ui.add_space(window.width() * 0.04);
 
-                ui.add_block(
+                ui.add_factor(
+                    "Current date",
                     economy.date.format(DATE_FORMAT).to_string(),
-                    "Current date\n\n\
-                        Income and expenses are paid every first day of the month. Interest \
-                        (for example on cash) is calculated daily.\n\n\
-                        Use the space key to pause/unpause the time.",
+                    text_color,
                     images.get(if *game_state.get() == GameState::Running {
                         "time"
                     } else {
                         "time-paused"
                     }),
-                    text_color,
-                    window.xxl_size(),
+                    "Income and expenses are paid every first day of the month. Interest \
+                    (for example on cash) is calculated daily.\n\n\
+                    Use the space key to pause/unpause the time."
+                        .to_string(),
+                    None,
+                    &window,
                 );
             });
         });
@@ -218,7 +229,7 @@ pub fn left_panel(
     window: Single<&Window>,
 ) {
     SidePanel::left("left_panel")
-        .exact_width(window.width() * LEFT_LABEL_FRAC)
+        .exact_width(window.width().min(1.2 * WIDTH) * LEFT_LABEL_FRAC)
         .show_separator_line(false)
         .resizable(false)
         .show(contexts.ctx_mut(), |ui| {
@@ -244,6 +255,7 @@ pub fn central_panel(
     economy: Res<GlobalEconomy>,
     mut player: ResMut<Player>,
     mut messages: EventWriter<MessageEv>,
+    images: Res<ImageIds>,
     window: Single<&Window>,
 ) {
     CentralPanel::default()
@@ -266,7 +278,7 @@ pub fn central_panel(
             },
             Tab::Bonds => bonds_panel(ui, &mut ui_state, &window),
             Tab::Currencies => currencies_panel(ui, &mut ui_state, &window),
-            Tab::Commodities => commodities_panel(ui, &mut ui_state, &window),
+            Tab::Commodities => commodities_panel(ui, &mut ui_state, &economy, &images, &window),
             Tab::Credit => credit_panel(
                 ui,
                 &mut ui_state,

@@ -26,7 +26,7 @@ impl Economy {
     pub const DEFAULT: f32 = (Self::MIN + Self::MAX) * 0.5;
 
     /// Maximum random daily fluctuation from the current value
-    const FLUCTUATION: f32 = 2.0;
+    const FLUCTUATION: f32 = 1.5;
 
     pub fn bump(&mut self) -> f32 {
         let norm = (self.current() - Self::DEFAULT) / Self::MAX;
@@ -54,8 +54,7 @@ impl Factor for Economy {
     }
 
     fn description(&self) -> String {
-        "Global economic factor\n\n\
-        The global economy represents the overall financial health and activity of the \
+        "The global economy represents the overall financial health and activity of the \
         world. It fluctuates based on trade, market sentiment and events. A strong global \
         economy means higher consumer confidence, robust industry growth, and increased \
         investments. A weak global economy signals recessions, crises, or reduced spending, \

@@ -1,6 +1,6 @@
 mod assets;
 mod audio;
-mod constants;
+pub mod constants;
 mod countries;
 pub mod factors;
 mod game_settings;

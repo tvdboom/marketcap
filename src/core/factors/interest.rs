@@ -60,8 +60,7 @@ impl Factor for Interest {
 
     fn description(&self) -> String {
         format!(
-            "Global interest rate\n\n\
-            The global interest rate is set by the central bank and determines the cost of \
+            "The global interest rate is set by the central bank and determines the cost of \
             borrowing money. It rises when inflation is high, making loans expensive, and \
             falls when inflation is low, encouraging investment.\n\n\
             In the game, interest rates directly impact debt strategies. Players must try to \

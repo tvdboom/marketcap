@@ -4,8 +4,11 @@ use bevy_egui::egui::*;
 use chrono::{Datelike, Duration};
 use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
 
-use crate::core::constants::LINE_WIDTH;
+use crate::core::constants::{HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
 use crate::core::global_economy::GlobalEconomy;
+use crate::core::resources::ImageIds;
+use crate::core::securities::commodities::Commodity;
+use crate::utils::NameFromEnum;
 
 /// Add text widget with custom size
 pub fn add_text(text: impl Into<String>, size: f32) -> RichText {
@@ -48,7 +51,7 @@ pub fn toggle(on: &mut bool) -> impl Widget + '_ {
 }
 
 /// Make a line plot with the last 6 months of data
-pub fn line_plot(ui: &mut Ui, data: &Vec<f32>, color: Color32) {
+pub fn line_plot(ui: &mut Ui, data: &Vec<f32>) {
     let start = data.len().saturating_sub(190); // 6 months approx.
     let sin: PlotPoints = data
         .iter()
@@ -58,6 +61,7 @@ pub fn line_plot(ui: &mut Ui, data: &Vec<f32>, color: Color32) {
         .collect();
 
     Plot::new("plot")
+        .view_aspect(WIDTH / HEIGHT)
         .show_background(false)
         .x_grid_spacer(|grid| {
             (grid.bounds.0 as i64..grid.bounds.1 as i64)
@@ -75,21 +79,48 @@ pub fn line_plot(ui: &mut Ui, data: &Vec<f32>, color: Color32) {
             format!("{:02}-{}", d.month(), d.year())
         })])
         .show(ui, |plot_ui| {
-            plot_ui.line(Line::new("line", sin).width(LINE_WIDTH).color(color))
+            plot_ui.line(Line::new("line", sin).width(LINE_WIDTH).color(LINE_COLOR))
         });
 }
 
 /// Custom syntactic sugar for repetitive UI elements
+pub trait CustomHover {
+    fn on_hover(self, text: impl Into<String>, size: f32) -> Response;
+    fn on_disabled_hover(self, text: impl Into<String>, size: f32) -> Response;
+}
+
+impl CustomHover for Response {
+    fn on_hover(self, text: impl Into<String>, size: f32) -> Response {
+        self.on_hover_ui(|ui| {
+            ui.add_text(text, size);
+        })
+    }
+
+    fn on_disabled_hover(self, text: impl Into<String>, size: f32) -> Response {
+        self.on_disabled_hover_ui(|ui| {
+            ui.add_text(text, size);
+        })
+    }
+}
+
 pub trait CustomUi {
     fn add_text(&mut self, text: impl Into<String>, size: f32) -> Response;
     fn add_button(&mut self, text: impl Into<String>, window: &Window) -> Response;
-    fn add_block(
+    fn add_factor(
         &mut self,
-        text: impl Into<String>,
-        hover_text: impl Into<WidgetText>,
+        name: impl Into<String>,
+        value: impl Into<String>,
+        color: impl Into<Color32>,
         texture_id: TextureId,
-        text_color: impl Into<Color32>,
-        size: f32,
+        description: String,
+        plot: Option<&Vec<f32>>,
+        window: &Window,
+    ) -> Response;
+    fn add_commodity(
+        &mut self,
+        commodity: &Commodity,
+        images: &ImageIds,
+        window: &Window,
     ) -> Response;
 }
 
@@ -105,20 +136,111 @@ impl CustomUi for Ui {
         )
     }
 
-    fn add_block(
+    fn add_factor(
         &mut self,
-        text: impl Into<String>,
-        hover_text: impl Into<WidgetText>,
-        texture_id: TextureId,
+        name: impl Into<String>,
+        value: impl Into<String>,
         color: impl Into<Color32>,
-        size: f32,
+        texture_id: TextureId,
+        description: String,
+        plot: Option<&Vec<f32>>,
+        window: &Window,
     ) -> Response {
         self.horizontal_centered(|ui| {
-            ui.add(Image::new(SizedTexture::new(texture_id, [size; 2])));
-            ui.label(add_text(text, size).color(color))
+            ui.add(Image::new(SizedTexture::new(
+                texture_id,
+                [window.xxl_size(); 2],
+            )));
+            ui.label(add_text(value, window.xxl_size()).color(color))
         })
         .response
-        .on_hover_text(hover_text)
+        .on_hover_ui(|ui| {
+            ui.set_min_width(window.width() * 0.4);
+
+            ui.add_text(name, window.l_size());
+            ui.add_space(window.height() * 0.01);
+            ui.add_text(description, window.m_size());
+            if let Some(values) = plot {
+                ui.add_space(window.height() * 0.01);
+                line_plot(ui, values);
+            }
+        })
+    }
+
+    fn add_commodity(
+        &mut self,
+        commodity: &Commodity,
+        images: &ImageIds,
+        window: &Window,
+    ) -> Response {
+        self.horizontal(|ui| {
+            ui.add(Image::new(SizedTexture::new(
+                images.get(commodity.kind.to_lowername().as_str()),
+                [window.height() * 0.2; 2],
+            )))
+            .on_hover_ui(|ui| {
+                ui.set_min_width(window.width() * 0.4);
+
+                ui.add_text(commodity.kind.to_name(), window.l_size());
+                ui.add_space(window.height() * 0.01);
+                ui.add_text(commodity.description(), window.m_size());
+                ui.add_space(window.height() * 0.01);
+                line_plot(ui, &commodity.prices);
+            });
+
+            ui.vertical(|ui| {
+                ui.add_space(window.height() * 0.02);
+
+                ui.add_text(commodity.kind.to_name(), window.l_size());
+                ui.add_text(
+                    format!("Price: {:.0}", commodity.current()),
+                    window.m_size(),
+                )
+                .on_hover("Current price of the commodity.", window.m_size());
+
+                ui.add_text(
+                    format!("Volatility: {:.1}%", commodity.volatility),
+                    window.m_size(),
+                )
+                .on_hover(
+                    "Maximum daily price fluctuation as percentage of the current price.",
+                    window.m_size(),
+                );
+
+                ui.add_text(
+                    format!(
+                        "Maturity: {}",
+                        commodity
+                            .maturity
+                            .map_or("--".to_string(), |m| format!("{m} days"))
+                    ),
+                    window.m_size(),
+                )
+                .on_hover(
+                    "Number of days until the commodity loses its value.",
+                    window.m_size(),
+                );
+
+                ui.add_text(
+                    format!(
+                        "Production: {}",
+                        commodity
+                            .production
+                            .iter()
+                            .map(|c| c.to_name())
+                            .collect::<Vec<_>>()
+                            .join(", ")
+                    ),
+                    window.m_size(),
+                )
+                .on_hover(
+                    "Countries producing this commodity. Bond prices for \
+                        these countries might be affected by the commodity price.",
+                    window.m_size(),
+                );
+            });
+        })
+        .response
     }
 }
 
@@ -141,26 +263,26 @@ pub trait TextSizes {
 
 impl TextSizes for Window {
     fn xxl_size(&self) -> f32 {
-        self.width().min(self.height()) * Self::XXL_SIZE
+        self.width().min(self.height()).min(1.2 * HEIGHT) * Self::XXL_SIZE
     }
 
     fn xl_size(&self) -> f32 {
-        self.width().min(self.height()) * Self::XL_SIZE
+        self.width().min(self.height()).min(1.2 * HEIGHT) * Self::XL_SIZE
     }
 
     fn l_size(&self) -> f32 {
-        self.width().min(self.height()) * Self::L_SIZE
+        self.width().min(self.height()).min(1.2 * HEIGHT) * Self::L_SIZE
     }
 
     fn m_size(&self) -> f32 {
-        self.width().min(self.height()) * Self::M_SIZE
+        self.width().min(self.height()).min(1.2 * HEIGHT) * Self::M_SIZE
     }
 
     fn s_size(&self) -> f32 {
-        self.width().min(self.height()) * Self::S_SIZE
+        self.width().min(self.height()).min(1.2 * HEIGHT) * Self::S_SIZE
     }
 
     fn xs_size(&self) -> f32 {
-        self.width().min(self.height()) * Self::XS_SIZE
+        self.width().min(self.height()).min(1.2 * HEIGHT) * Self::XS_SIZE
     }
 }

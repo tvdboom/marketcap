@@ -48,8 +48,7 @@ impl Factor for Inflation {
     }
 
     fn description(&self) -> String {
-        "Inflation\n\n\
-        Inflation is the gradual increase in the price of goods and services over time, \
+        "Inflation is the gradual increase in the price of goods and services over time, \
         reducing the purchasing power of money. As inflation rises, business expenses \
         become more expensive.\n\n\
         Inflation is tied to the global economic factor, where a thriving economy has a \

@@ -40,6 +40,7 @@ fn extract_variant_name(text: String) -> String {
 /// Trait to get the text of an enum variant
 pub trait NameFromEnum {
     fn to_name(&self) -> String;
+    fn to_lowername(&self) -> String;
 }
 
 impl<T: Debug> NameFromEnum for T {
@@ -48,6 +49,10 @@ impl<T: Debug> NameFromEnum for T {
 
         let text = extract_variant_name(format!("{:?}", self));
         re.replace_all(&text, "$1 $2").to_string()
+    }
+
+    fn to_lowername(&self) -> String {
+        self.to_name().to_lowercase()
     }
 }
 

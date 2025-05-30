@@ -11,7 +11,7 @@ use crate::core::loans::{Loan, LoanKind, LoanProvider, LoanTerm};
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::player::Player;
 use crate::core::ui::state::{CreditTab, UiState};
-use crate::core::ui::utils::{CustomUi, TextSizes, add_text, toggle};
+use crate::core::ui::utils::{CustomHover, CustomUi, TextSizes, add_text, toggle};
 use crate::utils::{NameFromEnum, create_guid, first_day_in_two_months};
 
 pub fn credit_panel(
@@ -129,17 +129,17 @@ pub fn credit_panel(
                                 ui.add_space(window.height() * 0.02);
 
                                 ui.add_text(format!("Fee: {fee:.0}"), window.m_size())
-                                    .on_hover_text(
+                                    .on_hover(
                                         "If the global interest rate has increased since \
                                         the start of the loan, the fee consists of up to twelve \
                                         months of interest over the repaid amount (depending on \
                                         the number of installments left). If the global interest \
                                         rate has decreased, the fee consists of the agreed \
                                         interest plus the current difference multiplied by the \
-                                        number of missed installments.",
+                                        number of missed installments.", window.m_size()
                                     );
                                 ui.add_text(format!("Total costs: {costs:.0}"), window.m_size())
-                                    .on_hover_text("Total amount to be paid. Includes the repaid amount plus the repayment fee.");
+                                    .on_hover("Total amount to be paid. Includes the repaid amount plus the repayment fee.", window.m_size());
 
                                 ui.add_space(window.height() * 0.02);
 
@@ -207,7 +207,7 @@ pub fn credit_panel(
                                 item.clone(),
                                 add_text(item.to_name(), window.s_size()),
                             )
-                                .on_hover_text(item.description());
+                                .on_hover(item.description(), window.s_size());
                         }
                     });
 
@@ -225,10 +225,10 @@ pub fn credit_panel(
                             .show_value(false)
                             .text(add_text(principal.to_string(), window.m_size())),
                     )
-                        .on_hover_text(
+                        .on_hover(
                             "The amount of money you want to borrow. The maximum amount you \
                             can borrow is determined by the credit provider and the company's \
-                            enterprise value.",
+                            enterprise value.", window.s_size()
                         );
                     
                     ui.add_text("Kind", window.m_size());
@@ -239,7 +239,7 @@ pub fn credit_panel(
                                 item.clone(),
                                 add_text(item.to_name(), window.s_size()),
                             )
-                                .on_hover_text(item.description());
+                                .on_hover(item.description(), window.s_size());
                         }
                     });
 
@@ -251,14 +251,14 @@ pub fn credit_panel(
                                 item.clone(),
                                 add_text(item.to_name(), window.s_size()),
                             )
-                                .on_hover_text(
-                                    "Longer terms reduce the monthly installment and the interest rate.");
+                                .on_hover(
+                                    "Longer terms reduce the monthly installment and the interest rate.", window.s_size());
                         }
                     });
 
                     ui.add_text("Prepayment-free loan", window.m_size());
-                    ui.add(toggle(&mut ui_state.credit.no_fee)).on_hover_text(
-                        "No early repayment fee for an increase in interest.",
+                    ui.add(toggle(&mut ui_state.credit.no_fee)).on_hover(
+                        "No early repayment fee for an increase in interest.", window.s_size()
                     );
 
                     // Check if the player has active loan with >50% outstanding
@@ -274,10 +274,10 @@ pub fn credit_panel(
                     );
 
                     if has_loans {
-                        button = button.on_disabled_hover_text(
+                        button = button.on_disabled_hover(
                             "You have an outstanding loan with this provider. \
                             You can only take a new loan when the remaining debt is \
-                            less than 50% of the principal.",
+                            less than 50% of the principal.", window.s_size()
                         );
                     }
 
@@ -301,9 +301,9 @@ pub fn credit_panel(
                         format!("Interest rate: {}%", loan.interest_rate),
                         window.s_size(),
                     )
-                        .on_hover_text(
+                        .on_hover(
                             "Percentage of the outstanding amount that must be paid as \
-                            interest every year.",
+                            interest every year.", window.s_size()
                         );
 
                     ui.add_text(
@@ -313,16 +313,16 @@ pub fn credit_panel(
                         ),
                         window.s_size(),
                     )
-                        .on_hover_text(
+                        .on_hover(
                             "Amount to be paid back the first month. For the straight-line \
-                            loan kind, the installments change over time."
+                            loan kind, the installments change over time.", window.s_size()
                         );
 
                     ui.add_text(
                         format!("Start date: {}", loan.start_date.format(DATE_FORMAT)),
                         window.s_size(),
                     )
-                        .on_hover_text("Starting date of the installments.");
+                        .on_hover("Starting date of the installments.", window.s_size());
 
                     ui.add_text(
                         format!(
@@ -331,7 +331,7 @@ pub fn credit_panel(
                         ),
                         window.s_size(),
                     )
-                        .on_hover_text("Date on which the loan is fully repaid.");
+                        .on_hover("Date on which the loan is fully repaid.", window.s_size());
                 });
             });
         },

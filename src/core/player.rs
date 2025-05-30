@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use chrono::NaiveDate;
+use chrono::{Duration, NaiveDate};
 use serde::{Deserialize, Serialize};
 
 use crate::core::factors::Factor;
@@ -15,6 +15,18 @@ pub struct OwnedCommodity {
     pub amount: u32,
     pub buy_date: NaiveDate,
     pub buy_price: f32,
+    pub warning: bool,
+}
+
+impl OwnedCommodity {
+    pub fn maturity_date(&self, economy: &GlobalEconomy) -> Option<NaiveDate> {
+        economy
+            .commodities
+            .iter()
+            .find_map(|c| (c.kind == self.kind).then_some(c.maturity))
+            .unwrap()
+            .and_then(|m| Some(self.buy_date + Duration::days(m as i64)))
+    }
 }
 
 #[derive(Resource, Clone, Default, Serialize, Deserialize)]
@@ -35,8 +47,9 @@ impl Player {
                     economy
                         .commodities
                         .iter()
-                        .find(|c2| c1.kind == c2.kind)
-                        .map(|c2| c1.amount as f32 * c2.current())
+                        .find_map(|c2| {
+                            (c1.kind == c2.kind).then_some(c1.amount as f32 * c2.current())
+                        })
                         .unwrap()
                 })
                 .sum::<f32>()

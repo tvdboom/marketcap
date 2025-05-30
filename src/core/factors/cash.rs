@@ -49,8 +49,7 @@ impl Factor for Cash {
 
     fn description(&self) -> String {
         format!(
-            "Cash\n\n\
-        Cash represents the liquid assets the company possesses, funds that are immediately \
+            "Cash represents the liquid assets the company possesses, funds that are immediately \
         available for spending, investing, or covering financial obligations. The bank pays \
         a low interest on cash deposits.\n\n\
         Current interest: {:.1}%\n\
