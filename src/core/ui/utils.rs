@@ -187,9 +187,9 @@ impl CustomUi for Ui {
             ui.vertical(|ui| {
                 ui.add_space(window.height() * 0.02);
 
-                ui.add_text(security.kind.to_name(), window.l_size());
+                ui.add_text(security.name.to_name(), window.l_size());
                 ui.add_text(format!("Price: {:.0}", security.current()), window.m_size())
-                    .on_hover("Current price of the commodity.", window.m_size());
+                    .on_hover("Current price of the security.", window.m_size());
 
                 ui.add_text(
                     format!("Volatility: {:.1}%", security.volatility),
@@ -210,7 +210,7 @@ impl CustomUi for Ui {
                     window.m_size(),
                 )
                 .on_hover(
-                    "Number of days until the commodity loses its value.",
+                    "Number of days until the security matures.",
                     window.m_size(),
                 );
 
