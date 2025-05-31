@@ -315,49 +315,49 @@ pub fn trade_modal(
 
         let modal = Modal::new(Id::new("trade")).show(contexts.ctx_mut(), |ui| {
             ui.horizontal(|ui| {
-                ComboBox::from_id_salt("Security")
-                    .selected_text(add_text(
-                        ui_state.trade.security.to_name(),
-                        window.xl_size(),
-                    ))
-                    .show_ui(ui, |ui| {
-                        for kind in SecurityKind::iter() {
-                            ui.add_text(kind.plural(), window.s_size());
-                            ui.separator();
+                ui.vertical(|ui| {
+                    ComboBox::from_id_salt("Security")
+                        .selected_text(add_text(
+                            ui_state.trade.security.to_name(),
+                            window.xl_size(),
+                        ))
+                        .show_ui(ui, |ui| {
+                            for kind in SecurityKind::iter() {
+                                ui.add_text(kind.plural(), window.s_size());
+                                ui.separator();
 
-                            for name in SecurityName::iter() {
-                                if economy.get(&name).kind == kind {
-                                    ui.selectable_value(
-                                        &mut ui_state.trade.security,
-                                        name,
-                                        name.to_name(),
-                                    );
+                                for name in SecurityName::iter() {
+                                    if economy.get(&name).kind == kind {
+                                        ui.selectable_value(
+                                            &mut ui_state.trade.security,
+                                            name,
+                                            add_text(name.to_name(), window.s_size()),
+                                        );
+                                    }
                                 }
                             }
+                        });
+
+                    ui.add(Image::new(SizedTexture::new(
+                        images.get(security.name.to_lowername().as_str()),
+                        [window.height() * 0.2; 2],
+                    )));
+                });
+
+                ui.vertical(|ui| {
+                    ui.horizontal(|ui| {
+                        for tab in TradeTab::iter() {
+                            ui.selectable_value(
+                                &mut ui_state.trade.tab,
+                                tab,
+                                add_text(
+                                    format!("{}  {}", tab.emoji(), tab.to_name()),
+                                    window.l_size(),
+                                ),
+                            );
                         }
                     });
 
-                ui.add_space(window.width() * 0.03);
-                
-                for tab in TradeTab::iter() {
-                    ui.selectable_value(
-                        &mut ui_state.trade.tab,
-                        tab,
-                        add_text(
-                            format!("{}  {}", tab.emoji(), tab.to_name()),
-                            window.l_size(),
-                        ),
-                    );
-                }
-            });
-
-            ui.horizontal(|ui| {
-                ui.add(Image::new(SizedTexture::new(
-                    images.get(security.name.to_lowername().as_str()),
-                    [window.height() * 0.2; 2],
-                )));
-
-                ui.vertical(|ui| {
                     ui.add_space(window.height() * 0.02);
 
                     ui.add_text(
@@ -370,7 +370,7 @@ pub fn trade_modal(
                         ui.add_text("Quantity:", window.m_size());
 
                         let amount = ui_state.trade.amount;
-                        ui.spacing_mut().slider_width = window.width() * 0.12;
+                        ui.spacing_mut().slider_width = window.width() * 0.15;
                         ui.add(
                             Slider::new(
                                 &mut ui_state.trade.amount,
@@ -380,17 +380,21 @@ pub fn trade_modal(
                             .show_value(false)
                             .text(add_text(amount.to_string(), window.m_size())),
                         );
-                        
+
                         ui.add_space(window.width() * 0.02);
-                        
+
                         ui.add_text(
-                        format!(
-                            "Total price: {:.0}",
-                            security.current() * ui_state.trade.amount as f32
-                        ),
-                        window.m_size(),
-                    );
+                            format!(
+                                "Total price: {:.0}",
+                                security.current() * ui_state.trade.amount as f32
+                            ),
+                            window.m_size(),
+                        );
                     });
+
+                    let mut buy_clicked = false;
+                    let mut sell_clicked = false;
+                    let mut close_clicked = false;
 
                     Sides::new().show(
                         ui,
@@ -407,31 +411,15 @@ pub fn trade_modal(
                                         )
                                         .on_hover(
                                             format!(
-                                                "Buy {} positions for this security.",
-                                                ui_state.trade.amount
-                                            ),
-                                            window.m_size(),
-                                        );
-                                    
-                                    if button.clicked() {
-                                        player.cash.amount -= 
-                                            security.current() * ui_state.trade.amount as f32;
-
-                                        player.securities.push(OwnedSecurity {
-                                            name: security.name,
-                                            amount: ui_state.trade.amount,
-                                            buy_date: economy.date,
-                                            buy_price: security.current(),
-                                            warning: false,
-                                        });
-                                        
-                                        messages.write(MessageEv {
-                                            message: format!("Bought {} {}.", 
+                                                "Buy {} units of {}.",
                                                 ui_state.trade.amount,
                                                 security.name.to_lowername()
                                             ),
-                                            level: MessageLevel::Info,
-                                        });
+                                            window.m_size(),
+                                        );
+
+                                    if button.clicked() {
+                                        buy_clicked = true;
                                     }
                                 },
                             );
@@ -444,10 +432,20 @@ pub fn trade_modal(
                                         Button::new(add_text("Close position", window.xl_size())),
                                     )
                                     .on_hover(
-                                        "Close all positions for this security.",
+                                        format!(
+                                            "Sell all units of {}.",
+                                            security.name.to_lowername()
+                                        ),
                                         window.m_size(),
                                     )
-                                    .on_disabled_hover("No positions to sell", window.m_size());
+                                    .on_disabled_hover(
+                                        format!("No {} to sell", security.name.to_lowername()),
+                                        window.m_size(),
+                                    );
+
+                                if button.clicked() {
+                                    close_clicked = true;
+                                }
 
                                 ui.add_enabled_ui(owned >= ui_state.trade.amount, |ui| {
                                     let button = ui
@@ -457,19 +455,74 @@ pub fn trade_modal(
                                         )
                                         .on_hover(
                                             format!(
-                                                "Sell {} positions for this security.",
-                                                ui_state.trade.amount
+                                                "Sell {} units of {}.",
+                                                ui_state.trade.amount,
+                                                security.name.to_lowername()
                                             ),
                                             window.m_size(),
                                         )
                                         .on_disabled_hover(
-                                            "Not enough positions to sell.",
+                                            format!(
+                                                "Not enough units of {} to sell.",
+                                                security.name.to_lowername(),
+                                            ),
                                             window.m_size(),
                                         );
+
+                                    if button.clicked() {
+                                        sell_clicked = true;
+                                    }
                                 });
                             });
                         },
                     );
+
+                    // Resolve button clicks
+                    if buy_clicked {
+                        player.cash.amount -= security.current() * ui_state.trade.amount as f32;
+                        player.securities.push(OwnedSecurity {
+                            name: security.name,
+                            amount: ui_state.trade.amount,
+                            buy_date: economy.date,
+                            buy_price: security.current(),
+                            warning: false,
+                        });
+
+                        messages.write(MessageEv {
+                            message: format!(
+                                "Bought {} {}.",
+                                ui_state.trade.amount,
+                                security.name.to_lowername()
+                            ),
+                            level: MessageLevel::Info,
+                        });
+                    }
+
+                    if close_clicked {
+                        player.cash.amount += security.current() * owned as f32;
+                        player.securities.retain(|s| s.name != security.name);
+
+                        messages.write(MessageEv {
+                            message: format!("Closed {} position.", security.name.to_lowername()),
+                            level: MessageLevel::Info,
+                        });
+                    }
+
+                    if sell_clicked {
+                        player.cash.amount += security.current() * ui_state.trade.amount as f32;
+                        player.securities.retain(|s| {
+                            !(s.name == security.name && s.amount <= ui_state.trade.amount)
+                        });
+
+                        messages.write(MessageEv {
+                            message: format!(
+                                "Sold {} {}.",
+                                ui_state.trade.amount,
+                                security.name.to_lowername()
+                            ),
+                            level: MessageLevel::Info,
+                        });
+                    }
                 });
             });
         });

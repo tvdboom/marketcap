@@ -133,6 +133,7 @@ pub enum TradeTab {
     MarketOrder,
     LimitOrder,
     ShortSelling,
+    Futures,
 }
 
 impl TradeTab {
@@ -141,6 +142,7 @@ impl TradeTab {
             TradeTab::MarketOrder => "🏪",
             TradeTab::LimitOrder => "♾",
             TradeTab::ShortSelling => "📉",
+            TradeTab::Futures => "🔮",
         }
     }
 }
