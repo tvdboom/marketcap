@@ -4,8 +4,8 @@ use bevy_egui::egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
 use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::widget_text::RichText;
 use bevy_egui::egui::{
-    Align, CentralPanel, Color32, FontData, FontFamily, Frame, Id, Image, Layout, Margin, Modal,
-    SidePanel, TopBottomPanel,
+    Align, Button, CentralPanel, Color32, ComboBox, FontData, FontFamily, Frame, Id, Image, Layout,
+    Margin, Modal, SidePanel, Sides, Slider, TopBottomPanel,
 };
 use strum::IntoEnumIterator;
 
@@ -17,13 +17,14 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::messages::MessageEv;
 use crate::core::player::Player;
 use crate::core::resources::ImageIds;
+use crate::core::securities::SecurityName;
 use crate::core::states::GameState;
 use crate::core::ui::bonds::bonds_panel;
 use crate::core::ui::commodities::commodities_panel;
 use crate::core::ui::credit::credit_panel;
 use crate::core::ui::currencies::currencies_panel;
 use crate::core::ui::state::{Tab, UiState};
-use crate::core::ui::utils::{CustomUi, TextSizes};
+use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
 use crate::utils::NameFromEnum;
 
 pub fn set_egui_style(mut contexts: EguiContexts, game_settings: Res<GameSettings>) {
@@ -271,7 +272,7 @@ pub fn central_panel(
                 }),
         )
         .show(contexts.ctx_mut(), |ui| match ui_state.tab {
-            Tab::Home => {
+            Tab::Overview => {
                 ui.heading("Home");
             },
             Tab::Stocks => {
@@ -303,12 +304,32 @@ pub fn trade_modal(
     images: Res<ImageIds>,
     window: Single<&Window>,
 ) {
-    if let Some(name) = &ui_state.trade_modal {
-        let security = economy.get(&name);
-        let modal = Modal::new(Id::new("trade")).show(contexts.ctx_mut(), |ui| {
-            ui.set_width(window.width() * 0.4);
+    if ui_state.trade.active {
+        let security = economy.get(&ui_state.trade.security);
 
-            ui.add_space(window.height() * 0.05);
+        let owned = player
+            .securities
+            .iter()
+            .filter_map(|s| (s.name == security.name).then_some(s.amount))
+            .sum::<u32>();
+
+        let modal = Modal::new(Id::new("trade")).show(contexts.ctx_mut(), |ui| {
+            ui.set_width(window.width() * 0.35);
+
+            ComboBox::from_id_salt("Security")
+                .selected_text(add_text(
+                    ui_state.trade.security.to_name(),
+                    window.xl_size(),
+                ))
+                .show_ui(ui, |ui| {
+                    for security in SecurityName::iter() {
+                        ui.selectable_value(
+                            &mut ui_state.trade.security,
+                            security,
+                            security.to_name(),
+                        );
+                    }
+                });
 
             ui.horizontal(|ui| {
                 ui.add(Image::new(SizedTexture::new(
@@ -319,47 +340,73 @@ pub fn trade_modal(
                 ui.vertical(|ui| {
                     ui.add_space(window.height() * 0.02);
 
-                    ui.add_text(security.name.to_name(), window.l_size());
+                    ui.add_text(
+                        format!("Unit price: {:.0}", security.current()),
+                        window.m_size(),
+                    );
+                    ui.add_text(format!("Owned: {owned}"), window.m_size());
 
-                    ui.add_text(format!("Price: {:.0}", security.current()), window.m_size());
+                    ui.horizontal(|ui| {
+                        ui.add_text("Quantity:", window.m_size());
+
+                        let amount = ui_state.trade.amount;
+                        ui.spacing_mut().slider_width = window.width() * 0.12;
+                        ui.add(
+                            Slider::new(
+                                &mut ui_state.trade.amount,
+                                0..=((player.cash.current() / security.current()) as u32)
+                                    .max(owned),
+                            )
+                            .show_value(false)
+                            .text(add_text(amount.to_string(), window.m_size())),
+                        );
+                    });
 
                     ui.add_text(
                         format!(
-                            "Owned: {}",
-                            player
-                                .securities
-                                .iter()
-                                .filter_map(|s| (s.name == security.name).then_some(s.amount))
-                                .sum::<u32>()
+                            "Total price: {:.0}",
+                            security.current() * ui_state.trade.amount as f32
                         ),
                         window.m_size(),
                     );
+
+                    Sides::new().show(
+                        ui,
+                        |ui| {
+                            ui.add_enabled_ui(
+                                player.cash.current()
+                                    >= security.current() * ui_state.trade.amount as f32,
+                                |ui| {
+                                    let button = ui.add_sized(
+                                        [window.width() * 0.08, window.height() * 0.05],
+                                        Button::new(add_text("Buy", window.xl_size())),
+                                    );
+                                },
+                            );
+                        },
+                        |ui| {
+                            ui.add_enabled_ui(owned >= ui_state.trade.amount, |ui| {
+                                let button = ui.add_sized(
+                                    [window.width() * 0.08, window.height() * 0.05],
+                                    Button::new(add_text("Sell", window.xl_size())),
+                                );
+                            });
+                        },
+                    );
                 });
             });
-
-            ui.add_space(window.height() * 0.05);
         });
 
         if modal.should_close() {
-            ui_state.trade_modal = None;
+            ui_state.trade.active = false;
         }
     }
 }
 
 pub fn check_keys(keyboard: Res<ButtonInput<KeyCode>>, mut ui_state: ResMut<UiState>) {
-    if keyboard.just_pressed(KeyCode::Digit1) {
-        ui_state.tab = Tab::Home;
-    } else if keyboard.just_pressed(KeyCode::Digit2) {
-        ui_state.tab = Tab::Stocks;
-    } else if keyboard.just_pressed(KeyCode::Digit3) {
-        ui_state.tab = Tab::Bonds;
-    } else if keyboard.just_pressed(KeyCode::Digit4) {
-        ui_state.tab = Tab::Currencies;
-    } else if keyboard.just_pressed(KeyCode::Digit5) {
-        ui_state.tab = Tab::Commodities;
-    } else if keyboard.just_pressed(KeyCode::Digit6) {
-        ui_state.tab = Tab::Credit;
-    } else if keyboard.just_pressed(KeyCode::Digit7) {
-        ui_state.tab = Tab::Policies;
+    if keyboard.just_pressed(KeyCode::KeyO) {
+        ui_state.tab = Tab::Overview;
+    } else if keyboard.just_pressed(KeyCode::KeyT) {
+        ui_state.trade.active = !ui_state.trade.active;
     }
 }

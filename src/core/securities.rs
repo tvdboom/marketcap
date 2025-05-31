@@ -1,10 +1,12 @@
-use crate::core::countries::Country;
 use rand::{Rng, rng};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
-#[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+use crate::core::countries::Country;
+
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum SecurityName {
+    #[default]
     Gold,
     Oil,
     Wheat,

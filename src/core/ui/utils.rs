@@ -235,6 +235,7 @@ impl CustomUi for Ui {
             });
         })
         .response
+        .interact(Sense::click())
     }
 }
 

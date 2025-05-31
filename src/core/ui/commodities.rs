@@ -1,12 +1,13 @@
+use bevy::prelude::Window;
+use bevy_egui::egui::{ScrollArea, Ui};
+use strum::IntoEnumIterator;
+
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::resources::ImageIds;
 use crate::core::securities::SecurityKind;
 use crate::core::ui::state::{CommodityTab, UiState};
 use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
 use crate::utils::NameFromEnum;
-use bevy::prelude::Window;
-use bevy_egui::egui::{ScrollArea, Sense, Ui};
-use strum::IntoEnumIterator;
 
 pub fn commodities_panel(
     ui: &mut Ui,
@@ -57,12 +58,11 @@ pub fn commodities_panel(
                     .iter()
                     .filter(|k| k.kind == SecurityKind::Commodity)
                 {
-                    let response = ui
-                        .add_security(security, images, window)
-                        .interact(Sense::click());
+                    let response = ui.add_security(security, images, window);
 
                     if response.clicked() {
-                        ui_state.trade_modal = Some(security.name);
+                        ui_state.trade.security = security.name;
+                        ui_state.trade.active = true;
                     }
                 }
             });

@@ -1,12 +1,13 @@
-use crate::core::loans::{LoanKind, LoanProvider, LoanTerm};
-use crate::core::securities::SecurityName;
 use bevy::prelude::*;
 use strum_macros::EnumIter;
+
+use crate::core::loans::{LoanKind, LoanProvider, LoanTerm};
+use crate::core::securities::SecurityName;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum Tab {
     #[default]
-    Home,
+    Overview,
     Stocks,
     Bonds,
     Currencies,
@@ -18,7 +19,7 @@ pub enum Tab {
 impl Tab {
     pub fn emoji(&self) -> &str {
         match self {
-            Tab::Home => "🏠",
+            Tab::Overview => "🗺",
             Tab::Stocks => "📈",
             Tab::Bonds => "💵",
             Tab::Currencies => "💰",
@@ -126,6 +127,14 @@ impl Default for CreditState {
     }
 }
 
+#[derive(Default)]
+pub struct Trade {
+    pub active: bool,
+    pub security: SecurityName,
+    pub amount: u32,
+    pub price: u32,
+}
+
 #[derive(Resource, Default)]
 pub struct UiState {
     pub tab: Tab,
@@ -133,5 +142,5 @@ pub struct UiState {
     pub currencies: CurrencyTab,
     pub commodities: CommodityTab,
     pub credit: CreditState,
-    pub trade_modal: Option<SecurityName>,
+    pub trade: Trade,
 }
