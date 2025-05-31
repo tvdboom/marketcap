@@ -127,11 +127,30 @@ impl Default for CreditState {
     }
 }
 
+#[derive(EnumIter, Clone, Copy, Default, Debug, PartialEq)]
+pub enum TradeTab {
+    #[default]
+    MarketOrder,
+    LimitOrder,
+    ShortSelling,
+}
+
+impl TradeTab {
+    pub fn emoji(&self) -> &str {
+        match self {
+            TradeTab::MarketOrder => "🏪",
+            TradeTab::LimitOrder => "♾",
+            TradeTab::ShortSelling => "📉",
+        }
+    }
+}
+
 #[derive(Default)]
 pub struct Trade {
     pub active: bool,
     pub security: SecurityName,
     pub amount: u32,
+    pub tab: TradeTab,
     pub price: u32,
 }
 

@@ -12,12 +12,23 @@ pub enum SecurityName {
     Wheat,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum SecurityKind {
     Stock,
     Bond,
     Currency,
     Commodity,
+}
+
+impl SecurityKind {
+    pub fn plural(&self) -> &str {
+        match self {
+            SecurityKind::Stock => "Stocks",
+            SecurityKind::Bond => "Bonds",
+            SecurityKind::Currency => "Currencies",
+            SecurityKind::Commodity => "Commodities",
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
