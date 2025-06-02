@@ -169,73 +169,78 @@ impl CustomUi for Ui {
         images: &ImageIds,
         window: &Window,
     ) -> Response {
-        self.horizontal(|ui| {
-            ui.add(Image::new(SizedTexture::new(
-                images.get(security.name.to_lowername().as_str()),
-                [window.height() * 0.2; 2],
-            )))
-            .on_hover_ui(|ui| {
-                ui.set_min_width(window.width() * 0.4);
+        Frame::new()
+            .stroke(Stroke::new(1.0, Color32::GRAY))
+            .corner_radius(5.0)
+            .show(self, |ui| {
+                ui.horizontal(|ui| {
+                    ui.add(Image::new(SizedTexture::new(
+                        images.get(security.name.to_lowername().as_str()),
+                        [window.height() * 0.2; 2],
+                    )))
+                    .on_hover_ui(|ui| {
+                        ui.set_min_width(window.width() * 0.4);
 
-                ui.add_text(security.name.to_name(), window.l_size());
-                ui.add_space(window.height() * 0.01);
-                ui.add_text(security.description(), window.m_size());
-                ui.add_space(window.height() * 0.01);
-                line_plot(ui, &security.prices);
-            });
+                        ui.add_text(security.name.to_name(), window.l_size());
+                        ui.add_space(window.height() * 0.01);
+                        ui.add_text(security.description(), window.m_size());
+                        ui.add_space(window.height() * 0.01);
+                        line_plot(ui, &security.prices);
+                    });
 
-            ui.vertical(|ui| {
-                ui.add_space(window.height() * 0.02);
+                    ui.vertical(|ui| {
+                        ui.add_space(window.height() * 0.02);
 
-                ui.add_text(security.name.to_name(), window.l_size());
+                        ui.add_text(security.name.to_name(), window.l_size());
 
-                ui.add_text(format!("Price: {:.0}", security.current()), window.m_size())
-                    .on_hover("Current price of the security.", window.m_size());
+                        ui.add_text(format!("Price: {:.0}", security.current()), window.m_size())
+                            .on_hover("Current price of the security.", window.m_size());
 
-                ui.add_text(
-                    format!("Volatility: {:.1}%", security.volatility),
-                    window.m_size(),
-                )
-                .on_hover(
-                    "Maximum daily price fluctuation as percentage of the current price.",
-                    window.m_size(),
-                );
+                        ui.add_text(
+                            format!("Volatility: {:.1}%", security.volatility),
+                            window.m_size(),
+                        )
+                        .on_hover(
+                            "Maximum daily price fluctuation as percentage of the current price.",
+                            window.m_size(),
+                        );
 
-                ui.add_text(
-                    format!(
-                        "Maturity: {}",
-                        security
-                            .maturity
-                            .map_or("--".to_string(), |m| format!("{m} days"))
-                    ),
-                    window.m_size(),
-                )
-                .on_hover(
-                    "Number of days until the security matures.",
-                    window.m_size(),
-                );
+                        ui.add_text(
+                            format!(
+                                "Maturity: {}",
+                                security
+                                    .maturity
+                                    .map_or("--".to_string(), |m| format!("{m} days"))
+                            ),
+                            window.m_size(),
+                        )
+                        .on_hover(
+                            "Number of days until the security matures.",
+                            window.m_size(),
+                        );
 
-                ui.add_text(
-                    format!(
-                        "Production: {}",
-                        security
-                            .production
-                            .iter()
-                            .map(|c| c.to_name())
-                            .collect::<Vec<_>>()
-                            .join(", ")
-                    ),
-                    window.m_size(),
-                )
-                .on_hover(
-                    "Countries producing this commodity. Bond prices for \
-                        these countries might be affected by the commodity price.",
-                    window.m_size(),
-                );
-            });
-        })
-        .response
-        .interact(Sense::click())
+                        ui.add_text(
+                            format!(
+                                "Production: {}",
+                                security
+                                    .production
+                                    .iter()
+                                    .map(|c| c.to_name())
+                                    .collect::<Vec<_>>()
+                                    .join(", ")
+                            ),
+                            window.m_size(),
+                        )
+                        .on_hover(
+                        "Countries producing this commodity. Bond prices for \
+                            these countries might be affected by the commodity price.",
+                            window.m_size(),
+                        );
+                    });
+                })
+            })
+            .response
+            .interact(Sense::click())
     }
 }
 

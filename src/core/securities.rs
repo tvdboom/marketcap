@@ -2,7 +2,7 @@ use rand::{Rng, rng};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
-use crate::core::countries::Country;
+use crate::core::countries::CountryName;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum SecurityName {
@@ -49,7 +49,7 @@ pub struct Security {
     pub maturity: Option<u32>,
 
     /// Countries where the commodity is produced
-    pub production: Vec<Country>,
+    pub production: Vec<CountryName>,
 }
 
 impl Security {
@@ -116,11 +116,11 @@ pub fn start_securities() -> Vec<Security> {
             volatility: 1.,
             maturity: None,
             production: vec![
-                Country::China,
-                Country::Russia,
-                Country::Australia,
-                Country::USA,
-                Country::Canada,
+                CountryName::China,
+                CountryName::Russia,
+                CountryName::Australia,
+                CountryName::USA,
+                CountryName::Canada,
             ],
         },
         Security {
@@ -130,10 +130,10 @@ pub fn start_securities() -> Vec<Security> {
             volatility: 5.,
             maturity: Some(365),
             production: vec![
-                Country::USA,
-                Country::Russia,
-                Country::Canada,
-                Country::Venezuela,
+                CountryName::USA,
+                CountryName::Russia,
+                CountryName::Canada,
+                CountryName::Venezuela,
             ],
         },
         Security {
@@ -143,11 +143,11 @@ pub fn start_securities() -> Vec<Security> {
             volatility: 2.3,
             maturity: Some(280),
             production: vec![
-                Country::China,
-                Country::Russia,
-                Country::USA,
-                Country::EU,
-                Country::Ukraine,
+                CountryName::China,
+                CountryName::Russia,
+                CountryName::USA,
+                CountryName::EU,
+                CountryName::Ukraine,
             ],
         },
     ]

@@ -18,7 +18,7 @@ pub const TOP_LABEL_FRAC: f32 = 0.1; // Fraction of the screen height for the to
 pub const LEFT_LABEL_FRAC: f32 = 0.14; // Fraction of the screen height for the left label
 pub const DATE_FORMAT: &str = "%d-%m-%Y";
 pub const LINE_WIDTH: f32 = 2.5;
-pub const LINE_COLOR: Color32 = Color32::GRAY;
+pub const LINE_COLOR: Color32 = Color32::DARK_GRAY;
 
 /// Credit
 pub const LOAN_STEP: u32 = 1_000;

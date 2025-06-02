@@ -1,13 +1,11 @@
 use bevy::prelude::Window;
 use bevy_egui::egui::{ScrollArea, Ui};
-use strum::IntoEnumIterator;
 
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::resources::ImageIds;
 use crate::core::securities::SecurityKind;
-use crate::core::ui::state::{CommodityTab, UiState};
-use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
-use crate::utils::NameFromEnum;
+use crate::core::ui::state::UiState;
+use crate::core::ui::utils::{CustomUi, TextSizes};
 
 pub fn commodities_panel(
     ui: &mut Ui,
@@ -16,21 +14,6 @@ pub fn commodities_panel(
     images: &ImageIds,
     window: &Window,
 ) {
-    ui.horizontal(|ui| {
-        for tab in CommodityTab::iter() {
-            ui.selectable_value(
-                &mut ui_state.commodities,
-                tab,
-                add_text(
-                    format!("{}  {}", tab.emoji(), tab.to_name()),
-                    window.l_size(),
-                ),
-            );
-        }
-    });
-
-    ui.separator();
-
     ui.add_text(
         "Commodities are raw materials or primary agricultural products that can be \
         bought, sold and traded. They serve as the building blocks of the global economy,\
@@ -45,27 +28,18 @@ pub fn commodities_panel(
 
     ui.add_space(window.height() * 0.02);
 
-    match ui_state.commodities {
-        CommodityTab::Overview => {
-            ui.add_text("", window.m_size());
+    ScrollArea::vertical().show(ui, |ui| {
+        for security in economy
+            .securities
+            .iter()
+            .filter(|k| k.kind == SecurityKind::Commodity)
+        {
+            let response = ui.add_security(security, images, window);
 
-            ui.separator();
-        },
-        CommodityTab::Market => {
-            ScrollArea::vertical().show(ui, |ui| {
-                for security in economy
-                    .securities
-                    .iter()
-                    .filter(|k| k.kind == SecurityKind::Commodity)
-                {
-                    let response = ui.add_security(security, images, window);
-
-                    if response.clicked() {
-                        ui_state.trade.security = security.name;
-                        ui_state.trade.active = true;
-                    }
-                }
-            });
-        },
-    }
+            if response.clicked() {
+                ui_state.trade.security = security.name;
+                ui_state.trade.active = true;
+            }
+        }
+    });
 }

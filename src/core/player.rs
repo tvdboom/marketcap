@@ -11,6 +11,7 @@ use crate::core::securities::SecurityName;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct OwnedSecurity {
+    pub id: String,
     pub name: SecurityName,
     pub amount: u32,
     pub buy_date: NaiveDate,

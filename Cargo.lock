@@ -3553,6 +3553,7 @@ dependencies = [
  "egui_plot",
  "getrandom 0.3.3",
  "image",
+ "itertools 0.14.0",
  "rand 0.9.1",
  "regex",
  "rfd",

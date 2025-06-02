@@ -3,7 +3,7 @@ pub mod systems;
 mod bonds;
 mod commodities;
 mod credit;
-mod currencies;
+mod forex;
 pub mod menu;
 pub mod state;
 pub mod themes;

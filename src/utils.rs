@@ -5,14 +5,25 @@ use rand::distr::Alphanumeric;
 use rand::{Rng, rng};
 use regex::Regex;
 
-/// Create a random 4-character GUID
+/// Create a random 5-character GUID
 pub fn create_guid() -> String {
     rng()
         .sample_iter(&Alphanumeric)
-        .take(4)
+        .take(5)
         .map(char::from)
         .map(|c| c.to_ascii_uppercase())
         .collect()
+}
+
+/// Format a number with k suffix
+pub fn format_number(number: f32) -> String {
+    if number >= 1_000_000. {
+        format!("{:.1}M", number / 1_000_000.)
+    } else if number >= 1_000. {
+        format!("{:.1}k", number / 1_000.)
+    } else {
+        format!("{}", number.floor())
+    }
 }
 
 /// Gets the first day of the next month after the next month
@@ -27,7 +38,7 @@ pub fn first_day_in_two_months(date: NaiveDate) -> NaiveDate {
     NaiveDate::from_ymd_opt(year, month, 1).expect(format!("Invalid date: {}", date).as_str())
 }
 
-/// Helper function to extract only the variant name (removes tuple/struct fields)
+/// Extract only the variant name (removes tuple/struct fields)
 fn extract_variant_name(text: String) -> String {
     text.split_once('(')
         .or_else(|| text.split_once('{'))

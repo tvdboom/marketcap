@@ -7,6 +7,7 @@ use bevy_egui::egui::{
     Align, Button, CentralPanel, Color32, ComboBox, FontData, FontFamily, Frame, Id, Image, Layout,
     Margin, Modal, SidePanel, Sides, Slider, TopBottomPanel,
 };
+use itertools::Itertools;
 use strum::IntoEnumIterator;
 
 use crate::core::assets::WorldAssets;
@@ -22,10 +23,10 @@ use crate::core::states::GameState;
 use crate::core::ui::bonds::bonds_panel;
 use crate::core::ui::commodities::commodities_panel;
 use crate::core::ui::credit::credit_panel;
-use crate::core::ui::currencies::currencies_panel;
+use crate::core::ui::forex::forex_panel;
 use crate::core::ui::state::{Tab, TradeTab, UiState};
 use crate::core::ui::utils::{CustomHover, CustomUi, TextSizes, add_text};
-use crate::utils::NameFromEnum;
+use crate::utils::{NameFromEnum, create_guid, format_number};
 
 pub fn set_egui_style(mut contexts: EguiContexts, game_settings: Res<GameSettings>) {
     let context = contexts.ctx_mut();
@@ -98,7 +99,7 @@ pub fn top_panel(
 
                 ui.add_factor(
                     "Enterprise value",
-                    format!("{:.0}", player.enterprise_value(&economy).floor()),
+                    format_number(player.enterprise_value(&economy)),
                     GREEN,
                     images.get("enterprise"),
                     format!(
@@ -108,9 +109,10 @@ pub fn top_panel(
                         In the game, the enterprise value represents a measure of the success \
                         of the player. If the enterprise value drops below zero, the company \
                         goes bankrupt and the game is lost.\n\n\
+                        Enterprise value: {}\n\
                         Cash: {}\nDebt: {:.0}",
                         player.cash,
-                        player.loans.iter().map(|l| l.outstanding).sum::<f32>()
+                        -player.loans.iter().map(|l| l.outstanding).sum::<f32>()
                     ),
                     None,
                     &window,
@@ -279,7 +281,8 @@ pub fn central_panel(
                 ui.heading("Stocks");
             },
             Tab::Bonds => bonds_panel(ui, &mut ui_state, &window),
-            Tab::Currencies => currencies_panel(ui, &mut ui_state, &window),
+            Tab::Forex => forex_panel(ui, &mut ui_state, &window),
+            Tab::Crypto => forex_panel(ui, &mut ui_state, &window),
             Tab::Commodities => commodities_panel(ui, &mut ui_state, &economy, &images, &window),
             Tab::Credit => credit_panel(
                 ui,
@@ -354,7 +357,8 @@ pub fn trade_modal(
                                     format!("{}  {}", tab.emoji(), tab.to_name()),
                                     window.l_size(),
                                 ),
-                            );
+                            )
+                            .on_hover(tab.description(), window.m_size());
                         }
                     });
 
@@ -364,7 +368,13 @@ pub fn trade_modal(
                         format!("Unit price: {:.0}", security.current()),
                         window.m_size(),
                     );
-                    ui.add_text(format!("Owned: {owned}"), window.m_size());
+                    ui.add_text(
+                        format!(
+                            "Owned: {owned}          Value: {:.0}",
+                            owned as f32 * security.current()
+                        ),
+                        window.m_size(),
+                    );
 
                     ui.horizontal(|ui| {
                         ui.add_text("Quantity:", window.m_size());
@@ -481,6 +491,7 @@ pub fn trade_modal(
                     if buy_clicked {
                         player.cash.amount -= security.current() * ui_state.trade.amount as f32;
                         player.securities.push(OwnedSecurity {
+                            id: create_guid(),
                             name: security.name,
                             amount: ui_state.trade.amount,
                             buy_date: economy.date,
@@ -510,9 +521,20 @@ pub fn trade_modal(
 
                     if sell_clicked {
                         player.cash.amount += security.current() * ui_state.trade.amount as f32;
-                        player.securities.retain(|s| {
-                            !(s.name == security.name && s.amount <= ui_state.trade.amount)
-                        });
+
+                        let mut remaining = ui_state.trade.amount;
+                        player
+                            .securities
+                            .iter_mut()
+                            .filter(|s| s.name == security.name)
+                            .sorted_by_key(|s| s.buy_date)
+                            .for_each(|s| {
+                                let to_deduct = remaining.min(s.amount);
+                                s.amount -= to_deduct;
+                                remaining -= to_deduct;
+                            });
+
+                        player.securities.retain(|s| s.amount > 0);
 
                         messages.write(MessageEv {
                             message: format!(

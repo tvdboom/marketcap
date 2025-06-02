@@ -10,7 +10,8 @@ pub enum Tab {
     Overview,
     Stocks,
     Bonds,
-    Currencies,
+    Forex,
+    Crypto,
     Commodities,
     Credit,
     Policies,
@@ -22,8 +23,9 @@ impl Tab {
             Tab::Overview => "🗺",
             Tab::Stocks => "📈",
             Tab::Bonds => "💵",
-            Tab::Currencies => "💰",
-            Tab::Commodities => "💎",
+            Tab::Forex => "💱",
+            Tab::Crypto => "💸",
+            Tab::Commodities => "🌾",
             Tab::Credit => "💳",
             Tab::Policies => "📜",
         }
@@ -44,40 +46,6 @@ impl BondTab {
             BondTab::Overview => "🗺",
             BondTab::Government => "💼",
             BondTab::Corporate => "🏢",
-        }
-    }
-}
-
-#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
-pub enum CurrencyTab {
-    #[default]
-    Overview,
-    Forex,
-    Crypto,
-}
-
-impl CurrencyTab {
-    pub fn emoji(&self) -> &str {
-        match self {
-            CurrencyTab::Overview => "🗺",
-            CurrencyTab::Forex => "💱",
-            CurrencyTab::Crypto => "💸",
-        }
-    }
-}
-
-#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
-pub enum CommodityTab {
-    #[default]
-    Overview,
-    Market,
-}
-
-impl CommodityTab {
-    pub fn emoji(&self) -> &str {
-        match self {
-            CommodityTab::Overview => "🗺",
-            CommodityTab::Market => "🌾",
         }
     }
 }
@@ -145,6 +113,29 @@ impl TradeTab {
             TradeTab::Futures => "🔮",
         }
     }
+
+    pub fn description(&self) -> &str {
+        match self {
+            TradeTab::MarketOrder => "Buy or sell a security at the current market price.",
+            TradeTab::LimitOrder => {
+                "Set a specific price to buy or sell a security. The order will only execute \
+                if the security reaches that price."
+            },
+            TradeTab::ShortSelling => {
+                "Short selling is a trading strategy where an investor bets against a \
+                security, expecting its price to decline. First, the investor borrows shares \
+                from a broker and immediately sells them at the current market price. If the \
+                stock price drops, the investor can buy the shares back at a lower price and \
+                return them to the broker, pocketing the difference as profit. The investor \
+                pays interest during the time the shares are borrowed. If the stock price rises, \
+                the investor must buy back the shares at a higher price, resulting in a loss."
+            },
+            TradeTab::Futures => {
+                "Financial contracts to buy or sell securities against a predetermined price \
+                in the future. "
+            },
+        }
+    }
 }
 
 #[derive(Default)]
@@ -160,8 +151,6 @@ pub struct Trade {
 pub struct UiState {
     pub tab: Tab,
     pub bonds: BondTab,
-    pub currencies: CurrencyTab,
-    pub commodities: CommodityTab,
     pub credit: CreditState,
     pub trade: Trade,
 }
