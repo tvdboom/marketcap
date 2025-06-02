@@ -5,13 +5,13 @@ mod countries;
 pub mod factors;
 mod game_settings;
 mod global_economy;
+mod instruments;
 mod loans;
 pub mod messages;
 mod pause;
 mod persistence;
 mod player;
 mod resources;
-mod securities;
 mod states;
 mod systems;
 mod ui;
@@ -28,10 +28,11 @@ use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::{AppState, GameState};
 use crate::core::systems::time_pass;
+use crate::core::ui::commodities::commodity_modal;
 use crate::core::ui::menu::{in_game_menu, toggle_menu_keyboard};
 use crate::core::ui::state::UiState;
 use crate::core::ui::systems::{
-    add_egui_images, central_panel, check_keys, left_panel, set_egui_style, top_panel, trade_modal,
+    add_egui_images, central_panel, check_keys, left_panel, set_egui_style, top_panel,
 };
 
 pub struct GamePlugin;
@@ -89,7 +90,7 @@ impl Plugin for GamePlugin {
                     left_panel,
                     central_panel,
                     in_game_menu,
-                    trade_modal,
+                    commodity_modal,
                 )
                     .chain()
                     .in_set(InGameSet),

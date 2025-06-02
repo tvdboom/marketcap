@@ -8,7 +8,7 @@ use crate::core::constants::DEFAULT_SPEED;
 use crate::core::factors::economy::Economy;
 use crate::core::factors::inflation::Inflation;
 use crate::core::factors::interest::Interest;
-use crate::core::securities::{Security, SecurityName, start_securities};
+use crate::core::instruments::commodities::{Commodity, CommodityName, start_commodities};
 
 #[derive(Resource, Clone, Serialize, Deserialize)]
 pub struct GlobalEconomy {
@@ -27,8 +27,8 @@ pub struct GlobalEconomy {
     /// Global interest rate (1-10)
     pub interest: Interest,
 
-    /// Information of all securities
-    pub securities: Vec<Security>,
+    /// Information of all commodities
+    pub commodities: Vec<Commodity>,
 }
 
 impl GlobalEconomy {
@@ -38,13 +38,13 @@ impl GlobalEconomy {
         let interest = self.interest.bump();
         let inflation = self.inflation.bump(economy, interest);
 
-        for security in &mut self.securities {
+        for security in &mut self.commodities {
             security.bump(inflation);
         }
     }
 
-    pub fn get(&self, name: &SecurityName) -> &Security {
-        self.securities.iter().find(|c| c.name == *name).unwrap()
+    pub fn get_commodity(&self, name: &CommodityName) -> &Commodity {
+        self.commodities.iter().find(|c| c.name == *name).unwrap()
     }
 }
 
@@ -56,7 +56,7 @@ impl Default for GlobalEconomy {
             economy: Economy::default(),
             inflation: Inflation::default(),
             interest: Interest::default(),
-            securities: start_securities(),
+            commodities: start_commodities(),
         }
     }
 }

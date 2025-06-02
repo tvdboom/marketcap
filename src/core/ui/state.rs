@@ -1,8 +1,7 @@
+use crate::core::instruments::commodities::CommodityName;
+use crate::core::loans::{LoanKind, LoanProvider, LoanTerm};
 use bevy::prelude::*;
 use strum_macros::EnumIter;
-
-use crate::core::loans::{LoanKind, LoanProvider, LoanTerm};
-use crate::core::securities::SecurityName;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum Tab {
@@ -95,6 +94,12 @@ impl Default for CreditState {
     }
 }
 
+#[derive(Default, PartialEq)]
+pub enum ActiveModal {
+    #[default]
+    Commodity,
+}
+
 #[derive(EnumIter, Clone, Copy, Default, Debug, PartialEq)]
 pub enum TradeTab {
     #[default]
@@ -116,22 +121,22 @@ impl TradeTab {
 
     pub fn description(&self) -> &str {
         match self {
-            TradeTab::MarketOrder => "Buy or sell a security at the current market price.",
+            TradeTab::MarketOrder => "Buy or sell an instrument at the current market price.",
             TradeTab::LimitOrder => {
-                "Set a specific price to buy or sell a security. The order will only execute \
-                if the security reaches that price."
+                "Set a specific price to buy or sell an instrument. The order will only execute \
+                if the instrument reaches that price."
             },
             TradeTab::ShortSelling => {
-                "Short selling is a trading strategy where an investor bets against a \
-                security, expecting its price to decline. First, the investor borrows shares \
-                from a broker and immediately sells them at the current market price. If the \
-                stock price drops, the investor can buy the shares back at a lower price and \
-                return them to the broker, pocketing the difference as profit. The investor \
-                pays interest during the time the shares are borrowed. If the stock price rises, \
-                the investor must buy back the shares at a higher price, resulting in a loss."
+                "Short selling is a trading strategy where an investor bets against an instrument, \
+                expecting its price to decline. First, the investor borrows shares from a broker \
+                and immediately sells them at the current market price. If the stock price drops, \
+                the investor can buy the shares back at a lower price and return them to the \
+                broker, pocketing the difference as profit. The investor pays interest during \
+                the time the shares are borrowed. If the stock price rises, the investor must \
+                buy back the shares at a higher price, resulting in a loss."
             },
             TradeTab::Futures => {
-                "Financial contracts to buy or sell securities against a predetermined price \
+                "Financial contracts to buy or sell instruments against a predetermined price \
                 in the future. "
             },
         }
@@ -139,9 +144,9 @@ impl TradeTab {
 }
 
 #[derive(Default)]
-pub struct Trade {
+pub struct CommodityModal {
     pub active: bool,
-    pub security: SecurityName,
+    pub name: CommodityName,
     pub amount: u32,
     pub tab: TradeTab,
     pub price: u32,
@@ -152,5 +157,6 @@ pub struct UiState {
     pub tab: Tab,
     pub bonds: BondTab,
     pub credit: CreditState,
-    pub trade: Trade,
+    pub active_modal: Option<ActiveModal>,
+    pub commodity_modal: CommodityModal,
 }

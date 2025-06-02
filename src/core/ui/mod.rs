@@ -1,7 +1,7 @@
 pub mod systems;
 
 mod bonds;
-mod commodities;
+pub mod commodities;
 mod credit;
 mod forex;
 pub mod menu;

@@ -1,44 +1,32 @@
+use crate::core::countries::CountryName;
 use rand::{Rng, rng};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
-use crate::core::countries::CountryName;
-
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub enum SecurityName {
+pub enum CommodityName {
     #[default]
+    Aluminium,
+    Cocoa,
+    Copper,
     Gold,
+    Iron,
+    LiquidNaturalGas,
     Oil,
     Wheat,
 }
 
-#[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
-pub enum SecurityKind {
-    Stock,
-    Bond,
-    Currency,
-    Commodity,
-}
-
-impl SecurityKind {
-    pub fn plural(&self) -> &str {
-        match self {
-            SecurityKind::Stock => "Stocks",
-            SecurityKind::Bond => "Bonds",
-            SecurityKind::Currency => "Currencies",
-            SecurityKind::Commodity => "Commodities",
-        }
-    }
-}
-
 #[derive(Clone, Serialize, Deserialize)]
-pub struct Security {
+pub struct Commodity {
     /// The name of the security
-    pub name: SecurityName,
+    pub name: CommodityName,
 
-    /// The kind of security
-    pub kind: SecurityKind,
+    /// The acronym of the unit the commodity is traded in
+    pub unit: &'static str,
 
+    /// The full name of unit the commodity is traded in
+    pub full_unit: &'static str,
+    
     /// The prices of the security over time
     pub prices: Vec<f32>,
 
@@ -52,17 +40,29 @@ pub struct Security {
     pub production: Vec<CountryName>,
 }
 
-impl Security {
+impl Commodity {
     pub fn description(&self) -> &str {
         match self.name {
-            SecurityName::Gold => {
+            CommodityName::Aluminium => {
+                "A lightweight, durable metal used in construction, transportation, and \
+                packaging. Aluminium is a stable commodity with moderate volatility, \
+                influenced by global demand, mining output, and energy costs. It is a \
+                solid investment for those looking for exposure to industrial materials."
+            },
+            CommodityName::Cocoa => {
+                "A key ingredient in chocolate and beauty products, cocoa is a seasonal agricultural commodity \
+                with moderate volatility. Its price is influenced by weather conditions, \
+                crop yields, and global demand for chocolate products. Cocoa can be a \
+                stable investment but may experience price spikes during poor harvests."
+            },
+            CommodityName::Gold => {
                 "A precious metal valued for its rarity, durability, and historical role as \
                 a store of value. Gold serves as a stable but slow-growing investment, and \
                 a hedge against inflation. While not highly volatile, gold retains value \
                 even during market crashes, making it a strategic asset in times of crisis. \
                 Gold doesn't degrade over time, allowing it to be held indefinitely."
             },
-            SecurityName::Oil => {
+            CommodityName::Oil => {
                 "A high-demand fossil fuel crucial to the energy sector. Oil is a volatile \
                 commodity influenced by geopolitical tensions, supply disruptions, OPEC \
                 decisions, and economic cycles. Its price can spike during conflicts or \
@@ -71,7 +71,7 @@ impl Security {
                 quickly, making it ideal for aggressive traders or those hedging industrial \
                 operations."
             },
-            SecurityName::Wheat => {
+            CommodityName::Wheat => {
                 "A staple agricultural commodity essential for global food supply. Wheat \
                 represents a relatively stable but seasonally influenced asset. Its price \
                 is affected by weather patterns, crop yields and trade policies. Wheat is a \
@@ -90,7 +90,7 @@ impl Security {
             * (1. + rng().random_range(-self.volatility / 100. ..self.volatility / 100.));
 
         // Gold is a special case since its price moves with the inflation
-        if self.name == SecurityName::Gold {
+        if self.name == CommodityName::Gold {
             if inflation > 6. {
                 // If inflation is high, gold's price increases significantly
                 new_price *= 1. + inflation / 200.;
@@ -107,11 +107,12 @@ impl Security {
     }
 }
 
-pub fn start_securities() -> Vec<Security> {
+pub fn start_commodities() -> Vec<Commodity> {
     vec![
-        Security {
-            name: SecurityName::Gold,
-            kind: SecurityKind::Commodity,
+        Commodity {
+            name: CommodityName::Gold,
+            unit: "g",
+            full_unit: "gram",
             prices: vec![93.],
             volatility: 1.,
             maturity: None,
@@ -123,9 +124,25 @@ pub fn start_securities() -> Vec<Security> {
                 CountryName::Canada,
             ],
         },
-        Security {
-            name: SecurityName::Oil,
-            kind: SecurityKind::Commodity,
+        Commodity {
+            name: CommodityName::Gold,
+            unit: "g",
+            full_unit: "gram",
+            prices: vec![93.],
+            volatility: 1.,
+            maturity: None,
+            production: vec![
+                CountryName::China,
+                CountryName::Russia,
+                CountryName::Australia,
+                CountryName::USA,
+                CountryName::Canada,
+            ],
+        },
+        Commodity {
+            name: CommodityName::Oil,
+            unit: "bbl",
+            full_unit: "barrel",
             prices: vec![65.],
             volatility: 5.,
             maturity: Some(365),
@@ -136,9 +153,10 @@ pub fn start_securities() -> Vec<Security> {
                 CountryName::Venezuela,
             ],
         },
-        Security {
-            name: SecurityName::Wheat,
-            kind: SecurityKind::Commodity,
+        Commodity {
+            name: CommodityName::Wheat,
+            unit: "ton",
+            full_unit: "metric ton",
             prices: vec![7.],
             volatility: 2.3,
             maturity: Some(280),

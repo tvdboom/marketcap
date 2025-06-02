@@ -6,23 +6,23 @@ use crate::core::factors::Factor;
 use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
 use crate::core::global_economy::GlobalEconomy;
+use crate::core::instruments::commodities::CommodityName;
 use crate::core::loans::Loan;
-use crate::core::securities::SecurityName;
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct OwnedSecurity {
+pub struct OwnedCommodity {
     pub id: String,
-    pub name: SecurityName,
+    pub name: CommodityName,
     pub amount: u32,
     pub buy_date: NaiveDate,
     pub buy_price: f32,
     pub warning: bool,
 }
 
-impl OwnedSecurity {
+impl OwnedCommodity {
     pub fn maturity_date(&self, economy: &GlobalEconomy) -> Option<NaiveDate> {
         economy
-            .get(&self.name)
+            .get_commodity(&self.name)
             .maturity
             .and_then(|m| Some(self.buy_date + Duration::days(m as i64)))
     }
@@ -33,16 +33,16 @@ pub struct Player {
     pub cash: Cash,
     pub credit_score: CreditScore,
     pub loans: Vec<Loan>,
-    pub securities: Vec<OwnedSecurity>,
+    pub commodities: Vec<OwnedCommodity>,
 }
 
 impl Player {
     pub fn enterprise_value(&self, economy: &GlobalEconomy) -> f32 {
         self.cash.amount
             + self
-                .securities
+                .commodities
                 .iter()
-                .map(|owned| owned.amount as f32 * economy.get(&owned.name).current())
+                .map(|owned| owned.amount as f32 * economy.get_commodity(&owned.name).current())
                 .sum::<f32>()
             - self.loans.iter().map(|l| l.outstanding).sum::<f32>()
     }
@@ -85,6 +85,7 @@ impl Player {
         }
 
         // Remove loans that are fully repaid
+        // Remove at <1 to not show outstanding 0 for an active loan
         self.loans.retain(|l| l.outstanding >= 1.);
 
         success

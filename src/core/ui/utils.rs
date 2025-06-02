@@ -6,8 +6,8 @@ use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
 
 use crate::core::constants::{HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
 use crate::core::global_economy::GlobalEconomy;
+use crate::core::instruments::commodities::Commodity;
 use crate::core::resources::ImageIds;
-use crate::core::securities::Security;
 use crate::utils::NameFromEnum;
 
 /// Add text widget with custom size
@@ -116,8 +116,12 @@ pub trait CustomUi {
         plot: Option<&Vec<f32>>,
         window: &Window,
     ) -> Response;
-    fn add_security(&mut self, security: &Security, images: &ImageIds, window: &Window)
-    -> Response;
+    fn add_commodity(
+        &mut self,
+        security: &Commodity,
+        images: &ImageIds,
+        window: &Window,
+    ) -> Response;
 }
 
 impl CustomUi for Ui {
@@ -163,9 +167,9 @@ impl CustomUi for Ui {
         })
     }
 
-    fn add_security(
+    fn add_commodity(
         &mut self,
-        security: &Security,
+        security: &Commodity,
         images: &ImageIds,
         window: &Window,
     ) -> Response {
@@ -232,7 +236,7 @@ impl CustomUi for Ui {
                             window.m_size(),
                         )
                         .on_hover(
-                        "Countries producing this commodity. Bond prices for \
+                            "Countries producing this commodity. Bond prices for \
                             these countries might be affected by the commodity price.",
                             window.m_size(),
                         );

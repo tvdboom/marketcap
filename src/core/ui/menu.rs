@@ -165,8 +165,8 @@ pub fn toggle_menu_keyboard(
     if keyboard.just_pressed(KeyCode::Escape) {
         match *game_state.get() {
             GameState::Running | GameState::Paused => {
-                if ui_state.trade.active {
-                    ui_state.trade.active = false;
+                if ui_state.active_modal.is_some() {
+                    ui_state.active_modal = None;
                 } else {
                     next_game_state.set(GameState::InGameMenu);
                 }
