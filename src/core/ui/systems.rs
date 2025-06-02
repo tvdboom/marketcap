@@ -141,10 +141,11 @@ pub fn top_panel(
 
                 ui.add_space(window.width() * 0.01);
 
+                let netflow = player.netflow(&economy).floor();
                 ui.add_factor(
                     "Net flow",
-                    format!("{:+.0}", player.netflow().floor()),
-                    match player.netflow() {
+                    format!("{netflow:+}"),
+                    match netflow {
                         n if n <= -1. => Color32::RED,
                         n if n >= 1. => GREEN,
                         _ => text_color,
@@ -154,9 +155,9 @@ pub fn top_panel(
                         "The net flow represents the total financial movement at the end of \
                         each month, calculated as income minus debt repayments and expenses. \
                         It shows whether the player will gain or lose money this month.\n\n\
-                        Inflow: {:+.0}\nOutflow: {:+.0}",
+                        Inflow: {:+.0}\nOutflow: {:-.0}",
                         player.inflow().floor(),
-                        -player.outflow().floor(),
+                        player.outflow(&economy).floor(),
                     ),
                     None,
                     &window,

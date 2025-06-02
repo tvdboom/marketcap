@@ -1,3 +1,10 @@
+use bevy::prelude::{EventWriter, Res, ResMut, Single, Window};
+use bevy_egui::EguiContexts;
+use bevy_egui::egui::load::SizedTexture;
+use bevy_egui::egui::{Button, ComboBox, Id, Image, Modal, ScrollArea, Sides, Slider, Ui};
+use itertools::Itertools;
+use strum::IntoEnumIterator;
+
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::commodities::CommodityName;
@@ -7,12 +14,6 @@ use crate::core::resources::ImageIds;
 use crate::core::ui::state::{ActiveModal, TradeTab, UiState};
 use crate::core::ui::utils::{CustomHover, CustomUi, TextSizes, add_text};
 use crate::utils::{NameFromEnum, create_guid};
-use bevy::prelude::{EventWriter, Res, ResMut, Single, Window};
-use bevy_egui::EguiContexts;
-use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::{Button, ComboBox, Id, Image, Modal, ScrollArea, Sides, Slider, Ui};
-use itertools::Itertools;
-use strum::IntoEnumIterator;
 
 pub fn commodities_panel(
     ui: &mut Ui,
@@ -22,12 +23,12 @@ pub fn commodities_panel(
     window: &Window,
 ) {
     ui.add_text(
-        "Commodities are raw materials or primary agricultural products that can be \
-        bought, sold and traded. They serve as the building blocks of the global economy,\
-        their prices often having a direct impact on stock prices.\n\n\
-        Commodities typically present volatile price movements. Be aware, commodities are \
-        natural products that degrade over time. Be sure to sell them before they lose their \
-        value.",
+        "Commodities are raw materials or primary agricultural products that can be traded. \
+        They serve as the building blocks of the global economy, their prices often having a \
+        direct impact on bond and stock prices.\n\n\
+        Because commodities are physical instruments, they require storage facilities to preserve \
+        the products before selling them. This incurs a storage cost, which is a fixed price per \
+        unit per day.",
         window.m_size(),
     );
 

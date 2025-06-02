@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use chrono::{Duration, NaiveDate};
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use crate::core::factors::Factor;
@@ -19,15 +19,6 @@ pub struct OwnedCommodity {
     pub warning: bool,
 }
 
-impl OwnedCommodity {
-    pub fn maturity_date(&self, economy: &GlobalEconomy) -> Option<NaiveDate> {
-        economy
-            .get_commodity(&self.name)
-            .maturity
-            .and_then(|m| Some(self.buy_date + Duration::days(m as i64)))
-    }
-}
-
 #[derive(Resource, Clone, Default, Serialize, Deserialize)]
 pub struct Player {
     pub cash: Cash,
@@ -42,7 +33,7 @@ impl Player {
             + self
                 .commodities
                 .iter()
-                .map(|owned| owned.amount as f32 * economy.get_commodity(&owned.name).current())
+                .map(|o| o.amount as f32 * economy.get_commodity(&o.name).current())
                 .sum::<f32>()
             - self.loans.iter().map(|l| l.outstanding).sum::<f32>()
     }
@@ -51,12 +42,20 @@ impl Player {
         self.cash.accumulated_interest
     }
 
-    pub fn outflow(&self) -> f32 {
-        self.loans.iter().map(|l| l.next_installment_amount()).sum()
+    pub fn outflow(&self, economy: &GlobalEconomy) -> f32 {
+        self.commodities
+            .iter()
+            .map(|o| o.amount as f32 * economy.get_commodity(&o.name).storage)
+            .sum::<f32>()
+            + self
+                .loans
+                .iter()
+                .map(|l| l.next_installment_amount())
+                .sum::<f32>()
     }
 
-    pub fn netflow(&self) -> f32 {
-        self.inflow() - self.outflow()
+    pub fn netflow(&self, economy: &GlobalEconomy) -> f32 {
+        self.inflow() - self.outflow(economy)
     }
 
     pub fn resolve_loans(&mut self) -> bool {

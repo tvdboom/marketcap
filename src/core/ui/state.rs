@@ -1,7 +1,8 @@
-use crate::core::instruments::commodities::CommodityName;
-use crate::core::loans::{LoanKind, LoanProvider, LoanTerm};
 use bevy::prelude::*;
 use strum_macros::EnumIter;
+
+use crate::core::instruments::commodities::CommodityName;
+use crate::core::loans::{LoanKind, LoanProvider, LoanTerm};
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum Tab {

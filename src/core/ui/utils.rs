@@ -3,8 +3,10 @@ use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::*;
 use chrono::{Datelike, Duration};
 use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
+use strum::IntoEnumIterator;
 
 use crate::core::constants::{HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
+use crate::core::countries::Country;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::commodities::Commodity;
 use crate::core::resources::ImageIds;
@@ -169,7 +171,7 @@ impl CustomUi for Ui {
 
     fn add_commodity(
         &mut self,
-        security: &Commodity,
+        commodity: &Commodity,
         images: &ImageIds,
         window: &Window,
     ) -> Response {
@@ -179,29 +181,32 @@ impl CustomUi for Ui {
             .show(self, |ui| {
                 ui.horizontal(|ui| {
                     ui.add(Image::new(SizedTexture::new(
-                        images.get(security.name.to_lowername().as_str()),
+                        images.get(commodity.name.to_lowername().as_str()),
                         [window.height() * 0.2; 2],
                     )))
                     .on_hover_ui(|ui| {
                         ui.set_min_width(window.width() * 0.4);
 
-                        ui.add_text(security.name.to_name(), window.l_size());
+                        ui.add_text(commodity.name.to_name(), window.l_size());
                         ui.add_space(window.height() * 0.01);
-                        ui.add_text(security.description(), window.m_size());
+                        ui.add_text(commodity.description(), window.m_size());
                         ui.add_space(window.height() * 0.01);
-                        line_plot(ui, &security.prices);
+                        line_plot(ui, &commodity.prices);
                     });
 
                     ui.vertical(|ui| {
                         ui.add_space(window.height() * 0.02);
 
-                        ui.add_text(security.name.to_name(), window.l_size());
-
-                        ui.add_text(format!("Price: {:.0}", security.current()), window.m_size())
-                            .on_hover("Current price of the security.", window.m_size());
+                        ui.add_text(commodity.name.to_name(), window.l_size());
 
                         ui.add_text(
-                            format!("Volatility: {:.1}%", security.volatility),
+                            format!("Price: {:.0}", commodity.current()),
+                            window.m_size(),
+                        )
+                        .on_hover("Current price of the security.", window.m_size());
+
+                        ui.add_text(
+                            format!("Volatility: {:.1}%", commodity.volatility),
                             window.m_size(),
                         )
                         .on_hover(
@@ -210,12 +215,7 @@ impl CustomUi for Ui {
                         );
 
                         ui.add_text(
-                            format!(
-                                "Maturity: {}",
-                                security
-                                    .maturity
-                                    .map_or("--".to_string(), |m| format!("{m} days"))
-                            ),
+                            format!("Storage costs: {}", commodity.storage),
                             window.m_size(),
                         )
                         .on_hover(
@@ -226,10 +226,11 @@ impl CustomUi for Ui {
                         ui.add_text(
                             format!(
                                 "Production: {}",
-                                security
-                                    .production
-                                    .iter()
-                                    .map(|c| c.to_name())
+                                Country::iter()
+                                    .filter_map(|c| c
+                                        .production()
+                                        .contains(&commodity.name)
+                                        .then_some(commodity.name.to_name()))
                                     .collect::<Vec<_>>()
                                     .join(", ")
                             ),

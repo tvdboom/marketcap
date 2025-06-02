@@ -1,11 +1,10 @@
 use bevy::prelude::*;
-use chrono::{Datelike, Duration};
+use chrono::Datelike;
 
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::player::Player;
-use crate::utils::NameFromEnum;
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
@@ -25,48 +24,20 @@ pub fn time_pass(
 
         player.cash.bump(economy.interest.current());
 
-        // Check if commodities have degraded
-        player.commodities.retain_mut(|owned| {
-            if let Some(maturity) = owned.maturity_date(&economy) {
-                let commodity = economy.get_commodity(&owned.name);
-
-                if maturity <= economy.date {
-                    // Commodity has degraded -> remove it
-                    message.write(MessageEv {
-                        message: format!(
-                            "{} units of {} have degraded and have been removed!",
-                            owned.amount,
-                            owned.name.to_lowername()
-                        ),
-                        level: MessageLevel::Error,
-                    });
-
-                    return false; // Remove commodity
-                } else if !owned.warning && maturity <= economy.date + Duration::days(30) {
-                    // Commodity is about to degrade -> warn player
-                    owned.warning = true;
-                    message.write(MessageEv {
-                        message: format!(
-                            "{} units of {} are degrading in 30 days!",
-                            owned.amount,
-                            owned.name.to_lowername()
-                        ),
-                        level: MessageLevel::Warning,
-                    });
-                }
-            }
-
-            // Keep commodity if it hasn't degraded
-            true
-        });
-
-        if economy.date.day() == 20 && player.outflow() > player.cash.current() {
+        // Increase storage costs for commodities according to inflation
+        let inflation = economy.inflation.current();
+        for commodity in economy.commodities.iter_mut() {
+            commodity.storage *= 1. + inflation / 100. / 365.;
+        }
+        
+        // Check if player has enough cash to cover outflow
+        if economy.date.day() == 20 && player.outflow(&economy) > player.cash.current() {
             message.write(MessageEv {
                 message: "You're outflow is larger than your cash reserve!".to_string(),
                 level: MessageLevel::Warning,
             });
         }
-
+        
         // Monthly operations =================================== >>
 
         if economy.date.day() == 1 {
