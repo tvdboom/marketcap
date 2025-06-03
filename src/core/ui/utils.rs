@@ -223,13 +223,19 @@ impl CustomUi for Ui {
 
                             let diff = commodity.diff();
                             ui.label(
-                                RichText::new(format!("  ▲ {diff:.1}%"))
-                                    .color(match diff {
-                                        d if d >= 0.05 => Color32::GREEN,
-                                        d if d <= -0.05 => Color32::RED,
-                                        _ => Color32::WHITE,
-                                    })
-                                    .size(window.m_size()),
+                                RichText::new(format!(
+                                    "  {}{diff:.1}%",
+                                    match diff {
+                                        d if d >= 0. => "▲",
+                                        _ => "▼",
+                                    }
+                                ))
+                                .color(match diff {
+                                    d if d >= 0.05 => Color32::GREEN,
+                                    d if d <= -0.05 => Color32::RED,
+                                    _ => Color32::WHITE,
+                                })
+                                .size(window.m_size()),
                             )
                             .on_hover(
                                 "Percentage difference between the current price and \

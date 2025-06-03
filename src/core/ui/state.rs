@@ -36,7 +36,7 @@ impl Tab {
 pub enum OverviewTab {
     #[default]
     Portfolio,
-    Orders,
+    OrderBook,
     Debts,
 }
 
@@ -44,7 +44,7 @@ impl OverviewTab {
     pub fn emoji(&self) -> &str {
         match self {
             OverviewTab::Portfolio => "📊",
-            OverviewTab::Orders => "📋",
+            OverviewTab::OrderBook => "📋",
             OverviewTab::Debts => "💳",
         }
     }
@@ -53,7 +53,6 @@ impl OverviewTab {
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum BondTab {
     #[default]
-    Overview,
     Government,
     Corporate,
 }
@@ -61,7 +60,6 @@ pub enum BondTab {
 impl BondTab {
     pub fn emoji(&self) -> &str {
         match self {
-            BondTab::Overview => "🗺",
             BondTab::Government => "💼",
             BondTab::Corporate => "🏢",
         }
@@ -71,16 +69,16 @@ impl BondTab {
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum CreditTab {
     #[default]
-    Overview,
     NewLoan,
+    RepayLoan,
     P2P,
 }
 
 impl CreditTab {
     pub fn emoji(&self) -> &str {
         match self {
-            CreditTab::Overview => "🗺",
             CreditTab::NewLoan => "✏",
+            CreditTab::RepayLoan => "💰",
             CreditTab::P2P => "👤",
         }
     }

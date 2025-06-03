@@ -116,13 +116,13 @@ pub fn top_panel(
                             .filter(|o| matches!(o.kind, InstrumentKind::Commodity(_)))
                             .map(|o| o.amount as f32 * economy.get_current(&o.kind))
                             .sum::<f32>()
-                            .max(0.),
+                            .floor(),
                         player
                             .loans
                             .iter()
                             .map(|l| l.outstanding)
                             .sum::<f32>()
-                            .max(0.),
+                            .floor(),
                         player.enterprise_value(&economy).floor(),
                     ),
                     None,
@@ -157,8 +157,22 @@ pub fn top_panel(
                         "The net flow represents the total financial movement at the end of \
                         each month, calculated as income minus debt repayments and expenses. \
                         It shows whether the player will gain or lose money this month.\n\n\
-                        Inflow: {:+.0}\nOutflow: {:-.0}",
+                        Cash interest: {}\n------------------------\nInflow: {:+}\n\n\
+                        Storage costs: {}\nLoan installments: {}\n------------------------\nOutflow: {:-}",
+                        player.cash.accumulated_interest.floor(),
                         player.inflow().floor(),
+                        player
+                            .instruments
+                            .iter()
+                            .map(|o| o.amount as f32 * economy.get(&o.kind).storage_cost())
+                            .sum::<f32>()
+                            .floor(),
+                        player
+                            .loans
+                            .iter()
+                            .map(|l| l.next_installment_amount())
+                            .sum::<f32>()
+                            .floor(),
                         player.outflow(&economy).floor(),
                     ),
                     None,
@@ -286,7 +300,7 @@ pub fn central_panel(
                 }),
         )
         .show(contexts.ctx_mut(), |ui| match ui_state.tab {
-            Tab::Overview => overview_panel(ui, &mut ui_state, &window),
+            Tab::Overview => overview_panel(ui, &mut ui_state, &player, &window),
             Tab::Stocks => {
                 ui.heading("Stocks");
             },

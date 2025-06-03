@@ -25,11 +25,6 @@ pub fn bonds_panel(ui: &mut Ui, ui_state: &mut UiState, window: &Window) {
     ui.separator();
 
     match ui_state.bonds {
-        BondTab::Overview => {
-            ui.add_text("", window.m_size());
-
-            ui.separator();
-        },
         BondTab::Government => {
             ui.add_text("", window.m_size());
 
