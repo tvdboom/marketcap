@@ -1,8 +1,11 @@
+use crate::core::factors::economy::Economy;
+use crate::core::instruments::Instrument;
+use crate::utils::NameFromEnum;
 use rand::{Rng, rng};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
-#[derive(Clone, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Unit {
     Gram,
     Barrel,
@@ -36,20 +39,25 @@ pub enum CommodityName {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Commodity {
-    /// The name of the security
+    /// The name of the commodity
     pub name: CommodityName,
 
     /// The unit the commodity is traded in
     pub unit: Unit,
 
-    /// The prices of the security over time
+    /// The prices of the commodity over time
     pub prices: Vec<f32>,
 
     /// Percentage of price that can change daily
     pub volatility: f32,
 
+    /// Factor with which the price follows the global economy
+    /// If positive, the price increases when the economy blooms.
+    /// If negative, the price decreases when the economy is in recess.
+    pub economy_factor: f32,
+
     /// Storage cost price per unit per day
-    pub storage: f32,
+    pub storage_cost: f32,
 }
 
 impl Commodity {
@@ -109,30 +117,46 @@ impl Commodity {
         }
     }
 
-    pub fn current(&self) -> f32 {
-        *self.prices.last().unwrap()
-    }
-
-    pub fn bump(&mut self, inflation: f32) -> f32 {
+    pub fn bump(&mut self, economy: f32, inflation: f32) -> f32 {
         let mut new_price = self.current()
             * (1. + inflation / 100. / 365.)
             * (1. + rng().random_range(-self.volatility / 100. ..self.volatility / 100.));
 
-        // Gold is a special case since its price moves with the inflation
-        if self.name == CommodityName::Gold {
-            if inflation > 6. {
-                // If inflation is high, gold's price increases significantly
-                new_price *= 1. + inflation / 200.;
-            } else if inflation < 2.5 {
-                // If inflation is low, gold's price slightly decreases
-                new_price *= 1. - inflation / 200.;
-            }
+        // If the economy is doing really good or bad, it affects prices
+        if economy < 25. || economy > 75. {
+            new_price *= 1. + self.economy_factor * (economy - Economy::DEFAULT) / 100.;
         }
 
         new_price = new_price.max(0.);
 
         self.prices.push(new_price);
         new_price
+    }
+}
+
+impl Instrument for Commodity {
+    fn name(&self) -> String {
+        self.name.to_name()
+    }
+
+    fn lowername(&self) -> String {
+        self.name.to_lowername()
+    }
+
+    fn all(&self) -> &Vec<f32> {
+        &self.prices
+    }
+
+    fn current(&self) -> f32 {
+        *self.prices.last().unwrap()
+    }
+
+    fn unit(&self) -> String {
+        self.unit.abbr().to_string()
+    }
+
+    fn storage_cost(&self) -> f32 {
+        self.storage_cost
     }
 }
 
@@ -143,56 +167,64 @@ pub fn start_commodities() -> Vec<Commodity> {
             unit: Unit::MetricTon,
             prices: vec![2200.],
             volatility: 0.6,
-            storage: 0.5,
+            economy_factor: 0.05,
+            storage_cost: 0.5,
         },
         Commodity {
             name: CommodityName::Cocoa,
             unit: Unit::MetricTon,
             prices: vec![9762.],
             volatility: 6.2,
-            storage: 0.2,
+            economy_factor: -0.05,
+            storage_cost: 0.2,
         },
         Commodity {
             name: CommodityName::Copper,
             unit: Unit::MetricTon,
             prices: vec![9623.],
             volatility: 4.4,
-            storage: 0.6,
+            economy_factor: 0.05,
+            storage_cost: 0.6,
         },
         Commodity {
             name: CommodityName::Gold,
             unit: Unit::Gram,
             prices: vec![93.],
             volatility: 1.,
-            storage: 0.05,
+            economy_factor: -0.1,
+            storage_cost: 0.05,
         },
         Commodity {
             name: CommodityName::Iron,
             unit: Unit::MetricTon,
             prices: vec![125.],
             volatility: 0.5,
-            storage: 0.3,
+            economy_factor: 0.08,
+            storage_cost: 0.2,
         },
         Commodity {
             name: CommodityName::LNG,
-            unit: Unit::MetricTon,
+            unit: Unit::MillionBritishThermalUnits,
             prices: vec![13.],
-            volatility: 14.2,
-            storage: 1.0,
+            volatility: 7.2,
+            economy_factor: 0.12,
+            storage_cost: 0.05,
         },
         Commodity {
             name: CommodityName::Oil,
             unit: Unit::Barrel,
             prices: vec![65.],
             volatility: 5.,
-            storage: 0.5,
+            economy_factor: 0.09,
+            storage_cost: 0.1,
         },
         Commodity {
             name: CommodityName::Wheat,
             unit: Unit::MetricTon,
             prices: vec![201.],
             volatility: 2.3,
-            storage: 0.1,
+            economy_factor: -0.05,
+            storage_cost: 0.1,
         },
     ]
 }

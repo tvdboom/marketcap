@@ -14,13 +14,14 @@ use crate::core::factors::Factor;
 use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::messages::MessageEv;
-use crate::core::player::Player;
+use crate::core::player::{InstrumentKind, Player};
 use crate::core::resources::ImageIds;
 use crate::core::states::GameState;
 use crate::core::ui::bonds::bonds_panel;
 use crate::core::ui::commodities::commodities_panel;
 use crate::core::ui::credit::credit_panel;
 use crate::core::ui::forex::forex_panel;
+use crate::core::ui::overview::overview_panel;
 use crate::core::ui::state::{Tab, UiState};
 use crate::core::ui::utils::{CustomUi, TextSizes};
 use crate::utils::{NameFromEnum, format_number};
@@ -110,9 +111,10 @@ pub fn top_panel(
                         -------------------\nEnterprise value: {:.0}",
                         player.cash,
                         player
-                            .commodities
+                            .instruments
                             .iter()
-                            .map(|s| s.amount as f32 * economy.get_commodity(&s.name).current())
+                            .filter(|o| matches!(o.kind, InstrumentKind::Commodity(_)))
+                            .map(|o| o.amount as f32 * economy.get_current(&o.kind))
                             .sum::<f32>()
                             .max(0.),
                         player
@@ -284,21 +286,21 @@ pub fn central_panel(
                 }),
         )
         .show(contexts.ctx_mut(), |ui| match ui_state.tab {
-            Tab::Overview => {
-                ui.heading("Home");
-            },
+            Tab::Overview => overview_panel(ui, &mut ui_state, &window),
             Tab::Stocks => {
                 ui.heading("Stocks");
             },
             Tab::Bonds => bonds_panel(ui, &mut ui_state, &window),
             Tab::Forex => forex_panel(ui, &mut ui_state, &window),
             Tab::Crypto => forex_panel(ui, &mut ui_state, &window),
-            Tab::Commodities => commodities_panel(ui, &mut ui_state, &economy, &images, &window),
+            Tab::Commodities => {
+                commodities_panel(ui, &mut ui_state, &economy, &player, &images, &window)
+            },
             Tab::Credit => credit_panel(
                 ui,
                 &mut ui_state,
-                &mut player,
                 &economy,
+                &mut player,
                 &mut messages,
                 &window,
             ),

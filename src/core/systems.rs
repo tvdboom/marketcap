@@ -24,12 +24,12 @@ pub fn time_pass(
 
         player.cash.bump(economy.interest.current());
 
-        // Increase storage costs for commodities according to inflation
+        // Increase storage costs for commodities, following inflation
         let inflation = economy.inflation.current();
         for commodity in economy.commodities.iter_mut() {
-            commodity.storage *= 1. + inflation / 100. / 365.;
+            commodity.storage_cost *= 1. + inflation / 100. / 365.;
         }
-        
+
         // Check if player has enough cash to cover outflow
         if economy.date.day() == 20 && player.outflow(&economy) > player.cash.current() {
             message.write(MessageEv {
@@ -37,7 +37,7 @@ pub fn time_pass(
                 level: MessageLevel::Warning,
             });
         }
-        
+
         // Monthly operations =================================== >>
 
         if economy.date.day() == 1 {
@@ -48,10 +48,9 @@ pub fn time_pass(
             // Interest on cash is paid
             player.cash.resolve();
 
-            // Loans are paid
-            if !player.resolve_loans() {
+            if !player.resolve_debts(&economy) {
                 message.write(MessageEv {
-                    message: "You defaulted on a loan!".to_string(),
+                    message: "You don't have enough cash to pay your debts!".to_string(),
                     level: MessageLevel::Error,
                 });
             }

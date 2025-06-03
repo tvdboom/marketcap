@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use crate::core::factors::Factor;
@@ -9,14 +8,16 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::loans::Loan;
 
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+pub enum InstrumentKind {
+    Commodity(CommodityName),
+}
+
 #[derive(Clone, Serialize, Deserialize)]
-pub struct OwnedCommodity {
-    pub id: String,
-    pub name: CommodityName,
+pub struct OwnedInstrument {
+    pub kind: InstrumentKind,
     pub amount: u32,
-    pub buy_date: NaiveDate,
-    pub buy_price: f32,
-    pub warning: bool,
+    pub interest: f32,
 }
 
 #[derive(Resource, Clone, Default, Serialize, Deserialize)]
@@ -24,16 +25,16 @@ pub struct Player {
     pub cash: Cash,
     pub credit_score: CreditScore,
     pub loans: Vec<Loan>,
-    pub commodities: Vec<OwnedCommodity>,
+    pub instruments: Vec<OwnedInstrument>,
 }
 
 impl Player {
     pub fn enterprise_value(&self, economy: &GlobalEconomy) -> f32 {
         self.cash.amount
             + self
-                .commodities
+                .instruments
                 .iter()
-                .map(|o| o.amount as f32 * economy.get_commodity(&o.name).current())
+                .map(|o| o.amount as f32 * economy.get(&o.kind).current())
                 .sum::<f32>()
             - self.loans.iter().map(|l| l.outstanding).sum::<f32>()
     }
@@ -43,28 +44,37 @@ impl Player {
     }
 
     pub fn outflow(&self, economy: &GlobalEconomy) -> f32 {
-        self.commodities
+        let storage_costs: f32 = self
+            .instruments
             .iter()
-            .map(|o| o.amount as f32 * economy.get_commodity(&o.name).storage)
-            .sum::<f32>()
-            + self
-                .loans
-                .iter()
-                .map(|l| l.next_installment_amount())
-                .sum::<f32>()
+            .map(|o| o.amount as f32 * economy.get(&o.kind).storage_cost())
+            .sum();
+
+        let loan_payments: f32 = self.loans.iter().map(|l| l.next_installment_amount()).sum();
+
+        storage_costs + loan_payments
     }
 
     pub fn netflow(&self, economy: &GlobalEconomy) -> f32 {
         self.inflow() - self.outflow(economy)
     }
 
-    pub fn resolve_loans(&mut self) -> bool {
-        if self.loans.is_empty() {
-            return true;
+    pub fn resolve_debts(&mut self, economy: &GlobalEconomy) -> bool {
+        let mut success = true;
+
+        for instrument in self.instruments.iter() {
+            let storage_cost =
+                instrument.amount as f32 * economy.get(&instrument.kind).storage_cost();
+
+            if self.cash.current() > storage_cost {
+                self.cash.amount -= storage_cost;
+            } else {
+                success = false;
+                break;
+            }
         }
 
-        let mut success = true;
-        for loan in self.loans.iter_mut() {
+        self.loans.retain_mut(|loan| {
             let installment = loan.next_installment_amount();
 
             if installment > self.cash.current() {
@@ -75,7 +85,9 @@ impl Player {
                 loan.outstanding -= loan.next_principal_component();
                 loan.n_installments += 1;
             }
-        }
+
+            loan.outstanding >= 1. // Keep loans that are not fully repaid
+        });
 
         if success {
             self.credit_score.score = (self.credit_score.score + 1).min(CreditScore::MAX);
@@ -83,10 +95,18 @@ impl Player {
             self.credit_score.score = (self.credit_score.score - 12).max(CreditScore::MIN);
         }
 
-        // Remove loans that are fully repaid
-        // Remove at <1 to not show outstanding 0 for an active loan
-        self.loans.retain(|l| l.outstanding >= 1.);
-
         success
+    }
+
+    pub fn get_owned(&self, instrument: &InstrumentKind) -> u32 {
+        self.instruments
+            .iter()
+            .find(|c| c.kind == *instrument)
+            .map(|c| c.amount)
+            .unwrap_or_default()
+    }
+
+    pub fn get_value(&self, instrument: &InstrumentKind, economy: &GlobalEconomy) -> f32 {
+        self.get_owned(instrument) as f32 * economy.get_current(instrument)
     }
 }

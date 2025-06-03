@@ -15,7 +15,7 @@ pub fn create_guid() -> String {
         .collect()
 }
 
-/// Format a number with k suffix
+/// Format a number with k or M suffix
 pub fn format_number(number: f32) -> String {
     if number >= 1_000_000. {
         format!("{:.1}M", number / 1_000_000.)

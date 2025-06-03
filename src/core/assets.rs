@@ -57,8 +57,8 @@ impl FromWorld for WorldAssets {
             ("time-paused", assets.load("images/icons/time-paused.png")),
         ]);
 
-        for security in CommodityName::iter() {
-            let name = Box::leak(Box::new(security.to_lowername())).as_str();
+        for commodity in CommodityName::iter() {
+            let name = Box::leak(Box::new(commodity.to_lowername())).as_str();
             images.insert(
                 name,
                 assets.load(format!("images/commodities/{}.png", name)),

@@ -47,11 +47,7 @@ impl Country {
             ],
             Country::Russia => vec![CommodityName::Oil, CommodityName::LNG],
             Country::Ukraine => vec![CommodityName::Wheat],
-            Country::USA => vec![
-                CommodityName::Oil,
-                CommodityName::Wheat,
-                CommodityName::LNG,
-            ],
+            Country::USA => vec![CommodityName::Oil, CommodityName::Wheat, CommodityName::LNG],
             Country::Venezuela => vec![CommodityName::Oil, CommodityName::Cocoa],
         }
     }

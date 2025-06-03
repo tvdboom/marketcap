@@ -33,6 +33,24 @@ impl Tab {
 }
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
+pub enum OverviewTab {
+    #[default]
+    Portfolio,
+    Orders,
+    Debts,
+}
+
+impl OverviewTab {
+    pub fn emoji(&self) -> &str {
+        match self {
+            OverviewTab::Portfolio => "📊",
+            OverviewTab::Orders => "📋",
+            OverviewTab::Debts => "💳",
+        }
+    }
+}
+
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum BondTab {
     #[default]
     Overview,
@@ -144,18 +162,30 @@ impl TradeTab {
     }
 }
 
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
+pub enum OrderOptions {
+    #[default]
+    Alphabetical,
+    OwnedAmount,
+    OwnedValue,
+    LowestPrice,
+    HighestPrice,
+    LowestVolatility,
+    HighestVolatility,
+}
+
 #[derive(Default)]
 pub struct CommodityModal {
-    pub active: bool,
     pub name: CommodityName,
     pub amount: u32,
     pub tab: TradeTab,
-    pub price: u32,
+    pub order: OrderOptions,
 }
 
 #[derive(Resource, Default)]
 pub struct UiState {
     pub tab: Tab,
+    pub overview: OverviewTab,
     pub bonds: BondTab,
     pub credit: CreditState,
     pub active_modal: Option<ActiveModal>,

@@ -53,8 +53,9 @@ impl Factor for Cash {
         available for spending, investing, or covering financial obligations. The bank pays \
         a low interest on cash deposits.\n\n\
         Current interest: {:.1}%\n\
-        Accumulated interest: {:.0}",
-            self.current_interest, self.accumulated_interest
+        Accumulated interest: {}",
+            self.current_interest,
+            self.accumulated_interest.floor()
         )
     }
 

@@ -5,12 +5,13 @@ use chrono::{Datelike, Duration};
 use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
 use strum::IntoEnumIterator;
 
-use crate::core::constants::{HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
+use crate::core::constants::{CURRENCY, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
 use crate::core::countries::Country;
 use crate::core::global_economy::GlobalEconomy;
+use crate::core::instruments::Instrument;
 use crate::core::instruments::commodities::Commodity;
 use crate::core::resources::ImageIds;
-use crate::utils::NameFromEnum;
+use crate::utils::{NameFromEnum, format_number};
 
 /// Add text widget with custom size
 pub fn add_text(text: impl Into<String>, size: f32) -> RichText {
@@ -80,6 +81,9 @@ pub fn line_plot(ui: &mut Ui, data: &Vec<f32>) {
             let d = GlobalEconomy::default().date + Duration::days(mark.value as i64);
             format!("{:02}-{}", d.month(), d.year())
         })])
+        .custom_y_axes(vec![
+            AxisHints::new_x().formatter(|mark, _| format_number(mark.value as f32)),
+        ])
         .show(ui, |plot_ui| {
             plot_ui.line(Line::new("line", sin).width(LINE_WIDTH).color(LINE_COLOR))
         });
@@ -120,7 +124,7 @@ pub trait CustomUi {
     ) -> Response;
     fn add_commodity(
         &mut self,
-        security: &Commodity,
+        commodity: &Commodity,
         images: &ImageIds,
         window: &Window,
     ) -> Response;
@@ -178,7 +182,10 @@ impl CustomUi for Ui {
         Frame::new()
             .stroke(Stroke::new(1.0, Color32::GRAY))
             .corner_radius(5.0)
+            .inner_margin(25.0)
             .show(self, |ui| {
+                ui.set_width(ui.available_width() * 0.98);
+
                 ui.horizontal(|ui| {
                     ui.add(Image::new(SizedTexture::new(
                         images.get(commodity.name.to_lowername().as_str()),
@@ -195,15 +202,41 @@ impl CustomUi for Ui {
                     });
 
                     ui.vertical(|ui| {
-                        ui.add_space(window.height() * 0.02);
-
                         ui.add_text(commodity.name.to_name(), window.l_size());
 
-                        ui.add_text(
-                            format!("Price: {:.0}", commodity.current()),
-                            window.m_size(),
-                        )
-                        .on_hover("Current price of the security.", window.m_size());
+                        ui.horizontal(|ui| {
+                            ui.add_text(
+                                format!(
+                                    "Price: {:.0} {CURRENCY}/{}",
+                                    commodity.current(),
+                                    commodity.unit()
+                                ),
+                                window.m_size(),
+                            )
+                            .on_hover(
+                                format!(
+                                    "Current price of the commodity per {}.",
+                                    commodity.unit.to_lowername()
+                                ),
+                                window.m_size(),
+                            );
+
+                            let diff = commodity.diff();
+                            ui.label(
+                                RichText::new(format!("  ▲ {diff:.1}%"))
+                                    .color(match diff {
+                                        d if d >= 0.05 => Color32::GREEN,
+                                        d if d <= -0.05 => Color32::RED,
+                                        _ => Color32::WHITE,
+                                    })
+                                    .size(window.m_size()),
+                            )
+                            .on_hover(
+                                "Percentage difference between the current price and \
+                                the average price of the last month.",
+                                window.m_size(),
+                            );
+                        });
 
                         ui.add_text(
                             format!("Volatility: {:.1}%", commodity.volatility),
@@ -215,11 +248,17 @@ impl CustomUi for Ui {
                         );
 
                         ui.add_text(
-                            format!("Storage costs: {}", commodity.storage),
+                            format!(
+                                "Storage cost: {:.0} {CURRENCY}/{}/month",
+                                commodity.storage_cost * 30.,
+                                commodity.unit.abbr(),
+                            ),
                             window.m_size(),
                         )
                         .on_hover(
-                            "Number of days until the security matures.",
+                            "Current price of storage per day. Note that this price increases \
+                            with inflation. Storage costs are deducted every month or when the \
+                            commodity is sold.",
                             window.m_size(),
                         );
 
@@ -230,7 +269,7 @@ impl CustomUi for Ui {
                                     .filter_map(|c| c
                                         .production()
                                         .contains(&commodity.name)
-                                        .then_some(commodity.name.to_name()))
+                                        .then_some(c.to_name()))
                                     .collect::<Vec<_>>()
                                     .join(", ")
                             ),
@@ -244,7 +283,9 @@ impl CustomUi for Ui {
                     });
                 })
             })
+            .inner
             .response
+            .interact(Sense::hover())
             .interact(Sense::click())
     }
 }

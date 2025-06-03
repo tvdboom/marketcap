@@ -1,24 +1,30 @@
+use crate::core::constants::CURRENCY;
+use crate::core::factors::Factor;
+use crate::core::global_economy::GlobalEconomy;
+use crate::core::instruments::Instrument;
+use crate::core::instruments::commodities::CommodityName;
+use crate::core::messages::{MessageEv, MessageLevel};
+use crate::core::player::{InstrumentKind, OwnedInstrument, Player};
+use crate::core::resources::ImageIds;
+use crate::core::ui::state::{ActiveModal, OrderOptions, TradeTab, UiState};
+use crate::core::ui::utils::{CustomHover, CustomUi, TextSizes, add_text};
+use crate::utils::NameFromEnum;
 use bevy::prelude::{EventWriter, Res, ResMut, Single, Window};
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::{Button, ComboBox, Id, Image, Modal, ScrollArea, Sides, Slider, Ui};
+use bevy_egui::egui::{
+    Align, Button, Color32, ComboBox, Id, Image, Layout, Modal, RichText, ScrollArea, Sides,
+    Slider, Ui,
+};
+use chrono::Datelike;
 use itertools::Itertools;
 use strum::IntoEnumIterator;
-
-use crate::core::factors::Factor;
-use crate::core::global_economy::GlobalEconomy;
-use crate::core::instruments::commodities::CommodityName;
-use crate::core::messages::{MessageEv, MessageLevel};
-use crate::core::player::{OwnedCommodity, Player};
-use crate::core::resources::ImageIds;
-use crate::core::ui::state::{ActiveModal, TradeTab, UiState};
-use crate::core::ui::utils::{CustomHover, CustomUi, TextSizes, add_text};
-use crate::utils::{NameFromEnum, create_guid};
 
 pub fn commodities_panel(
     ui: &mut Ui,
     ui_state: &mut UiState,
     economy: &GlobalEconomy,
+    player: &Player,
     images: &ImageIds,
     window: &Window,
 ) {
@@ -27,22 +33,69 @@ pub fn commodities_panel(
         They serve as the building blocks of the global economy, their prices often having a \
         direct impact on bond and stock prices.\n\n\
         Because commodities are physical instruments, they require storage facilities to preserve \
-        the products before selling them. This incurs a storage cost, which is a fixed price per \
-        unit per day.",
+        the products before selling them. This incurs a storage cost, which is a variable price \
+        per unit per day that increases with inflation.",
         window.m_size(),
     );
 
     ui.separator();
 
-    ui.add_space(window.height() * 0.02);
+    ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+        ui.set_max_height(window.height() * 0.05);
+
+        ComboBox::from_id_salt("order")
+            .selected_text(add_text("Order by", window.m_size()))
+            .show_ui(ui, |ui| {
+                for order in OrderOptions::iter() {
+                    ui.selectable_value(
+                        &mut ui_state.commodity_modal.order,
+                        order,
+                        add_text(order.to_name(), window.s_size()),
+                    );
+                }
+            });
+    });
 
     ScrollArea::vertical().show(ui, |ui| {
-        for security in economy.commodities.iter() {
-            let response = ui.add_commodity(security, images, window);
+        ui.set_width(ui.available_width());
+
+        let commodities =
+            economy
+                .commodities
+                .iter()
+                .sorted_by(|a, b| match ui_state.commodity_modal.order {
+                    OrderOptions::Alphabetical => a.name.to_lowername().cmp(&b.name.to_lowername()),
+                    OrderOptions::OwnedAmount => player
+                        .get_owned(&InstrumentKind::Commodity(b.name))
+                        .cmp(&player.get_owned(&InstrumentKind::Commodity(a.name))),
+                    OrderOptions::OwnedValue => player
+                        .get_value(&InstrumentKind::Commodity(b.name), economy)
+                        .partial_cmp(&player.get_value(&InstrumentKind::Commodity(a.name), economy))
+                        .unwrap_or(std::cmp::Ordering::Equal),
+                    OrderOptions::LowestPrice => a
+                        .current()
+                        .partial_cmp(&b.current())
+                        .unwrap_or(std::cmp::Ordering::Equal),
+                    OrderOptions::HighestPrice => b
+                        .current()
+                        .partial_cmp(&a.current())
+                        .unwrap_or(std::cmp::Ordering::Equal),
+                    OrderOptions::LowestVolatility => a
+                        .volatility
+                        .partial_cmp(&b.volatility)
+                        .unwrap_or(std::cmp::Ordering::Equal),
+                    OrderOptions::HighestVolatility => b
+                        .volatility
+                        .partial_cmp(&a.volatility)
+                        .unwrap_or(std::cmp::Ordering::Equal),
+                });
+
+        for commodity in commodities {
+            let response = ui.add_commodity(commodity, images, window);
 
             if response.clicked() {
-                ui_state.commodity_modal.name = security.name;
-                ui_state.commodity_modal.active = true;
+                ui_state.active_modal = Some(ActiveModal::Commodity);
+                ui_state.commodity_modal.name = commodity.name;
             }
         }
     });
@@ -58,13 +111,12 @@ pub fn commodity_modal(
     window: Single<&Window>,
 ) {
     if ui_state.active_modal == Some(ActiveModal::Commodity) {
-        let commodity = economy.get_commodity(&ui_state.commodity_modal.name);
+        let kind = &InstrumentKind::Commodity(ui_state.commodity_modal.name);
+        let instrument = economy.get(kind);
 
-        let owned = player
-            .commodities
-            .iter()
-            .filter_map(|s| (s.name == commodity.name).then_some(s.amount))
-            .sum::<u32>();
+        let owned = player.get_owned(kind);
+        let storage_costs = (ui_state.commodity_modal.amount * economy.date.day()) as f32
+            * instrument.storage_cost();
 
         let modal = Modal::new(Id::new("modal")).show(contexts.ctx_mut(), |ui| {
             ui.horizontal(|ui| {
@@ -85,14 +137,18 @@ pub fn commodity_modal(
                         });
 
                     ui.add(Image::new(SizedTexture::new(
-                        images.get(commodity.name.to_lowername().as_str()),
+                        images.get(instrument.lowername().as_str()),
                         [window.height() * 0.2; 2],
                     )));
                 });
 
                 ui.vertical(|ui| {
                     ui.horizontal(|ui| {
-                        for tab in TradeTab::iter() {
+                        for tab in [
+                            TradeTab::MarketOrder,
+                            TradeTab::LimitOrder,
+                            TradeTab::Futures,
+                        ] {
                             ui.selectable_value(
                                 &mut ui_state.commodity_modal.tab,
                                 tab,
@@ -107,15 +163,45 @@ pub fn commodity_modal(
 
                     ui.add_space(window.height() * 0.02);
 
+                    ui.horizontal(|ui| {
+                        ui.add_text(
+                            format!(
+                                "Price: {:.0} {CURRENCY}/{}",
+                                instrument.current(),
+                                instrument.unit()
+                            ),
+                            window.m_size(),
+                        );
+
+                        let diff = instrument.diff();
+                        ui.label(
+                            RichText::new(format!(
+                                " {}{diff:.1}%",
+                                match diff {
+                                    d if d >= 0. => "▲",
+                                    _ => "▼",
+                                }
+                            ))
+                            .color(match diff {
+                                d if d >= 0.05 => Color32::GREEN,
+                                d if d <= -0.05 => Color32::RED,
+                                _ => Color32::WHITE,
+                            })
+                            .size(window.m_size()),
+                        )
+                        .on_hover(
+                            "Percentage difference between the current price and \
+                                the average price of the last month.",
+                            window.m_size(),
+                        );
+                    });
+
                     ui.add_text(
-                        format!("Unit price: {:.0}", commodity.current()),
+                        format!("Owned: {owned} {}", instrument.unit()),
                         window.m_size(),
                     );
                     ui.add_text(
-                        format!(
-                            "Owned: {owned}          Value: {:.0}",
-                            owned as f32 * commodity.current()
-                        ),
+                        format!("Value: {:.0} {CURRENCY}", player.get_value(kind, &economy)),
                         window.m_size(),
                     );
 
@@ -127,23 +213,34 @@ pub fn commodity_modal(
                         ui.add(
                             Slider::new(
                                 &mut ui_state.commodity_modal.amount,
-                                0..=((player.cash.current() / commodity.current()) as u32)
+                                0..=((player.cash.current() / instrument.current()) as u32)
                                     .max(owned),
                             )
                             .show_value(false)
-                            .text(add_text(amount.to_string(), window.m_size())),
-                        );
-
-                        ui.add_space(window.width() * 0.02);
-
-                        ui.add_text(
-                            format!(
-                                "Total price: {:.0}",
-                                commodity.current() * ui_state.commodity_modal.amount as f32
-                            ),
-                            window.m_size(),
+                            .text(add_text(
+                                format!("{amount} {}", instrument.unit()),
+                                window.m_size(),
+                            )),
                         );
                     });
+
+                    ui.add_text(
+                        format!("Open storage costs: {storage_costs:.0} {CURRENCY}"),
+                        window.m_size(),
+                    )
+                    .on_hover(
+                        "Remaining storage costs for this month. If the commodity is \
+                        sold, the costs are deducted from the payout.",
+                        window.m_size(),
+                    );
+
+                    ui.add_text(
+                        format!(
+                            "Total price: {:.0} {CURRENCY}",
+                            instrument.current() * ui_state.commodity_modal.amount as f32
+                        ),
+                        window.m_size(),
+                    );
 
                     let mut buy_clicked = false;
                     let mut sell_clicked = false;
@@ -155,7 +252,7 @@ pub fn commodity_modal(
                             ui.add_enabled_ui(
                                 ui_state.commodity_modal.amount > 0
                                     && player.cash.current()
-                                        >= commodity.current()
+                                        >= instrument.current()
                                             * ui_state.commodity_modal.amount as f32,
                                 |ui| {
                                     let button = ui
@@ -165,9 +262,10 @@ pub fn commodity_modal(
                                         )
                                         .on_hover(
                                             format!(
-                                                "Buy {} units of {}.",
+                                                "Buy {} {} of {}.",
                                                 ui_state.commodity_modal.amount,
-                                                commodity.name.to_lowername()
+                                                instrument.unit(),
+                                                instrument.lowername(),
                                             ),
                                             window.m_size(),
                                         );
@@ -186,14 +284,11 @@ pub fn commodity_modal(
                                         Button::new(add_text("Close position", window.xl_size())),
                                     )
                                     .on_hover(
-                                        format!(
-                                            "Sell all units of {}.",
-                                            commodity.name.to_lowername()
-                                        ),
+                                        format!("Sell all {}.", instrument.lowername()),
                                         window.m_size(),
                                     )
                                     .on_disabled_hover(
-                                        format!("No {} to sell", commodity.name.to_lowername()),
+                                        format!("No {} to sell", instrument.lowername()),
                                         window.m_size(),
                                     );
 
@@ -209,16 +304,17 @@ pub fn commodity_modal(
                                         )
                                         .on_hover(
                                             format!(
-                                                "Sell {} units of {}.",
+                                                "Sell {} {} of {}.",
                                                 ui_state.commodity_modal.amount,
-                                                commodity.name.to_lowername()
+                                                instrument.unit(),
+                                                instrument.lowername()
                                             ),
                                             window.m_size(),
                                         )
                                         .on_disabled_hover(
                                             format!(
                                                 "Not enough units of {} to sell.",
-                                                commodity.name.to_lowername(),
+                                                instrument.lowername(),
                                             ),
                                             window.m_size(),
                                         );
@@ -233,60 +329,59 @@ pub fn commodity_modal(
 
                     // Resolve button clicks
                     if buy_clicked {
+                        if let Some(owned) = player.instruments.iter_mut().find(|o| o.kind == *kind)
+                        {
+                            owned.amount += ui_state.commodity_modal.amount;
+                        } else {
+                            player.instruments.push(OwnedInstrument {
+                                kind: kind.clone(),
+                                amount: ui_state.commodity_modal.amount,
+                                interest: 0.,
+                            });
+                        }
+
                         player.cash.amount -=
-                            commodity.current() * ui_state.commodity_modal.amount as f32;
-                        player.commodities.push(OwnedCommodity {
-                            id: create_guid(),
-                            name: commodity.name,
-                            amount: ui_state.commodity_modal.amount,
-                            buy_date: economy.date,
-                            buy_price: commodity.current(),
-                            warning: false,
-                        });
+                            instrument.current() * ui_state.commodity_modal.amount as f32;
 
                         messages.write(MessageEv {
                             message: format!(
-                                "Bought {} {}.",
+                                "Bought {} {} of {}.",
                                 ui_state.commodity_modal.amount,
-                                commodity.name.to_lowername()
+                                instrument.unit(),
+                                instrument.lowername()
                             ),
                             level: MessageLevel::Info,
                         });
                     }
 
                     if close_clicked {
-                        player.cash.amount += commodity.current() * owned as f32;
-                        player.commodities.retain(|s| s.name != commodity.name);
+                        player.cash.amount += instrument.current() * owned as f32 - storage_costs;
+                        player.instruments.retain(|s| s.kind != *kind);
 
                         messages.write(MessageEv {
-                            message: format!("Closed {} position.", commodity.name.to_lowername()),
+                            message: format!("Closed {} position.", instrument.lowername()),
                             level: MessageLevel::Info,
                         });
                     }
 
                     if sell_clicked {
-                        player.cash.amount +=
-                            commodity.current() * ui_state.commodity_modal.amount as f32;
+                        player.instruments.retain_mut(|o| {
+                            if o.kind == *kind {
+                                o.amount = o.amount.saturating_sub(ui_state.commodity_modal.amount);
+                            }
+                            o.amount > 0
+                        });
 
-                        let mut remaining = ui_state.commodity_modal.amount;
-                        player
-                            .commodities
-                            .iter_mut()
-                            .filter(|s| s.name == commodity.name)
-                            .sorted_by_key(|s| s.buy_date)
-                            .for_each(|s| {
-                                let to_deduct = remaining.min(s.amount);
-                                s.amount -= to_deduct;
-                                remaining -= to_deduct;
-                            });
-
-                        player.commodities.retain(|s| s.amount > 0);
+                        player.cash.amount += instrument.current()
+                            * ui_state.commodity_modal.amount as f32
+                            - storage_costs;
 
                         messages.write(MessageEv {
                             message: format!(
-                                "Sold {} {}.",
+                                "Sold {} {} of {}.",
                                 ui_state.commodity_modal.amount,
-                                commodity.name.to_lowername()
+                                instrument.unit(),
+                                instrument.lowername()
                             ),
                             level: MessageLevel::Info,
                         });
@@ -296,7 +391,7 @@ pub fn commodity_modal(
         });
 
         if modal.should_close() {
-            ui_state.commodity_modal.active = false;
+            ui_state.active_modal = None;
         }
     }
 }

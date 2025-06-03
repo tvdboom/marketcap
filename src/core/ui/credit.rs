@@ -17,8 +17,8 @@ use crate::utils::{NameFromEnum, create_guid, first_day_in_two_months};
 pub fn credit_panel(
     ui: &mut Ui,
     ui_state: &mut UiState,
-    player: &mut Player,
     economy: &GlobalEconomy,
+    player: &mut Player,
     message: &mut EventWriter<MessageEv>,
     window: &Window,
 ) {

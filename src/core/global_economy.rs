@@ -8,7 +8,9 @@ use crate::core::constants::DEFAULT_SPEED;
 use crate::core::factors::economy::Economy;
 use crate::core::factors::inflation::Inflation;
 use crate::core::factors::interest::Interest;
-use crate::core::instruments::commodities::{Commodity, CommodityName, start_commodities};
+use crate::core::instruments::Instrument;
+use crate::core::instruments::commodities::{Commodity, start_commodities};
+use crate::core::player::InstrumentKind;
 
 #[derive(Resource, Clone, Serialize, Deserialize)]
 pub struct GlobalEconomy {
@@ -38,13 +40,21 @@ impl GlobalEconomy {
         let interest = self.interest.bump();
         let inflation = self.inflation.bump(economy, interest);
 
-        for security in &mut self.commodities {
-            security.bump(inflation);
+        for commodity in &mut self.commodities {
+            commodity.bump(economy, inflation);
         }
     }
 
-    pub fn get_commodity(&self, name: &CommodityName) -> &Commodity {
-        self.commodities.iter().find(|c| c.name == *name).unwrap()
+    pub fn get(&self, instrument: &InstrumentKind) -> &dyn Instrument {
+        match instrument {
+            InstrumentKind::Commodity(name) => {
+                self.commodities.iter().find(|c| c.name == *name).unwrap()
+            },
+        }
+    }
+
+    pub fn get_current(&self, instrument: &InstrumentKind) -> f32 {
+        self.get(instrument).current()
     }
 }
 
