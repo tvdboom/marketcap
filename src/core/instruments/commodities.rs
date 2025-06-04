@@ -1,9 +1,10 @@
-use crate::core::factors::economy::Economy;
-use crate::core::instruments::Instrument;
-use crate::utils::NameFromEnum;
 use rand::{Rng, rng};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
+
+use crate::core::factors::economy::Economy;
+use crate::core::instruments::Instrument;
+use crate::utils::NameFromEnum;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Unit {

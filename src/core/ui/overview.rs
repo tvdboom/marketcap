@@ -1,13 +1,14 @@
-use crate::core::constants::DATE_FORMAT;
+use bevy::prelude::Window;
+use bevy_egui::egui::{Button, Frame, Sense, Ui};
+use egui_extras::{Column, TableBuilder};
+use strum::IntoEnumIterator;
+
+use crate::core::constants::{CURRENCY, DATE_FORMAT};
 use crate::core::loans::Loan;
 use crate::core::player::Player;
 use crate::core::ui::state::{CreditTab, OverviewTab, Tab, UiState};
 use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
 use crate::utils::NameFromEnum;
-use bevy::prelude::Window;
-use bevy_egui::egui::{Button, Frame, Sense, Ui};
-use egui_extras::{Column, TableBuilder};
-use strum::IntoEnumIterator;
 
 pub fn overview_panel(ui: &mut Ui, ui_state: &mut UiState, player: &Player, window: &Window) {
     ui.horizontal(|ui| {
@@ -96,9 +97,9 @@ pub fn loan_overview(ui: &mut Ui, ui_state: &mut UiState, loans: &Vec<Loan>, win
                             &loan.start_date.format(DATE_FORMAT).to_string(),
                             &loan.maturity_date().format(DATE_FORMAT).to_string(),
                             &loan.provider.to_name(),
-                            &loan.principal.to_string(),
-                            &loan.outstanding.floor().to_string(),
-                            &loan.next_installment_amount().floor().to_string(),
+                            &format!("{} {CURRENCY}", &loan.principal),
+                            &format!("{} {CURRENCY}", &loan.outstanding.floor()),
+                            &format!("{} {CURRENCY}", &loan.next_installment_amount().floor()),
                             &format!("{}%", loan.interest_rate.to_string()),
                             &loan.kind.to_name(),
                             &loan.no_fee.to_string(),

@@ -1,3 +1,12 @@
+use bevy::prelude::{EventWriter, Res, ResMut, Single, Window};
+use bevy_egui::EguiContexts;
+use bevy_egui::egui::load::SizedTexture;
+use bevy_egui::egui::{
+    Align, Button, ComboBox, Id, Image, Layout, Modal, ScrollArea, Sides, Slider, Ui,
+};
+use itertools::Itertools;
+use strum::IntoEnumIterator;
+
 use crate::core::constants::CURRENCY;
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
@@ -9,16 +18,6 @@ use crate::core::resources::ImageIds;
 use crate::core::ui::state::{ActiveModal, OrderOptions, TradeTab, UiState};
 use crate::core::ui::utils::{CustomHover, CustomUi, TextSizes, add_text};
 use crate::utils::NameFromEnum;
-use bevy::prelude::{EventWriter, Res, ResMut, Single, Window};
-use bevy_egui::EguiContexts;
-use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::{
-    Align, Button, Color32, ComboBox, Id, Image, Layout, Modal, RichText, ScrollArea, Sides,
-    Slider, Ui,
-};
-use chrono::Datelike;
-use itertools::Itertools;
-use strum::IntoEnumIterator;
 
 pub fn commodities_panel(
     ui: &mut Ui,
@@ -34,30 +33,30 @@ pub fn commodities_panel(
         direct impact on bond and stock prices.\n\n\
         Because commodities are physical instruments, they require storage facilities to preserve \
         the products before selling them. This incurs a storage cost, which is a variable price \
-        per unit per day that increases with inflation.",
+        per unit per month. Storage cost prices increase with inflation.",
         window.m_size(),
     );
 
     ui.separator();
 
-    ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-        ui.set_max_height(window.height() * 0.05);
-
-        ComboBox::from_id_salt("order")
-            .selected_text(add_text("Order by", window.m_size()))
-            .show_ui(ui, |ui| {
-                for order in OrderOptions::iter() {
-                    ui.selectable_value(
-                        &mut ui_state.commodity_modal.order,
-                        order,
-                        add_text(order.to_name(), window.s_size()),
-                    );
-                }
-            });
-    });
-
     ScrollArea::vertical().show(ui, |ui| {
         ui.set_width(ui.available_width());
+
+        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+            ui.set_max_height(window.height() * 0.05);
+
+            ComboBox::from_id_salt("order")
+                .selected_text(add_text("Order by", window.m_size()))
+                .show_ui(ui, |ui| {
+                    for order in OrderOptions::iter() {
+                        ui.selectable_value(
+                            &mut ui_state.commodity_modal.order,
+                            order,
+                            add_text(order.to_name(), window.s_size()),
+                        );
+                    }
+                });
+        });
 
         let commodities =
             economy
@@ -115,8 +114,8 @@ pub fn commodity_modal(
         let instrument = economy.get(kind);
 
         let owned = player.get_owned(kind);
-        let storage_costs = (ui_state.commodity_modal.amount * economy.date.day()) as f32
-            * instrument.storage_cost();
+        let storage_costs =
+            (ui_state.commodity_modal.amount * 30) as f32 * instrument.storage_cost();
 
         let modal = Modal::new(Id::new("modal")).show(contexts.ctx_mut(), |ui| {
             ui.horizontal(|ui| {
@@ -173,27 +172,7 @@ pub fn commodity_modal(
                             window.m_size(),
                         );
 
-                        let diff = instrument.diff();
-                        ui.label(
-                            RichText::new(format!(
-                                " {}{diff:.1}%",
-                                match diff {
-                                    d if d >= 0. => "▲",
-                                    _ => "▼",
-                                }
-                            ))
-                            .color(match diff {
-                                d if d >= 0.05 => Color32::GREEN,
-                                d if d <= -0.05 => Color32::RED,
-                                _ => Color32::WHITE,
-                            })
-                            .size(window.m_size()),
-                        )
-                        .on_hover(
-                            "Percentage difference between the current price and \
-                                the average price of the last month.",
-                            window.m_size(),
-                        );
+                        ui.add_indicator(instrument.diff(), &window);
                     });
 
                     ui.add_text(
@@ -208,6 +187,7 @@ pub fn commodity_modal(
                     ui.horizontal(|ui| {
                         ui.add_text("Quantity:", window.m_size());
 
+                        // ui.add_slider(&mut ui_state.commodity_modal.amount, ((player.cash.current() / instrument.current()) as u32).max(owned));
                         let amount = ui_state.commodity_modal.amount;
                         ui.spacing_mut().slider_width = window.width() * 0.15;
                         ui.add(
@@ -224,23 +204,40 @@ pub fn commodity_modal(
                         );
                     });
 
-                    ui.add_text(
-                        format!("Open storage costs: {storage_costs:.0} {CURRENCY}"),
-                        window.m_size(),
-                    )
-                    .on_hover(
-                        "Remaining storage costs for this month. If the commodity is \
-                        sold, the costs are deducted from the payout.",
-                        window.m_size(),
-                    );
+                    ui.horizontal(|ui| {
+                        ui.vertical(|ui| {
+                            if owned > 0 {
+                                ui.add_text(
+                                    format!("Open storage costs: {storage_costs:.0} {CURRENCY}"),
+                                    window.m_size(),
+                                )
+                                .on_hover(
+                                    "Storage costs for this month. If the commodity is sold, \
+                                    the costs are deducted from the proceeds.",
+                                    window.m_size(),
+                                );
+                            }
 
-                    ui.add_text(
-                        format!(
-                            "Total price: {:.0} {CURRENCY}",
-                            instrument.current() * ui_state.commodity_modal.amount as f32
-                        ),
-                        window.m_size(),
-                    );
+                            ui.add_text(
+                                format!(
+                                    "Proceeds: {:.0} {CURRENCY}",
+                                    instrument.current() * ui_state.commodity_modal.amount as f32 - storage_costs
+                                ),
+                                window.m_size(),
+                            )
+                            .on_hover(
+                                format!(
+                                    "Amount of money earned when selling {} {} of {}. This \
+                                    is equal to the current market price of the commodity minus \
+                                    the open storage costs.",
+                                    ui_state.commodity_modal.amount,
+                                    instrument.unit(),
+                                    instrument.lowername()
+                                ),
+                                window.m_size(),
+                            );
+                        });
+                    });
 
                     let mut buy_clicked = false;
                     let mut sell_clicked = false;

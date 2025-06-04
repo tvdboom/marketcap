@@ -157,23 +157,21 @@ pub fn top_panel(
                         "The net flow represents the total financial movement at the end of \
                         each month, calculated as income minus debt repayments and expenses. \
                         It shows whether the player will gain or lose money this month.\n\n\
-                        Cash interest: {}\n------------------------\nInflow: {:+}\n\n\
-                        Storage costs: {}\nLoan installments: {}\n------------------------\nOutflow: {:-}",
-                        player.cash.accumulated_interest.floor(),
-                        player.inflow().floor(),
+                        Cash interest: {:.0}\n------------------------\nInflow: {:+.0}\n\n\
+                        Storage costs: {:.0}\nLoan installments: {:.0}\n------------------------\nOutflow: {:-.0}",
+                        player.cash.accumulated_interest,
+                        player.inflow(),
                         player
                             .instruments
                             .iter()
                             .map(|o| o.amount as f32 * economy.get(&o.kind).storage_cost())
-                            .sum::<f32>()
-                            .floor(),
+                            .sum::<f32>(),
                         player
                             .loans
                             .iter()
                             .map(|l| l.next_installment_amount())
-                            .sum::<f32>()
-                            .floor(),
-                        player.outflow(&economy).floor(),
+                            .sum::<f32>(),
+                        player.outflow(&economy),
                     ),
                     None,
                     &window,

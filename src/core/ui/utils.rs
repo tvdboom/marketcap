@@ -112,6 +112,7 @@ impl CustomHover for Response {
 pub trait CustomUi {
     fn add_text(&mut self, text: impl Into<String>, size: f32) -> Response;
     fn add_button(&mut self, text: impl Into<String>, window: &Window) -> Response;
+    fn add_indicator(&mut self, diff: f32, window: &Window) -> Response;
     fn add_factor(
         &mut self,
         name: impl Into<String>,
@@ -139,6 +140,28 @@ impl CustomUi for Ui {
         self.add_sized(
             [window.width() * 0.2, window.height() * 0.075],
             Button::new(add_text(text, window.xl_size())),
+        )
+    }
+
+    fn add_indicator(&mut self, diff: f32, window: &Window) -> Response {
+        self.label(
+            RichText::new(format!(
+                "  {}{diff:.1}%",
+                match diff {
+                    d if d >= 0. => "▲",
+                    _ => "▼",
+                }
+            ))
+            .color(match diff {
+                d if d >= 0.05 => Color32::GREEN,
+                d if d <= -0.05 => Color32::RED,
+                _ => Color32::WHITE,
+            })
+            .size(window.m_size()),
+        )
+        .on_hover(
+            "Percentage difference between the current price and the average price of the last month.",
+            window.m_size(),
         )
     }
 
@@ -221,27 +244,7 @@ impl CustomUi for Ui {
                                 window.m_size(),
                             );
 
-                            let diff = commodity.diff();
-                            ui.label(
-                                RichText::new(format!(
-                                    "  {}{diff:.1}%",
-                                    match diff {
-                                        d if d >= 0. => "▲",
-                                        _ => "▼",
-                                    }
-                                ))
-                                .color(match diff {
-                                    d if d >= 0.05 => Color32::GREEN,
-                                    d if d <= -0.05 => Color32::RED,
-                                    _ => Color32::WHITE,
-                                })
-                                .size(window.m_size()),
-                            )
-                            .on_hover(
-                                "Percentage difference between the current price and \
-                                the average price of the last month.",
-                                window.m_size(),
-                            );
+                            ui.add_indicator(commodity.diff(), window);
                         });
 
                         ui.add_text(
