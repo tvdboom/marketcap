@@ -11,12 +11,7 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::Instrument;
 use crate::core::instruments::commodities::Commodity;
 use crate::core::resources::ImageIds;
-use crate::utils::{NameFromEnum, format_number};
-
-/// Add text widget with custom size
-pub fn add_text(text: impl Into<String>, size: f32) -> RichText {
-    RichText::new(text).size(size)
-}
+use crate::utils::{NameFromEnum, format_number, get_ratio};
 
 /// Custom IOS style toggle for UI
 pub fn toggle(on: &mut bool) -> impl Widget + '_ {
@@ -56,7 +51,7 @@ pub fn toggle(on: &mut bool) -> impl Widget + '_ {
 /// Make a line plot with the last 6 months of data
 pub fn line_plot(ui: &mut Ui, data: &Vec<f32>) {
     let start = data.len().saturating_sub(190); // 6 months approx.
-    let sin: PlotPoints = data
+    let points: PlotPoints = data
         .iter()
         .skip(start)
         .enumerate()
@@ -85,38 +80,17 @@ pub fn line_plot(ui: &mut Ui, data: &Vec<f32>) {
             AxisHints::new_x().formatter(|mark, _| format_number(mark.value as f32)),
         ])
         .show(ui, |plot_ui| {
-            plot_ui.line(Line::new("line", sin).width(LINE_WIDTH).color(LINE_COLOR))
+            plot_ui.line(Line::new("line", points).width(LINE_WIDTH).color(LINE_COLOR))
         });
 }
 
-/// Custom syntactic sugar for repetitive UI elements
-pub trait CustomHover {
-    fn on_hover(self, text: impl Into<String>, size: f32) -> Response;
-    fn on_disabled_hover(self, text: impl Into<String>, size: f32) -> Response;
-}
-
-impl CustomHover for Response {
-    fn on_hover(self, text: impl Into<String>, size: f32) -> Response {
-        self.on_hover_ui(|ui| {
-            ui.add_text(text, size);
-        })
-    }
-
-    fn on_disabled_hover(self, text: impl Into<String>, size: f32) -> Response {
-        self.on_disabled_hover_ui(|ui| {
-            ui.add_text(text, size);
-        })
-    }
-}
-
 pub trait CustomUi {
-    fn add_text(&mut self, text: impl Into<String>, size: f32) -> Response;
-    fn add_button(&mut self, text: impl Into<String>, window: &Window) -> Response;
-    fn add_indicator(&mut self, diff: f32, window: &Window) -> Response;
+    fn add_button(&mut self, text: impl Into<WidgetText>, window: &Window) -> Response;
+    fn add_indicator(&mut self, diff: f32) -> Response;
     fn add_factor(
         &mut self,
-        name: impl Into<String>,
-        value: impl Into<String>,
+        name: impl Into<RichText>,
+        value: impl Into<WidgetText>,
         color: impl Into<Color32>,
         texture_id: TextureId,
         description: String,
@@ -132,18 +106,17 @@ pub trait CustomUi {
 }
 
 impl CustomUi for Ui {
-    fn add_text(&mut self, text: impl Into<String>, size: f32) -> Response {
-        self.label(RichText::new(text).size(size))
-    }
-
-    fn add_button(&mut self, text: impl Into<String>, window: &Window) -> Response {
+    fn add_button(&mut self, text: impl Into<WidgetText>, window: &Window) -> Response {
         self.add_sized(
-            [window.width() * 0.2, window.height() * 0.075],
-            Button::new(add_text(text, window.xl_size())),
+            [
+                (window.width() * 0.2).min(300.),
+                (window.height() * 0.075).min(70.),
+            ],
+            Button::new(text),
         )
     }
 
-    fn add_indicator(&mut self, diff: f32, window: &Window) -> Response {
+    fn add_indicator(&mut self, diff: f32) -> Response {
         self.label(
             RichText::new(format!(
                 "  {}{diff:.1}%",
@@ -156,19 +129,17 @@ impl CustomUi for Ui {
                 d if d >= 0.05 => Color32::GREEN,
                 d if d <= -0.05 => Color32::RED,
                 _ => Color32::WHITE,
-            })
-            .size(window.m_size()),
+            }),
         )
-        .on_hover(
+        .on_hover_text(
             "Percentage difference between the current price and the average price of the last month.",
-            window.m_size(),
         )
     }
 
     fn add_factor(
         &mut self,
-        name: impl Into<String>,
-        value: impl Into<String>,
+        name: impl Into<RichText>,
+        value: impl Into<WidgetText>,
         color: impl Into<Color32>,
         texture_id: TextureId,
         description: String,
@@ -178,17 +149,17 @@ impl CustomUi for Ui {
         self.horizontal_centered(|ui| {
             ui.add(Image::new(SizedTexture::new(
                 texture_id,
-                [window.xxl_size(); 2],
+                [get_ratio(window.width(), window.height(), TextStyle::Heading); 2],
             )));
-            ui.label(add_text(value, window.xxl_size()).color(color))
+            ui.label(value.into().heading().color(color))
         })
         .response
         .on_hover_ui(|ui| {
             ui.set_min_width(window.width() * 0.4);
 
-            ui.add_text(name, window.l_size());
+            ui.label(name.into());
             ui.add_space(window.height() * 0.01);
-            ui.add_text(description, window.m_size());
+            ui.label(description);
             if let Some(values) = plot {
                 ui.add_space(window.height() * 0.01);
                 line_plot(ui, values);
@@ -217,77 +188,61 @@ impl CustomUi for Ui {
                     .on_hover_ui(|ui| {
                         ui.set_min_width(window.width() * 0.4);
 
-                        ui.add_text(commodity.name.to_name(), window.l_size());
+                        ui.label(commodity.name.to_name());
                         ui.add_space(window.height() * 0.01);
-                        ui.add_text(commodity.description(), window.m_size());
+                        ui.label(commodity.description());
                         ui.add_space(window.height() * 0.01);
                         line_plot(ui, &commodity.prices);
                     });
 
                     ui.vertical(|ui| {
-                        ui.add_text(commodity.name.to_name(), window.l_size());
+                        ui.heading(commodity.name.to_name());
 
                         ui.horizontal(|ui| {
-                            ui.add_text(
-                                format!(
-                                    "Price: {:.0} {CURRENCY}/{}",
-                                    commodity.current(),
-                                    commodity.unit()
-                                ),
-                                window.m_size(),
-                            )
-                            .on_hover(
-                                format!(
-                                    "Current price of the commodity per {}.",
-                                    commodity.unit.to_lowername()
-                                ),
-                                window.m_size(),
-                            );
+                            ui.label(format!(
+                                "Price: {:.0} {CURRENCY}/{}",
+                                commodity.current(),
+                                commodity.unit()
+                            ))
+                            .on_hover_text(format!(
+                                "Current price of the commodity per {}.",
+                                commodity.unit.to_lowername()
+                            ));
 
-                            ui.add_indicator(commodity.diff(), window);
+                            ui.add_indicator(commodity.diff());
                         });
 
-                        ui.add_text(
+                        ui.label(
                             format!("Volatility: {:.1}%", commodity.volatility),
-                            window.m_size(),
                         )
-                        .on_hover(
+                        .on_hover_text(
                             "Maximum daily price fluctuation as percentage of the current price.",
-                            window.m_size(),
                         );
 
-                        ui.add_text(
-                            format!(
-                                "Storage cost: {:.0} {CURRENCY}/{}/month",
-                                commodity.storage_cost * 30.,
-                                commodity.unit.abbr(),
-                            ),
-                            window.m_size(),
-                        )
-                        .on_hover(
-                            "Current price of storage per day. Note that this price increases \
-                            with inflation. Storage costs are deducted every month or when the \
-                            commodity is sold.",
-                            window.m_size(),
+                        ui.label(format!(
+                            "Storage costs: {:.0} {CURRENCY}/{}/month",
+                            commodity.storage_cost * 30.,
+                            commodity.unit.abbr(),
+                        ))
+                        .on_hover_text(
+                            "Current price of storage per month. Note that this price \
+                            increases with inflation. Storage costs are deducted every month \
+                            or when the commodity is sold.",
                         );
 
-                        ui.add_text(
-                            format!(
-                                "Production: {}",
-                                Country::iter()
-                                    .filter_map(|c| c
-                                        .production()
-                                        .contains(&commodity.name)
-                                        .then_some(c.to_name()))
-                                    .collect::<Vec<_>>()
-                                    .join(", ")
-                            ),
-                            window.m_size(),
-                        )
-                        .on_hover(
+                        ui.label(format!(
+                            "Production: {}",
+                            Country::iter()
+                                .filter_map(|c| c
+                                    .production()
+                                    .contains(&commodity.name)
+                                    .then_some(c.to_name()))
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        ))
+                        .on_hover_text(
                             "Countries producing this commodity. Bond prices for \
                             these countries might be affected by the commodity price.",
-                            window.m_size(),
                         );
                     });
                 })
@@ -296,48 +251,5 @@ impl CustomUi for Ui {
             .response
             .interact(Sense::hover())
             .interact(Sense::click())
-    }
-}
-
-/// Standard text sizes as a fraction of the window size
-pub trait TextSizes {
-    const XXL_SIZE: f32 = 0.034;
-    const XL_SIZE: f32 = 0.024;
-    const L_SIZE: f32 = 0.022;
-    const M_SIZE: f32 = 0.018;
-    const S_SIZE: f32 = 0.016;
-    const XS_SIZE: f32 = 0.014;
-
-    fn xxl_size(&self) -> f32;
-    fn xl_size(&self) -> f32;
-    fn l_size(&self) -> f32;
-    fn m_size(&self) -> f32;
-    fn s_size(&self) -> f32;
-    fn xs_size(&self) -> f32;
-}
-
-impl TextSizes for Window {
-    fn xxl_size(&self) -> f32 {
-        self.width().min(self.height()).min(1.2 * HEIGHT) * Self::XXL_SIZE
-    }
-
-    fn xl_size(&self) -> f32 {
-        self.width().min(self.height()).min(1.2 * HEIGHT) * Self::XL_SIZE
-    }
-
-    fn l_size(&self) -> f32 {
-        self.width().min(self.height()).min(1.2 * HEIGHT) * Self::L_SIZE
-    }
-
-    fn m_size(&self) -> f32 {
-        self.width().min(self.height()).min(1.2 * HEIGHT) * Self::M_SIZE
-    }
-
-    fn s_size(&self) -> f32 {
-        self.width().min(self.height()).min(1.2 * HEIGHT) * Self::S_SIZE
-    }
-
-    fn xs_size(&self) -> f32 {
-        self.width().min(self.height()).min(1.2 * HEIGHT) * Self::XS_SIZE
     }
 }

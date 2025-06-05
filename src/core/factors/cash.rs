@@ -1,5 +1,3 @@
-use std::fmt::{Display, Formatter, Result};
-
 use serde::{Deserialize, Serialize};
 
 use crate::core::factors::Factor;
@@ -33,12 +31,6 @@ impl Default for Cash {
             current_interest: 0.,
             accumulated_interest: 0.,
         }
-    }
-}
-
-impl Display for Cash {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "{:.0}", self.current().floor())
     }
 }
 

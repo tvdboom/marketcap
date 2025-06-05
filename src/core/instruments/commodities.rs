@@ -19,7 +19,7 @@ impl Unit {
         match self {
             Unit::Gram => "g",
             Unit::Barrel => "bbl",
-            Unit::MetricTon => "ton",
+            Unit::MetricTon => "t",
             Unit::MillionBritishThermalUnits => "MMBtu",
         }
     }
@@ -30,11 +30,14 @@ pub enum CommodityName {
     #[default]
     Aluminium,
     Cocoa,
+    Coffee,
     Copper,
+    Corn,
     Gold,
     Iron,
     LNG,
     Oil,
+    Silicon,
     Wheat,
 }
 
@@ -75,18 +78,25 @@ impl Commodity {
                 agricultural commodity with high volatility. Its price is influenced by \
                 weather conditions and crop yields."
             },
+            CommodityName::Coffee => {
+                "A globally traded beverage commodity, coffee is subject to high volatility \
+                due to weather conditions, crop yields, and global demand."
+            },
             CommodityName::Copper => {
                 "A versatile metal known for its high conductivity, durability and corrosion \
                 resistance. Copper is widely used in electrical wiring and construction. Its \
                 a volatile commodity that greatly influences multiple sectors like technology,\
                 military and transportation."
             },
+            CommodityName::Corn => {
+                "A staple agricultural commodity used for food, animal feed, and biofuels. \
+                Corn is a relatively stable asset."
+            },
             CommodityName::Gold => {
                 "A precious metal valued for its rarity, durability, and historical role as \
                 a store of value. Gold serves as a stable but slow-growing investment, and \
                 a hedge against inflation. While not highly volatile, gold retains value \
-                even during market crashes, making it a strategic asset in times of crisis. \
-                Gold doesn't degrade over time, allowing it to be held indefinitely."
+                even during market crashes, making it a strategic asset in times of crisis."
             },
             CommodityName::Iron => {
                 "Iron is a strong and abundant metal. As the backbone of steel production, \
@@ -109,6 +119,11 @@ impl Commodity {
                 quickly, making it ideal for aggressive traders or those hedging industrial \
                 operations."
             },
+            CommodityName::Silicon => {
+                "A key component in electronics and solar panels, silicon is a highly volatile \
+                commodity. Its price is influenced by technological advancements and global \
+                demand for electronics."
+            },
             CommodityName::Wheat => {
                 "A staple agricultural commodity essential for global food supply. Wheat \
                 represents a relatively stable but seasonally influenced asset. Its price \
@@ -125,11 +140,11 @@ impl Commodity {
 
         // If the economy is doing really good or bad, it affects prices
         if economy < 25. || economy > 75. {
-            new_price *= 1. + self.economy_factor * (economy - Economy::DEFAULT) / 100.;
+            new_price *= 1. + self.economy_factor * (economy - Economy::DEFAULT) / 300.;
         }
 
         new_price = new_price.max(0.);
-
+        
         self.prices.push(new_price);
         new_price
     }
@@ -180,6 +195,14 @@ pub fn start_commodities() -> Vec<Commodity> {
             storage_cost: 0.2,
         },
         Commodity {
+            name: CommodityName::Coffee,
+            unit: Unit::MetricTon,
+            prices: vec![3300.],
+            volatility: 4.5,
+            economy_factor: 0.04,
+            storage_cost: 0.5,
+        },
+        Commodity {
             name: CommodityName::Copper,
             unit: Unit::MetricTon,
             prices: vec![9623.],
@@ -188,11 +211,19 @@ pub fn start_commodities() -> Vec<Commodity> {
             storage_cost: 0.6,
         },
         Commodity {
+            name: CommodityName::Corn,
+            unit: Unit::MetricTon,
+            prices: vec![215.],
+            volatility: 2.5,
+            economy_factor: -0.02,
+            storage_cost: 0.1,
+        },
+        Commodity {
             name: CommodityName::Gold,
             unit: Unit::Gram,
             prices: vec![93.],
-            volatility: 1.,
-            economy_factor: -0.1,
+            volatility: 0.3,
+            economy_factor: -0.01,
             storage_cost: 0.05,
         },
         Commodity {
@@ -218,6 +249,14 @@ pub fn start_commodities() -> Vec<Commodity> {
             volatility: 5.,
             economy_factor: 0.09,
             storage_cost: 0.1,
+        },
+        Commodity {
+            name: CommodityName::Silicon,
+            unit: Unit::MetricTon,
+            prices: vec![6000.],
+            volatility: 6.5,
+            economy_factor: 0.07,
+            storage_cost: 0.4,
         },
         Commodity {
             name: CommodityName::Wheat,

@@ -4,7 +4,7 @@ use strum_macros::EnumIter;
 
 use crate::core::ui::themes::{Aesthetics, NordDark, NordLight};
 
-#[derive(EnumIter, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum Theme {
     #[default]
     Dark,
@@ -27,7 +27,7 @@ impl Theme {
     }
 }
 
-#[derive(EnumIter, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum AudioSetting {
     Mute,
     #[default]

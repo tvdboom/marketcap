@@ -10,6 +10,7 @@ use crate::core::loans::Loan;
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum InstrumentKind {
+    Stock,
     Commodity(CommodityName),
 }
 
@@ -43,16 +44,19 @@ impl Player {
         self.cash.accumulated_interest
     }
 
-    pub fn outflow(&self, economy: &GlobalEconomy) -> f32 {
-        let storage_costs: f32 = self
-            .instruments
+    pub fn storage_costs(&self, economy: &GlobalEconomy) -> f32 {
+        self.instruments
             .iter()
             .map(|o| o.amount as f32 * economy.get(&o.kind).storage_cost())
-            .sum();
+            .sum()
+    }
 
-        let loan_payments: f32 = self.loans.iter().map(|l| l.next_installment_amount()).sum();
+    pub fn loan_installments(&self) -> f32 {
+        self.loans.iter().map(|l| l.next_installment_amount()).sum()
+    }
 
-        storage_costs + loan_payments
+    pub fn outflow(&self, economy: &GlobalEconomy) -> f32 {
+        self.storage_costs(economy) + self.loan_installments()
     }
 
     pub fn netflow(&self, economy: &GlobalEconomy) -> f32 {
@@ -60,26 +64,31 @@ impl Player {
     }
 
     pub fn resolve_debts(&mut self, economy: &GlobalEconomy) -> bool {
-        let mut success = true;
+        let mut has_debt = false;
+        let mut has_paid = true;
 
         for instrument in self.instruments.iter() {
+            has_debt = true;
+
             let storage_cost =
                 instrument.amount as f32 * economy.get(&instrument.kind).storage_cost();
 
             if self.cash.current() > storage_cost {
                 self.cash.amount -= storage_cost;
             } else {
-                success = false;
+                has_paid = false;
                 break;
             }
         }
 
         self.loans.retain_mut(|loan| {
+            has_debt = true;
+
             let installment = loan.next_installment_amount();
 
             if installment > self.cash.current() {
                 loan.defaults += 1;
-                success = false;
+                has_paid = false;
             } else {
                 self.cash.amount -= loan.next_installment_amount();
                 loan.outstanding -= loan.next_principal_component();
@@ -89,13 +98,22 @@ impl Player {
             loan.outstanding >= 1. // Keep loans that are not fully repaid
         });
 
-        if success {
-            self.credit_score.score = (self.credit_score.score + 1).min(CreditScore::MAX);
-        } else {
-            self.credit_score.score = (self.credit_score.score - 12).max(CreditScore::MIN);
+        if has_debt {
+            if has_paid {
+                self.credit_score.score = (self.credit_score.score + 1).min(CreditScore::MAX);
+            } else {
+                self.credit_score.score = self.credit_score.score.saturating_sub(12).max(CreditScore::MIN);
+            }
         }
 
-        success
+        has_paid
+    }
+
+    pub fn commodities(&self) -> Vec<&OwnedInstrument> {
+        self.instruments
+            .iter()
+            .filter(|o| matches!(o.kind, InstrumentKind::Commodity(_)))
+            .collect::<Vec<_>>()
     }
 
     pub fn get_owned(&self, instrument: &InstrumentKind) -> u32 {

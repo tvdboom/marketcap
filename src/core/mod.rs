@@ -32,7 +32,8 @@ use crate::core::ui::commodities::commodity_modal;
 use crate::core::ui::menu::{in_game_menu, toggle_menu_keyboard};
 use crate::core::ui::state::UiState;
 use crate::core::ui::systems::{
-    add_egui_images, central_panel, check_keys, left_panel, set_egui_style, top_panel,
+    add_egui_images, central_panel, check_keys, left_panel, on_resize_system, set_egui_style,
+    top_panel,
 };
 
 pub struct GamePlugin;
@@ -95,6 +96,7 @@ impl Plugin for GamePlugin {
                     .chain()
                     .in_set(InGameSet),
             )
+            .add_systems(PostUpdate, on_resize_system)
             // Systems
             .add_systems(
                 Update,

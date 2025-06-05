@@ -3,7 +3,6 @@ use bevy_egui::egui::Ui;
 use strum::IntoEnumIterator;
 
 use crate::core::ui::state::{BondTab, UiState};
-use crate::core::ui::utils::{CustomUi, TextSizes, add_text};
 use crate::utils::NameFromEnum;
 
 pub fn bonds_panel(ui: &mut Ui, ui_state: &mut UiState, window: &Window) {
@@ -12,10 +11,7 @@ pub fn bonds_panel(ui: &mut Ui, ui_state: &mut UiState, window: &Window) {
             ui.selectable_value(
                 &mut ui_state.bonds,
                 tab,
-                add_text(
-                    format!("{}  {}", tab.emoji(), tab.to_name()),
-                    window.l_size(),
-                ),
+                format!("{}  {}", tab.emoji(), tab.to_name()),
             );
         }
     });
@@ -26,13 +22,9 @@ pub fn bonds_panel(ui: &mut Ui, ui_state: &mut UiState, window: &Window) {
 
     match ui_state.bonds {
         BondTab::Government => {
-            ui.add_text("", window.m_size());
-
             ui.separator();
         },
         BondTab::Corporate => {
-            ui.add_text("", window.m_size());
-
             ui.separator();
         },
     }

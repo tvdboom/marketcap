@@ -73,7 +73,7 @@ impl LoanProvider {
     }
 }
 
-#[derive(EnumIter, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum LoanKind {
     #[default]
     Annuity,
@@ -96,7 +96,7 @@ impl LoanKind {
     }
 }
 
-#[derive(EnumIter, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum LoanTerm {
     OneYear,
     ThreeYears,
@@ -191,7 +191,7 @@ impl Loan {
 
     pub fn maturity_date(&self) -> NaiveDate {
         self.start_date
-            .checked_add_months(Months::new(self.n_installments))
+            .checked_add_months(Months::new(self.installments_left()))
             .unwrap()
     }
 }

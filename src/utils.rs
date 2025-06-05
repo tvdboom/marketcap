@@ -1,9 +1,26 @@
 use std::fmt::Debug;
 
+use bevy_egui::egui::TextStyle;
 use chrono::{Datelike, NaiveDate};
 use rand::distr::Alphanumeric;
 use rand::{Rng, rng};
 use regex::Regex;
+
+use crate::core::constants::HEIGHT;
+
+/// Get the text size ratio depending on the window size
+pub fn get_ratio(width: f32, height: f32, style: TextStyle) -> f32 {
+    let ratio = width.min(height).min(1.2 * HEIGHT);
+
+    match style {
+        TextStyle::Small => ratio * 0.016,
+        TextStyle::Body => ratio * 0.018,
+        TextStyle::Button => ratio * 0.021,
+        TextStyle::Heading => ratio * 0.035,
+        TextStyle::Monospace => ratio * 0.024,
+        _ => unreachable!(), // We don't use custom text styles
+    }
+}
 
 /// Create a random 5-character GUID
 pub fn create_guid() -> String {
@@ -70,10 +87,19 @@ impl<T: Debug> NameFromEnum for T {
 /// Trait to round a number to one decimal place
 pub trait Round1 {
     fn round1(self) -> Self;
+    fn signed(self) -> String;
 }
 
 impl Round1 for f32 {
     fn round1(self) -> Self {
         (self * 10.).round() / 10.
+    }
+
+    fn signed(self) -> String {
+        match self as i32 {
+            x if x > 0 => format!("+{}", x),
+            x if x < 0 => x.to_string(),
+            _ => "0".to_string(),
+        }
     }
 }

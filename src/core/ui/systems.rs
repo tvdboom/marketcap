@@ -1,7 +1,7 @@
 use bevy::prelude::*;
+use bevy::window::WindowResized;
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
-use bevy_egui::egui::widget_text::RichText;
 use bevy_egui::egui::{
     Align, CentralPanel, Color32, FontData, FontFamily, Frame, Layout, Margin, SidePanel,
     TopBottomPanel,
@@ -9,12 +9,12 @@ use bevy_egui::egui::{
 use strum::IntoEnumIterator;
 
 use crate::core::assets::WorldAssets;
-use crate::core::constants::{DATE_FORMAT, GREEN, LEFT_LABEL_FRAC, TOP_LABEL_FRAC, WIDTH};
+use crate::core::constants::{CUSTOM_GREEN, DATE_FORMAT, LEFT_LABEL_FRAC, TOP_LABEL_FRAC, WIDTH};
 use crate::core::factors::Factor;
 use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::messages::MessageEv;
-use crate::core::player::{InstrumentKind, Player};
+use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::GameState;
 use crate::core::ui::bonds::bonds_panel;
@@ -23,13 +23,22 @@ use crate::core::ui::credit::credit_panel;
 use crate::core::ui::forex::forex_panel;
 use crate::core::ui::overview::overview_panel;
 use crate::core::ui::state::{Tab, UiState};
-use crate::core::ui::utils::{CustomUi, TextSizes};
-use crate::utils::{NameFromEnum, format_number};
+use crate::core::ui::utils::CustomUi;
+use crate::utils::{NameFromEnum, Round1, format_number};
 
-pub fn set_egui_style(mut contexts: EguiContexts, game_settings: Res<GameSettings>) {
+pub fn set_egui_style(
+    mut contexts: EguiContexts,
+    game_settings: Res<GameSettings>,
+    window: Single<&Window>,
+) {
     let context = contexts.ctx_mut();
 
-    context.set_style(game_settings.theme.get().custom_style());
+    context.set_style(
+        game_settings
+            .theme
+            .get()
+            .custom_style(window.width(), window.height()),
+    );
 
     context.add_font(FontInsert::new(
         "firamono",
@@ -73,6 +82,18 @@ pub fn add_egui_images(
     }
 }
 
+pub fn on_resize_system(
+    mut contexts: EguiContexts,
+    game_settings: Res<GameSettings>,
+    mut resize_reader: EventReader<WindowResized>,
+) {
+    for ev in resize_reader.read() {
+        contexts
+            .ctx_mut()
+            .set_style(game_settings.theme.get().custom_style(ev.width, ev.height));
+    }
+}
+
 pub fn top_panel(
     mut contexts: EguiContexts,
     economy: Res<GlobalEconomy>,
@@ -98,7 +119,7 @@ pub fn top_panel(
                 ui.add_factor(
                     "Enterprise value",
                     format_number(player.enterprise_value(&economy)),
-                    GREEN,
+                    CUSTOM_GREEN,
                     images.get("enterprise"),
                     format!(
                         "The enterprise value is a comprehensive measure of a company's total \
@@ -107,23 +128,25 @@ pub fn top_panel(
                         In the game, the enterprise value represents a measure of the success \
                         of the player. If the enterprise value drops below zero, the company \
                         goes bankrupt and the game is lost.\n\n\
-                        Cash: {:+.0}\nCommodities: {:+.0}\nDebt: {:-.0}\n\
-                        -------------------\nEnterprise value: {:.0}",
-                        player.cash,
+                        Cash: {}\n\
+                        Commodities: {}\n\
+                        Debt: {}\n\
+                        -------------------\n\
+                        Enterprise value: {}",
+                        player.cash.current().signed(),
                         player
-                            .instruments
+                            .commodities()
                             .iter()
-                            .filter(|o| matches!(o.kind, InstrumentKind::Commodity(_)))
                             .map(|o| o.amount as f32 * economy.get_current(&o.kind))
                             .sum::<f32>()
-                            .floor(),
+                            .signed(),
                         player
                             .loans
                             .iter()
-                            .map(|l| l.outstanding)
+                            .map(|l| -l.outstanding)
                             .sum::<f32>()
-                            .floor(),
-                        player.enterprise_value(&economy).floor(),
+                            .signed(),
+                        player.enterprise_value(&economy) as i32,
                     ),
                     None,
                     &window,
@@ -133,8 +156,8 @@ pub fn top_panel(
 
                 ui.add_factor(
                     "Cash",
-                    player.cash.to_string(),
-                    GREEN,
+                    (player.cash.current() as u32).to_string(),
+                    CUSTOM_GREEN,
                     images.get(player.cash.image()),
                     player.cash.description(),
                     None,
@@ -146,10 +169,10 @@ pub fn top_panel(
                 let netflow = player.netflow(&economy).floor();
                 ui.add_factor(
                     "Net flow",
-                    format!("{netflow:+}"),
+                    netflow.signed(),
                     match netflow {
                         n if n <= -1. => Color32::RED,
-                        n if n >= 1. => GREEN,
+                        n if n >= 1. => CUSTOM_GREEN,
                         _ => text_color,
                     },
                     images.get("netflow"),
@@ -157,21 +180,18 @@ pub fn top_panel(
                         "The net flow represents the total financial movement at the end of \
                         each month, calculated as income minus debt repayments and expenses. \
                         It shows whether the player will gain or lose money this month.\n\n\
-                        Cash interest: {:.0}\n------------------------\nInflow: {:+.0}\n\n\
-                        Storage costs: {:.0}\nLoan installments: {:.0}\n------------------------\nOutflow: {:-.0}",
-                        player.cash.accumulated_interest,
-                        player.inflow(),
-                        player
-                            .instruments
-                            .iter()
-                            .map(|o| o.amount as f32 * economy.get(&o.kind).storage_cost())
-                            .sum::<f32>(),
-                        player
-                            .loans
-                            .iter()
-                            .map(|l| l.next_installment_amount())
-                            .sum::<f32>(),
-                        player.outflow(&economy),
+                        Cash interest: {}\n\
+                        ------------------------\n\
+                        Inflow: {}\n\n\
+                        Storage costs: {}\n\
+                        Loan installments: {}\n\
+                        ------------------------\n\
+                        Outflow: {}",
+                        player.cash.accumulated_interest as u32,
+                        player.inflow().signed(),
+                        player.storage_costs(&economy) as u32,
+                        player.loan_installments() as u32,
+                        (-player.outflow(&economy)).signed(),
                     ),
                     None,
                     &window,
@@ -181,10 +201,10 @@ pub fn top_panel(
 
                 ui.add_factor(
                     "Credit score",
-                    player.credit_score.to_string(),
+                    player.credit_score.current().to_string(),
                     match player.credit_score.current() {
                         n if n < 30. => Color32::RED,
-                        n if n > 70. => GREEN,
+                        n if n > 70. => CUSTOM_GREEN,
                         _ => text_color,
                     },
                     images.get(player.credit_score.image()),
@@ -197,7 +217,7 @@ pub fn top_panel(
 
                 ui.add_factor(
                     "Global economic factor",
-                    economy.economy.to_string(),
+                    (economy.economy.current() as u8).to_string(),
                     text_color,
                     images.get(economy.economy.image()),
                     economy.economy.description(),
@@ -209,7 +229,7 @@ pub fn top_panel(
 
                 ui.add_factor(
                     "Inflation",
-                    economy.inflation.to_string(),
+                    format!("{:.1}%", economy.inflation.current()),
                     text_color,
                     images.get(economy.inflation.image()),
                     economy.inflation.description(),
@@ -221,7 +241,7 @@ pub fn top_panel(
 
                 ui.add_factor(
                     "Global interest rate",
-                    economy.interest.to_string(),
+                    format!("{:.1}%", economy.interest.current()),
                     text_color,
                     images.get(economy.interest.image()),
                     economy.interest.description(),
@@ -268,8 +288,7 @@ pub fn left_panel(
                     ui.selectable_value(
                         &mut ui_state.tab,
                         tab,
-                        RichText::new(format!("{}  {}", tab.emoji(), tab.to_name()))
-                            .size(window.xl_size()),
+                        format!("{}  {}", tab.emoji(), tab.to_name()),
                     );
                 }
             });
@@ -298,7 +317,7 @@ pub fn central_panel(
                 }),
         )
         .show(contexts.ctx_mut(), |ui| match ui_state.tab {
-            Tab::Overview => overview_panel(ui, &mut ui_state, &player, &window),
+            Tab::Overview => overview_panel(ui, &mut ui_state, &economy, &player, &window),
             Tab::Stocks => {
                 ui.heading("Stocks");
             },

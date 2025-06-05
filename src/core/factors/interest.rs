@@ -1,5 +1,3 @@
-use std::fmt::{Display, Formatter, Result};
-
 use serde::{Deserialize, Serialize};
 
 use crate::core::factors::Factor;
@@ -17,12 +15,6 @@ impl Default for Interest {
             rate: Vec::from([Self::DEFAULT]),
             next_rate: None,
         }
-    }
-}
-
-impl Display for Interest {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "{:.1}%", self.current())
     }
 }
 

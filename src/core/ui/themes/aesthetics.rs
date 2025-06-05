@@ -1,7 +1,8 @@
 use bevy_egui;
-use bevy_egui::egui::FontFamily::{Monospace, Proportional};
 use bevy_egui::egui::style::*;
 use bevy_egui::egui::*;
+
+use crate::utils::get_ratio;
 
 pub trait Aesthetics {
     /// The name of the theme for debugging and comparison purposes.
@@ -103,7 +104,7 @@ pub trait Aesthetics {
             icon_spacing: 6.0,
             tooltip_width: 600.0,
             indent_ends_with_horizontal_line: false,
-            combo_height: 200.0,
+            combo_height: 300.0,
             scroll: ScrollStyle {
                 bar_width: self.scroll_bar_width_style(),
                 handle_min_length: 12.0,
@@ -232,14 +233,47 @@ pub trait Aesthetics {
     }
 
     /// Edit text styles.
-    /// This is literally just a copy and pasted version of eguis `default_text_styles` function.
-    fn custom_text_styles(&self) -> std::collections::BTreeMap<TextStyle, FontId> {
+    fn custom_text_styles(
+        &self,
+        width: f32,
+        height: f32,
+    ) -> std::collections::BTreeMap<TextStyle, FontId> {
         [
-            (TextStyle::Small, FontId::new(10., Proportional)),
-            (TextStyle::Body, FontId::new(14., Proportional)),
-            (TextStyle::Button, FontId::new(14., Proportional)),
-            (TextStyle::Heading, FontId::new(18., Proportional)),
-            (TextStyle::Monospace, FontId::new(12., Monospace)),
+            (
+                TextStyle::Small,
+                FontId::new(
+                    get_ratio(width, height, TextStyle::Small),
+                    FontFamily::Proportional,
+                ),
+            ),
+            (
+                TextStyle::Body,
+                FontId::new(
+                    get_ratio(width, height, TextStyle::Body),
+                    FontFamily::Proportional,
+                ),
+            ),
+            (
+                TextStyle::Button,
+                FontId::new(
+                    get_ratio(width, height, TextStyle::Button),
+                    FontFamily::Proportional,
+                ),
+            ),
+            (
+                TextStyle::Heading,
+                FontId::new(
+                    get_ratio(width, height, TextStyle::Heading),
+                    FontFamily::Proportional,
+                ),
+            ),
+            (
+                TextStyle::Monospace,
+                FontId::new(
+                    get_ratio(width, height, TextStyle::Monospace),
+                    FontFamily::Monospace,
+                ),
+            ),
         ]
         .into()
     }
@@ -248,7 +282,7 @@ pub trait Aesthetics {
     /// Relies on all above trait methods to build the complete style.
     ///
     /// Specifies the look and feel of egui.
-    fn custom_style(&self) -> Style {
+    fn custom_style(&self, width: f32, height: f32) -> Style {
         Style {
             // override the text styles here: Option<TextStyle>
             override_text_style: None,
@@ -257,7 +291,7 @@ pub trait Aesthetics {
             override_font_id: None,
 
             // set your text styles here:
-            text_styles: self.custom_text_styles(),
+            text_styles: self.custom_text_styles(width, height),
 
             // set your drag value text style:
             spacing: self.spacing_style(),

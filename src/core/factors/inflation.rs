@@ -1,5 +1,3 @@
-use std::fmt::{Display, Formatter, Result};
-
 use serde::{Deserialize, Serialize};
 
 use crate::core::factors::Factor;
@@ -13,12 +11,6 @@ pub struct Inflation(pub Vec<f32>);
 impl Default for Inflation {
     fn default() -> Self {
         Self(Vec::from([Self::DEFAULT]))
-    }
-}
-
-impl Display for Inflation {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "{:.1}%", self.current())
     }
 }
 

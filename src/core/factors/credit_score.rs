@@ -1,5 +1,3 @@
-use std::fmt::{Display, Formatter};
-
 use serde::{Deserialize, Serialize};
 
 use crate::core::factors::Factor;
@@ -19,12 +17,6 @@ impl Default for CreditScore {
         CreditScore {
             score: (Self::MIN + Self::MAX) / 2,
         }
-    }
-}
-
-impl Display for CreditScore {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.current())
     }
 }
 

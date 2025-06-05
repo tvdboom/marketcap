@@ -1,5 +1,3 @@
-use std::fmt::{Display, Formatter, Result};
-
 use rand::{Rng, rng};
 use serde::{Deserialize, Serialize};
 
@@ -11,12 +9,6 @@ pub struct Economy(pub Vec<f32>);
 impl Default for Economy {
     fn default() -> Self {
         Self(Vec::from([Self::DEFAULT]))
-    }
-}
-
-impl Display for Economy {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result {
-        write!(f, "{:.0}", self.current().floor())
     }
 }
 

@@ -47,6 +47,11 @@ impl GlobalEconomy {
 
     pub fn get(&self, instrument: &InstrumentKind) -> &dyn Instrument {
         match instrument {
+            InstrumentKind::Stock => {
+                panic!(
+                    "GlobalEconomy does not handle stocks directly. Use Player::instruments instead."
+                );
+            },
             InstrumentKind::Commodity(name) => {
                 self.commodities.iter().find(|c| c.name == *name).unwrap()
             },
