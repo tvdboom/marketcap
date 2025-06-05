@@ -8,6 +8,7 @@ use crate::core::constants::DEFAULT_SPEED;
 use crate::core::factors::economy::Economy;
 use crate::core::factors::inflation::Inflation;
 use crate::core::factors::interest::Interest;
+use crate::core::instruments::bonds::{start_bonds, Bond};
 use crate::core::instruments::Instrument;
 use crate::core::instruments::commodities::{Commodity, start_commodities};
 use crate::core::player::InstrumentKind;
@@ -28,6 +29,9 @@ pub struct GlobalEconomy {
 
     /// Global interest rate (1-10)
     pub interest: Interest,
+
+    /// Information about all bonds
+    pub bonds: Vec<Bond>,
 
     /// Information of all commodities
     pub commodities: Vec<Commodity>,
@@ -72,6 +76,7 @@ impl Default for GlobalEconomy {
             inflation: Inflation::default(),
             interest: Interest::default(),
             commodities: start_commodities(),
+            bonds: start_bonds(),
         }
     }
 }

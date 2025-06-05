@@ -11,7 +11,7 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::Instrument;
 use crate::core::instruments::commodities::Commodity;
 use crate::core::resources::ImageIds;
-use crate::utils::{NameFromEnum, format_number, get_ratio};
+use crate::utils::{format_number, get_ratio, NameFromEnum};
 
 /// Custom IOS style toggle for UI
 pub fn toggle(on: &mut bool) -> impl Widget + '_ {

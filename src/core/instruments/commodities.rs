@@ -144,7 +144,7 @@ impl Commodity {
         }
 
         new_price = new_price.max(0.);
-        
+
         self.prices.push(new_price);
         new_price
     }

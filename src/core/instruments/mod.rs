@@ -1,4 +1,5 @@
 pub mod commodities;
+pub mod bonds;
 
 pub trait Instrument {
     fn name(&self) -> String;

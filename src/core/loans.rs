@@ -49,7 +49,7 @@ impl LoanProvider {
         &self,
         global_interest_rate: f32,
         credit_score: f32,
-        term: &LoanTerm,
+        term: &Term,
         no_fee: bool,
     ) -> f32 {
         let mut interest = match self {
@@ -97,19 +97,19 @@ impl LoanKind {
 }
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub enum LoanTerm {
+pub enum Term {
     OneYear,
     ThreeYears,
     #[default]
     FiveYears,
 }
 
-impl LoanTerm {
+impl Term {
     pub fn years(&self) -> u32 {
         match self {
-            LoanTerm::OneYear => 1,
-            LoanTerm::ThreeYears => 3,
-            LoanTerm::FiveYears => 5,
+            Term::OneYear => 1,
+            Term::ThreeYears => 3,
+            Term::FiveYears => 5,
         }
     }
 
@@ -145,7 +145,7 @@ pub struct Loan {
     pub kind: LoanKind,
 
     /// The number of years to pay back the loan
-    pub term: LoanTerm,
+    pub term: Term,
 
     /// Whether this is a prepayment-free loan
     pub no_fee: bool,
