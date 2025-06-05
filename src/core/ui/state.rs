@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 use strum_macros::EnumIter;
 
-use crate::core::instruments::commodities::CommodityName;
 use crate::core::loans::{LoanKind, LoanProvider, Term};
+use crate::core::player::InstrumentKind;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum Tab {
@@ -114,6 +114,7 @@ impl Default for CreditState {
 #[derive(Default, PartialEq)]
 pub enum ActiveModal {
     #[default]
+    Bond,
     Commodity,
 }
 
@@ -170,11 +171,12 @@ pub enum OrderOptions {
     HighestPrice,
     LowestVolatility,
     HighestVolatility,
+    LowestInterest,
+    HighestInterest,
 }
 
 #[derive(Default)]
-pub struct CommodityModal {
-    pub name: CommodityName,
+pub struct ModalInfo {
     pub amount: u32,
     pub tab: TradeTab,
     pub order: OrderOptions,
@@ -186,6 +188,7 @@ pub struct UiState {
     pub overview: OverviewTab,
     pub bonds: BondTab,
     pub credit: CreditState,
-    pub active_modal: Option<ActiveModal>,
-    pub commodity_modal: CommodityModal,
+    pub active_modal: Option<InstrumentKind>,
+    pub bond_modal: ModalInfo,
+    pub commodity_modal: ModalInfo,
 }

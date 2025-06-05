@@ -321,7 +321,7 @@ pub fn central_panel(
             Tab::Stocks => {
                 ui.heading("Stocks");
             },
-            Tab::Bonds => bonds_panel(ui, &mut ui_state, &window),
+            Tab::Bonds => bonds_panel(ui, &mut ui_state, &economy, &player, &images, &window),
             Tab::Forex => forex_panel(ui, &mut ui_state, &window),
             Tab::Crypto => forex_panel(ui, &mut ui_state, &window),
             Tab::Commodities => {

@@ -5,12 +5,13 @@ use crate::core::factors::Factor;
 use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
 use crate::core::global_economy::GlobalEconomy;
+use crate::core::instruments::bonds::BondName;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::loans::Loan;
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum InstrumentKind {
-    Stock,
+    Bond(BondName),
     Commodity(CommodityName),
 }
 
@@ -102,13 +103,24 @@ impl Player {
             if has_paid {
                 self.credit_score.score = (self.credit_score.score + 1).min(CreditScore::MAX);
             } else {
-                self.credit_score.score = self.credit_score.score.saturating_sub(12).max(CreditScore::MIN);
+                self.credit_score.score = self
+                    .credit_score
+                    .score
+                    .saturating_sub(12)
+                    .max(CreditScore::MIN);
             }
         }
 
         has_paid
     }
 
+    pub fn bonds(&self) -> Vec<&OwnedInstrument> {
+        self.instruments
+            .iter()
+            .filter(|o| matches!(o.kind, InstrumentKind::Bond(_)))
+            .collect::<Vec<_>>()
+    }
+    
     pub fn commodities(&self) -> Vec<&OwnedInstrument> {
         self.instruments
             .iter()

@@ -15,7 +15,7 @@ use crate::core::instruments::commodities::CommodityName;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::player::{InstrumentKind, OwnedInstrument, Player};
 use crate::core::resources::ImageIds;
-use crate::core::ui::state::{ActiveModal, OrderOptions, TradeTab, UiState};
+use crate::core::ui::state::{OrderOptions, TradeTab, UiState};
 use crate::core::ui::utils::CustomUi;
 use crate::utils::NameFromEnum;
 
@@ -50,7 +50,12 @@ pub fn commodities_panel(
             ComboBox::from_id_salt("order")
                 .selected_text("Order by")
                 .show_ui(ui, |ui| {
-                    for order in OrderOptions::iter() {
+                    for order in OrderOptions::iter().filter(|o| {
+                        !matches!(
+                            o,
+                            OrderOptions::HighestInterest | OrderOptions::LowestInterest
+                        )
+                    }) {
                         ui.selectable_value(
                             &mut ui_state.commodity_modal.order,
                             order,
@@ -89,14 +94,14 @@ pub fn commodities_panel(
                         .volatility
                         .partial_cmp(&a.volatility)
                         .unwrap_or(std::cmp::Ordering::Equal),
+                    _ => unreachable!(),
                 });
 
         for commodity in commodities {
             let response = ui.add_commodity(commodity, images, window);
 
             if response.clicked() {
-                ui_state.active_modal = Some(ActiveModal::Commodity);
-                ui_state.commodity_modal.name = commodity.name;
+                ui_state.active_modal = Some(InstrumentKind::Commodity(commodity.name));
             }
         }
     });
@@ -111,8 +116,8 @@ pub fn commodity_modal(
     images: Res<ImageIds>,
     window: Single<&Window>,
 ) {
-    if ui_state.active_modal == Some(ActiveModal::Commodity) {
-        let kind = &InstrumentKind::Commodity(ui_state.commodity_modal.name);
+    if matches!(ui_state.active_modal, Some(InstrumentKind::Commodity(_))) {
+        let kind = &ui_state.active_modal.unwrap();
         let instrument = economy.get(kind);
 
         // Number of units of this commodity owned by the player
@@ -130,13 +135,13 @@ pub fn commodity_modal(
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     ComboBox::from_id_salt("commodity")
-                        .selected_text(ui_state.commodity_modal.name.to_name())
+                        .selected_text(instrument.name())
                         .show_ui(ui, |ui| {
-                            for name in CommodityName::iter() {
+                            for item in CommodityName::iter() {
                                 ui.selectable_value(
-                                    &mut ui_state.commodity_modal.name,
-                                    name,
-                                    name.to_name(),
+                                    &mut ui_state.active_modal,
+                                    Some(InstrumentKind::Commodity(item)),
+                                    item.to_name(),
                                 );
                             }
                         });
@@ -206,13 +211,13 @@ pub fn commodity_modal(
                                         "Storage costs: {:.0} {CURRENCY}/month",
                                         instrument.storage_cost() * 30.,
                                     ))
-                                        .on_hover_text("Storage costs for the selected amount.");
+                                    .on_hover_text("Storage costs for the selected amount.");
 
                                     ui.label(format!(
                                         "Price: {:.0} {CURRENCY}",
                                         amount as f32 * instrument.current(),
                                     ))
-                                        .on_hover_text("Total price for the selected amount.");
+                                    .on_hover_text("Total price for the selected amount.");
                                 });
                             });
                         }

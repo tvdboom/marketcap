@@ -9,9 +9,10 @@ use crate::core::constants::{CURRENCY, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
 use crate::core::countries::Country;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::Instrument;
+use crate::core::instruments::bonds::Bond;
 use crate::core::instruments::commodities::Commodity;
 use crate::core::resources::ImageIds;
-use crate::utils::{format_number, get_ratio, NameFromEnum};
+use crate::utils::{NameFromEnum, format_number, get_ratio};
 
 /// Custom IOS style toggle for UI
 pub fn toggle(on: &mut bool) -> impl Widget + '_ {
@@ -80,7 +81,11 @@ pub fn line_plot(ui: &mut Ui, data: &Vec<f32>) {
             AxisHints::new_x().formatter(|mark, _| format_number(mark.value as f32)),
         ])
         .show(ui, |plot_ui| {
-            plot_ui.line(Line::new("line", points).width(LINE_WIDTH).color(LINE_COLOR))
+            plot_ui.line(
+                Line::new("line", points)
+                    .width(LINE_WIDTH)
+                    .color(LINE_COLOR),
+            )
         });
 }
 
@@ -97,6 +102,7 @@ pub trait CustomUi {
         plot: Option<&Vec<f32>>,
         window: &Window,
     ) -> Response;
+    fn add_bond(&mut self, bond: &Bond, images: &ImageIds, window: &Window) -> Response;
     fn add_commodity(
         &mut self,
         commodity: &Commodity,
@@ -165,6 +171,52 @@ impl CustomUi for Ui {
                 line_plot(ui, values);
             }
         })
+    }
+
+    fn add_bond(&mut self, bond: &Bond, images: &ImageIds, window: &Window) -> Response {
+        Frame::new()
+            .stroke(Stroke::new(1.0, Color32::GRAY))
+            .corner_radius(5.0)
+            .inner_margin(25.0)
+            .show(self, |ui| {
+                ui.set_width(ui.available_width() * 0.98);
+
+                ui.horizontal(|ui| {
+                    ui.add(Image::new(SizedTexture::new(
+                        images.get(bond.name.to_lowername().as_str()),
+                        [window.height() * 0.2; 2],
+                    )));
+
+                    ui.vertical(|ui| {
+                        ui.heading(bond.name.to_name());
+
+                        ui.horizontal(|ui| {
+                            ui.label(format!("Face value: {:.0} {CURRENCY}", bond.current(),))
+                                .on_hover_text(
+                                    "Price of the bond. The same amount is returned at maturity.",
+                                );
+                        });
+
+                        ui.label(format!("Quality: {}", bond.quality.to_name()))
+                            .on_hover_text(bond.quality.description());
+
+                        ui.label(format!("Interest: {:.1}%", bond.interest,))
+                            .on_hover_text(
+                                "Also known as the coupon payment. Fixed interest paid to the \
+                            holder as percentage of the face value.",
+                            );
+
+                        ui.label("Term").on_hover_text(
+                            "Period before the bond matures. At maturity, the face value \
+                            is returned to the holder.",
+                        );
+                    });
+                })
+            })
+            .inner
+            .response
+            .interact(Sense::hover())
+            .interact(Sense::click())
     }
 
     fn add_commodity(

@@ -8,8 +8,8 @@ use crate::core::constants::DEFAULT_SPEED;
 use crate::core::factors::economy::Economy;
 use crate::core::factors::inflation::Inflation;
 use crate::core::factors::interest::Interest;
-use crate::core::instruments::bonds::{start_bonds, Bond};
 use crate::core::instruments::Instrument;
+use crate::core::instruments::bonds::{Bond, start_bonds};
 use crate::core::instruments::commodities::{Commodity, start_commodities};
 use crate::core::player::InstrumentKind;
 
@@ -39,7 +39,7 @@ pub struct GlobalEconomy {
 
 impl GlobalEconomy {
     /// Daily changes in the global economy
-    pub fn bump(&mut self) {
+    pub fn bump(&mut self) -> (f32, f32, f32) {
         let economy = self.economy.bump();
         let interest = self.interest.bump();
         let inflation = self.inflation.bump(economy, interest);
@@ -47,15 +47,13 @@ impl GlobalEconomy {
         for commodity in &mut self.commodities {
             commodity.bump(economy, inflation);
         }
+
+        (economy, inflation, interest)
     }
 
     pub fn get(&self, instrument: &InstrumentKind) -> &dyn Instrument {
         match instrument {
-            InstrumentKind::Stock => {
-                panic!(
-                    "GlobalEconomy does not handle stocks directly. Use Player::instruments instead."
-                );
-            },
+            InstrumentKind::Bond(name) => self.bonds.iter().find(|b| b.name == *name).unwrap(),
             InstrumentKind::Commodity(name) => {
                 self.commodities.iter().find(|c| c.name == *name).unwrap()
             },
@@ -75,8 +73,8 @@ impl Default for GlobalEconomy {
             economy: Economy::default(),
             inflation: Inflation::default(),
             interest: Interest::default(),
-            commodities: start_commodities(),
             bonds: start_bonds(),
+            commodities: start_commodities(),
         }
     }
 }

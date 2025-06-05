@@ -39,7 +39,7 @@ pub fn format_number(number: f32) -> String {
         n if n >= 1_000. => format!("{:.1}k", number / 1_000.),
         n if n < 10. => format!("{:.1}", number),
         n if n < 1. => format!("{:.2}", number),
-        _ => format!("{}", number as u32)
+        _ => format!("{}", number as u32),
     }
 }
 

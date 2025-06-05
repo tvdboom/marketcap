@@ -5,6 +5,7 @@ use bevy::prelude::*;
 use bevy_kira_audio::AudioSource;
 use strum::IntoEnumIterator;
 
+use crate::core::instruments::bonds::BondName;
 use crate::core::instruments::commodities::CommodityName;
 use crate::utils::NameFromEnum;
 
@@ -56,6 +57,11 @@ impl FromWorld for WorldAssets {
             ("time", assets.load("images/icons/time.png")),
             ("time-paused", assets.load("images/icons/time-paused.png")),
         ]);
+
+        for bond in BondName::iter() {
+            let name = Box::leak(Box::new(bond.to_lowername())).as_str();
+            images.insert(name, assets.load(format!("images/bonds/{}.png", name)));
+        }
 
         for commodity in CommodityName::iter() {
             let name = Box::leak(Box::new(commodity.to_lowername())).as_str();
