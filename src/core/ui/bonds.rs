@@ -8,7 +8,7 @@ use crate::core::instruments::Instrument;
 use crate::core::instruments::bonds::BondKind;
 use crate::core::player::{InstrumentKind, Player};
 use crate::core::resources::ImageIds;
-use crate::core::ui::state::{ActiveModal, BondTab, OrderOptions, UiState};
+use crate::core::ui::state::{OrderOptions, UiState};
 use crate::core::ui::utils::CustomUi;
 use crate::utils::NameFromEnum;
 
@@ -21,7 +21,7 @@ pub fn bonds_panel(
     window: &Window,
 ) {
     ui.horizontal(|ui| {
-        for tab in BondTab::iter() {
+        for tab in BondKind::iter() {
             ui.selectable_value(
                 &mut ui_state.bonds,
                 tab,
@@ -74,10 +74,7 @@ pub fn bonds_panel(
         let bonds = economy
             .bonds
             .iter()
-            .filter(|b| match ui_state.bonds {
-                BondTab::Government => b.kind == BondKind::Government,
-                BondTab::Corporate => b.kind == BondKind::Corporate,
-            })
+            .filter(|b| b.kind == ui_state.bonds)
             .sorted_by(|a, b| match ui_state.bond_modal.order {
                 OrderOptions::Alphabetical => a.name.to_lowername().cmp(&b.name.to_lowername()),
                 OrderOptions::OwnedAmount => player
@@ -110,8 +107,7 @@ pub fn bonds_panel(
             let response = ui.add_bond(bond, images, window);
 
             if response.clicked() {
-                ui_state.active_modal = Some(ActiveModal::Bond);
-                ui_state.bond_modal.name = bond.name;
+                ui_state.active_modal = Some(InstrumentKind::Bond(bond.name));
             }
         }
     });

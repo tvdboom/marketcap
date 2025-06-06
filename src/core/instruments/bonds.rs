@@ -5,10 +5,20 @@ use crate::core::instruments::Instrument;
 use crate::core::loans::Term;
 use crate::utils::NameFromEnum;
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum BondKind {
+    #[default]
     Government,
     Corporate,
+}
+
+impl BondKind {
+    pub fn emoji(&self) -> &str {
+        match self {
+            BondKind::Government => "💼",
+            BondKind::Corporate => "🏢",
+        }
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -61,7 +71,8 @@ pub struct Bond {
 impl Bond {
     /// Issue a new bond, recalculating interest and face value
     pub fn issue(&mut self) {
-        self.value.push(self.value.last().unwrap() * (1.0 + self.interest / 100.));
+        self.value
+            .push(self.value.last().unwrap() * (1.0 + self.interest / 100.));
     }
 }
 

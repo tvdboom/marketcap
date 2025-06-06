@@ -325,7 +325,7 @@ pub fn credit_panel(
                                     });
                                     
                                     ui_state.tab = Tab::Overview;
-                                    ui_state.overview = OverviewTab::Debts;
+                                    ui_state.overview.tab = OverviewTab::Debts;
                                 }
                             });
 

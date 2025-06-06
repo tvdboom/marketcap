@@ -8,11 +8,29 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondName;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::loans::Loan;
+use crate::core::messages::{MessageEv, MessageLevel};
+use crate::utils::NameFromEnum;
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum InstrumentKind {
     Bond(BondName),
     Commodity(CommodityName),
+}
+
+impl InstrumentKind {
+    pub fn name(&self) -> String {
+        match self {
+            InstrumentKind::Bond(name) => name.to_name(),
+            InstrumentKind::Commodity(name) => name.to_name(),
+        }
+    }
+
+    pub fn lowername(&self) -> String {
+        match self {
+            InstrumentKind::Bond(name) => name.to_lowername(),
+            InstrumentKind::Commodity(name) => name.to_lowername(),
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -22,11 +40,28 @@ pub struct OwnedInstrument {
     pub interest: f32,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum Order {
+    Buy,
+    Sell,
+    Close,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct TradeOrder {
+    pub id: String,
+    pub instrument: InstrumentKind,
+    pub order: Order,
+    pub amount: u32,
+    pub price: u32,
+}
+
 #[derive(Resource, Clone, Default, Serialize, Deserialize)]
 pub struct Player {
     pub cash: Cash,
     pub credit_score: CreditScore,
     pub loans: Vec<Loan>,
+    pub orders: Vec<TradeOrder>,
     pub instruments: Vec<OwnedInstrument>,
 }
 
@@ -120,7 +155,7 @@ impl Player {
             .filter(|o| matches!(o.kind, InstrumentKind::Bond(_)))
             .collect::<Vec<_>>()
     }
-    
+
     pub fn commodities(&self) -> Vec<&OwnedInstrument> {
         self.instruments
             .iter()
@@ -138,5 +173,124 @@ impl Player {
 
     pub fn get_value(&self, instrument: &InstrumentKind, economy: &GlobalEconomy) -> f32 {
         self.get_owned(instrument) as f32 * economy.get_current(instrument)
+    }
+
+    pub fn buy(&mut self, instrument: &InstrumentKind, amount: u32, price: f32) {
+        if let Some(owned) = self.instruments.iter_mut().find(|o| o.kind == *instrument) {
+            owned.amount += amount;
+        } else {
+            self.instruments.push(OwnedInstrument {
+                kind: instrument.clone(),
+                amount,
+                interest: 0.,
+            });
+        }
+
+        self.cash.amount -= price;
+    }
+
+    pub fn sell(&mut self, instrument: &InstrumentKind, amount: u32, price: f32) {
+        self.instruments.retain_mut(|o| {
+            if o.kind == *instrument {
+                o.amount = o.amount.saturating_sub(amount);
+            }
+            o.amount > 0
+        });
+
+        self.cash.amount += price;
+    }
+
+    pub fn close(&mut self, instrument: &InstrumentKind, price: f32) {
+        self.cash.amount += price;
+        self.instruments.retain(|s| s.kind != *instrument);
+    }
+    
+    pub fn execute_orders(&mut self, economy: &GlobalEconomy, message: &mut EventWriter<MessageEv>) {
+        let mut to_remove = vec![];
+
+        for (i, order) in self.orders.iter().enumerate() {
+            let instrument = economy.get(&order.instrument);
+
+            match order.order {
+                Order::Buy => {
+                    if instrument.current() >= order.price as f32 {
+                        let price = instrument.current() * order.amount as f32;
+
+                        if self.cash.current() >= price {
+                            to_remove.push(i);
+                            self.buy(&order.instrument, order.amount, price);
+
+                            message.write(MessageEv {
+                                message: format!(
+                                    "Executed order {}: bought {} {}.",
+                                    order.id,
+                                    order.amount,
+                                    order.instrument.name()
+                                ),
+                                level: MessageLevel::Info,
+                            });
+                        } else {
+                            to_remove.push(i);
+                            message.write(MessageEv {
+                                message: format!(
+                                    "Failed to execute order {} because of a lack of cash.",
+                                    order.id
+                                ),
+                                level: MessageLevel::Info,
+                            });
+                        }
+                    }
+                },
+                Order::Sell => {
+                    if instrument.current() <= order.price as f32 {
+                        let price = instrument.current() * order.amount as f32;
+
+                        to_remove.push(i);
+                        self.sell(&order.instrument, order.amount, price);
+
+                        message.write(MessageEv {
+                            message: format!(
+                                "Sold {} {} for ${:.2}",
+                                order.amount,
+                                order.instrument.name(),
+                                price
+                            ),
+                            level: MessageLevel::Info,
+                        });
+                    }
+                },
+                Order::Close => {
+                    if let Some(owned) = self.instruments.iter().find(|o| o.kind == order.instrument) {
+                        let price = instrument.current() * owned.amount as f32;
+
+                        to_remove.push(i);
+                        self.close(&order.instrument, price);
+
+                        message.write(MessageEv {
+                            message: format!(
+                                "Closed position in {} for ${:.2}",
+                                order.instrument.name(),
+                                price
+                            ),
+                            level: MessageLevel::Info,
+                        });
+                    } else {
+                        to_remove.push(i);
+                        message.write(MessageEv {
+                            message: format!(
+                                "Failed to close position in {} because it is not owned.",
+                                order.instrument.name()
+                            ),
+                            level: MessageLevel::Warning,
+                        });
+                    }
+                },
+            }
+        }
+
+        // Remove in reverse order to avoid shifting indices
+        for &i in to_remove.iter().rev() {
+            self.orders.remove(i);
+        }
     }
 }

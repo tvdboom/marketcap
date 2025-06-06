@@ -5,7 +5,7 @@ use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondKind;
 use crate::core::messages::{MessageEv, MessageLevel};
-use crate::core::player::Player;
+use crate::core::player::{Order, Player};
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
@@ -29,9 +29,10 @@ pub fn time_pass(
         for commodity in economy.commodities.iter_mut() {
             commodity.storage_cost *= 1. + inflation / 100. / 365.;
         }
-        
-        if economy.date.day() == 1 {
 
+        player.execute_orders(&economy, &mut message);
+
+        if economy.date.day() == 1 {
             // Monthly operations =================================== >>
 
             // Central bank calculates/pushes next interest rate
@@ -46,11 +47,16 @@ pub fn time_pass(
             if economy.date.month() % 6 == 1 {
                 // Bonds interest is paid
                 for owned in player.bonds() {
-                    player.cash.amount += owned.interest * bond.face_value.iter().sum::<f32>();
+                    // let bond = economy.get(&owned.instrument);
+                    // player.cash.amount += owned.interest * bond.face_value().iter().sum::<f32>();
                 }
 
                 // Government bonds are issued
-                for bond in &mut economy.bonds.iter_mut().filter(|b| b.kind == BondKind::Government) {
+                for bond in &mut economy
+                    .bonds
+                    .iter_mut()
+                    .filter(|b| b.kind == BondKind::Government)
+                {
                     bond.issue();
                 }
             }
@@ -59,7 +65,11 @@ pub fn time_pass(
 
             if economy.date.month() == 1 {
                 // Corporate bonds are issued
-                for bond in &mut economy.bonds.iter_mut().filter(|b| b.kind == BondKind::Corporate) {
+                for bond in &mut economy
+                    .bonds
+                    .iter_mut()
+                    .filter(|b| b.kind == BondKind::Corporate)
+                {
                     bond.issue();
                 }
             }
@@ -73,9 +83,9 @@ pub fn time_pass(
                 });
             }
         }
-        
+
         // Warning messages =================================== >>
-        
+
         // Check if player has enough cash to cover outflow
         if economy.date.day() == 20 && player.outflow(&economy) > player.cash.current() {
             message.write(MessageEv {

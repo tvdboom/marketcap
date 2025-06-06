@@ -1,8 +1,8 @@
-use bevy::prelude::*;
-use strum_macros::EnumIter;
-
+use crate::core::instruments::bonds::BondKind;
 use crate::core::loans::{LoanKind, LoanProvider, Term};
 use crate::core::player::InstrumentKind;
+use bevy::prelude::*;
+use strum_macros::EnumIter;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum Tab {
@@ -50,20 +50,10 @@ impl OverviewTab {
     }
 }
 
-#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
-pub enum BondTab {
-    #[default]
-    Government,
-    Corporate,
-}
-
-impl BondTab {
-    pub fn emoji(&self) -> &str {
-        match self {
-            BondTab::Government => "💼",
-            BondTab::Corporate => "🏢",
-        }
-    }
+#[derive(Default)]
+pub struct OverviewState {
+    pub tab: OverviewTab,
+    pub order_book_order: OrderOptions,
 }
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
@@ -111,13 +101,6 @@ impl Default for CreditState {
     }
 }
 
-#[derive(Default, PartialEq)]
-pub enum ActiveModal {
-    #[default]
-    Bond,
-    Commodity,
-}
-
 #[derive(EnumIter, Clone, Copy, Default, Debug, PartialEq)]
 pub enum TradeTab {
     #[default]
@@ -141,8 +124,9 @@ impl TradeTab {
         match self {
             TradeTab::MarketOrder => "Buy or sell an instrument at the current market price.",
             TradeTab::LimitOrder => {
-                "Set a specific price to buy or sell an instrument. The order will only execute \
-                if the instrument reaches that price."
+                "Set a specific price to buy or sell an instrument. The order will automatically \
+                execute if the instrument reaches that price. If there isn't enough cash at the \
+                time of execution, the order will be cancelled."
             },
             TradeTab::ShortSelling => {
                 "Short selling is a trading strategy where an investor bets against an instrument, \
@@ -177,16 +161,17 @@ pub enum OrderOptions {
 
 #[derive(Default)]
 pub struct ModalInfo {
-    pub amount: u32,
     pub tab: TradeTab,
     pub order: OrderOptions,
+    pub amount: u32,
+    pub limit_price: u32,
 }
 
 #[derive(Resource, Default)]
 pub struct UiState {
     pub tab: Tab,
-    pub overview: OverviewTab,
-    pub bonds: BondTab,
+    pub overview: OverviewState,
+    pub bonds: BondKind,
     pub credit: CreditState,
     pub active_modal: Option<InstrumentKind>,
     pub bond_modal: ModalInfo,

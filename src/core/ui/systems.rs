@@ -301,7 +301,7 @@ pub fn central_panel(
     game_settings: Res<GameSettings>,
     economy: Res<GlobalEconomy>,
     mut player: ResMut<Player>,
-    mut messages: EventWriter<MessageEv>,
+    mut message: EventWriter<MessageEv>,
     images: Res<ImageIds>,
     window: Single<&Window>,
 ) {
@@ -317,7 +317,14 @@ pub fn central_panel(
                 }),
         )
         .show(contexts.ctx_mut(), |ui| match ui_state.tab {
-            Tab::Overview => overview_panel(ui, &mut ui_state, &economy, &player, &window),
+            Tab::Overview => overview_panel(
+                ui,
+                &mut ui_state,
+                &economy,
+                &mut player,
+                &mut message,
+                &window,
+            ),
             Tab::Stocks => {
                 ui.heading("Stocks");
             },
@@ -332,7 +339,7 @@ pub fn central_panel(
                 &mut ui_state,
                 &economy,
                 &mut player,
-                &mut messages,
+                &mut message,
                 &window,
             ),
             Tab::Policies => {
