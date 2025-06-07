@@ -204,20 +204,23 @@ impl Player {
         self.cash.amount += price;
         self.instruments.retain(|s| s.kind != *instrument);
     }
-    
-    pub fn execute_orders(&mut self, economy: &GlobalEconomy, message: &mut EventWriter<MessageEv>) {
-        let mut to_remove = vec![];
 
-        for (i, order) in self.orders.iter().enumerate() {
+    pub fn execute_orders(
+        &mut self,
+        economy: &GlobalEconomy,
+        message: &mut EventWriter<MessageEv>,
+    ) {
+        let mut to_drop = vec![];
+
+        for order in self.orders.clone() {
             let instrument = economy.get(&order.instrument);
+            let owned = self.get_owned(&order.instrument);
+            let price = instrument.current() * order.amount as f32;
 
             match order.order {
                 Order::Buy => {
                     if instrument.current() >= order.price as f32 {
-                        let price = instrument.current() * order.amount as f32;
-
                         if self.cash.current() >= price {
-                            to_remove.push(i);
                             self.buy(&order.instrument, order.amount, price);
 
                             message.write(MessageEv {
@@ -230,67 +233,75 @@ impl Player {
                                 level: MessageLevel::Info,
                             });
                         } else {
-                            to_remove.push(i);
                             message.write(MessageEv {
                                 message: format!(
-                                    "Failed to execute order {} because of a lack of cash.",
+                                    "Failed to execute order {}: lack of cash.",
                                     order.id
                                 ),
-                                level: MessageLevel::Info,
+                                level: MessageLevel::Warning,
                             });
                         }
+
+                        to_drop.push(order.id);
                     }
                 },
                 Order::Sell => {
                     if instrument.current() <= order.price as f32 {
-                        let price = instrument.current() * order.amount as f32;
+                        if owned >= order.amount {
+                            self.sell(&order.instrument, order.amount, price);
 
-                        to_remove.push(i);
-                        self.sell(&order.instrument, order.amount, price);
+                            message.write(MessageEv {
+                                message: format!(
+                                    "Executed order {}: sold {} {}.",
+                                    order.id,
+                                    order.amount,
+                                    order.instrument.name()
+                                ),
+                                level: MessageLevel::Info,
+                            });
+                        } else {
+                            message.write(MessageEv {
+                                message: format!(
+                                    "Failed to execute order {}: insufficient amount owned.",
+                                    order.id
+                                ),
+                                level: MessageLevel::Warning,
+                            });
+                        }
 
-                        message.write(MessageEv {
-                            message: format!(
-                                "Sold {} {} for ${:.2}",
-                                order.amount,
-                                order.instrument.name(),
-                                price
-                            ),
-                            level: MessageLevel::Info,
-                        });
+                        to_drop.push(order.id);
                     }
                 },
                 Order::Close => {
-                    if let Some(owned) = self.instruments.iter().find(|o| o.kind == order.instrument) {
-                        let price = instrument.current() * owned.amount as f32;
+                    if instrument.current() <= order.price as f32 {
+                        if owned > 0 {
+                            self.close(&order.instrument,instrument.current() * owned as f32);
 
-                        to_remove.push(i);
-                        self.close(&order.instrument, price);
+                            message.write(MessageEv {
+                                message: format!(
+                                    "Executed order {}: closed {} position.",
+                                    order.id,
+                                    order.instrument.name(),
+                                ),
+                                level: MessageLevel::Info,
+                            });
+                        } else {
+                            message.write(MessageEv {
+                                message: format!(
+                                    "Failed to execute order {}: no {} owned.",
+                                    order.id,
+                                    order.instrument.name()
+                                ),
+                                level: MessageLevel::Warning,
+                            });
+                        }
 
-                        message.write(MessageEv {
-                            message: format!(
-                                "Closed position in {} for ${:.2}",
-                                order.instrument.name(),
-                                price
-                            ),
-                            level: MessageLevel::Info,
-                        });
-                    } else {
-                        to_remove.push(i);
-                        message.write(MessageEv {
-                            message: format!(
-                                "Failed to close position in {} because it is not owned.",
-                                order.instrument.name()
-                            ),
-                            level: MessageLevel::Warning,
-                        });
+                        to_drop.push(order.id);
                     }
                 },
             }
         }
-
-        // Remove in reverse order to avoid shifting indices
-        for &i in to_remove.iter().rev() {
-            self.orders.remove(i);
-        }
+        
+        self.orders.retain(|o| !to_drop.contains(&o.id));
     }
 }

@@ -5,7 +5,7 @@ use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondKind;
 use crate::core::messages::{MessageEv, MessageLevel};
-use crate::core::player::{Order, Player};
+use crate::core::player::Player;
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
@@ -45,7 +45,7 @@ pub fn time_pass(
             // Bi-yearly operations =================================== >>
 
             if economy.date.month() % 6 == 1 {
-                // Bonds interest is paid
+                // Bond's interest is paid
                 for owned in player.bonds() {
                     // let bond = economy.get(&owned.instrument);
                     // player.cash.amount += owned.interest * bond.face_value().iter().sum::<f32>();
