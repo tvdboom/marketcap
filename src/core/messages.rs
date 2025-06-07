@@ -50,20 +50,27 @@ fn check_messages(
     mut play_audio_ev: EventWriter<PlayAudioEv>,
     mut message_ev: EventReader<MessageEv>,
 ) {
+    // Only make one sound per level per frame
+    let (mut info, mut warning, mut error) = (true, true, true);
+
     for MessageEv { message, level } in message_ev.read() {
         match level {
-            MessageLevel::Info => {
+            MessageLevel::Info if info => {
                 play_audio_ev.write(PlayAudioEv::new("message"));
-                messages.info(message)
+                messages.info(message);
+                info = false;
             },
-            MessageLevel::Warning => {
+            MessageLevel::Warning if warning => {
                 play_audio_ev.write(PlayAudioEv::new("warning"));
-                messages.warning(message)
+                messages.warning(message);
+                warning = false;
             },
-            MessageLevel::Error => {
+            MessageLevel::Error if error => {
                 play_audio_ev.write(PlayAudioEv::new("error"));
-                messages.error(message)
+                messages.error(message);
+                error = false;
             },
+            _ => (),
         };
     }
 

@@ -32,9 +32,8 @@ impl BondQuality {
         match self {
             BondQuality::InvestmentGrade => "Bonds rated AAA to BBB. Low risk of default.",
             BondQuality::HighYield => {
-                "\
-                Bonds rated BB or lower. Considered junk bonds, offering high yields due \
-                to the increased risk."
+                "Bonds rated BB or lower. Considered junk bonds, offering high yields due \
+                to the increased risk of default."
             },
         }
     }

@@ -44,5 +44,13 @@ pub fn toggle_pause_keyboard(
 
             next_game_state.set(GameState::Running);
         }
+        
+        // Hack to control global economy
+        if keyboard.just_pressed(KeyCode::ArrowUp) {
+            *economy.economy.0.last_mut().unwrap() += 10.0;
+        }
+        if keyboard.just_pressed(KeyCode::ArrowDown) {
+            *economy.economy.0.last_mut().unwrap() -= 10.0;
+        }
     }
 }

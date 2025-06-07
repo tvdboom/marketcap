@@ -13,7 +13,7 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::Instrument;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::messages::{MessageEv, MessageLevel};
-use crate::core::player::{InstrumentKind, Order, OwnedInstrument, Player, TradeOrder};
+use crate::core::player::{InstrumentKind, Order, Player, TradeOrder};
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderOptions, TradeTab, UiState};
 use crate::core::ui::utils::CustomUi;
@@ -211,6 +211,10 @@ pub fn commodity_modal(
                             )
                             .show_value(false)
                             .text(format!("{limit_price} {CURRENCY}")),
+                        )
+                        .on_hover_text(
+                            "If the commodity's price goes above this limit, a sell order \
+                            is executed. If it goes below, a buy order is executed.",
                         );
                     });
 
@@ -237,7 +241,7 @@ pub fn commodity_modal(
                         });
                     }
 
-                    if owned >= amount {
+                    if owned >= amount && ui_state.commodity_modal.tab == TradeTab::MarketOrder {
                         if player.cash.current() >= price {
                             ui.add(Separator::default().vertical());
                         }

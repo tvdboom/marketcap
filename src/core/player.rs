@@ -219,7 +219,7 @@ impl Player {
 
             match order.order {
                 Order::Buy => {
-                    if instrument.current() >= order.price as f32 {
+                    if instrument.current() <= order.price as f32 {
                         if self.cash.current() >= price {
                             self.buy(&order.instrument, order.amount, price);
 
@@ -246,7 +246,7 @@ impl Player {
                     }
                 },
                 Order::Sell => {
-                    if instrument.current() <= order.price as f32 {
+                    if instrument.current() >= order.price as f32 {
                         if owned >= order.amount {
                             self.sell(&order.instrument, order.amount, price);
 
@@ -273,9 +273,9 @@ impl Player {
                     }
                 },
                 Order::Close => {
-                    if instrument.current() <= order.price as f32 {
+                    if instrument.current() >= order.price as f32 {
                         if owned > 0 {
-                            self.close(&order.instrument,instrument.current() * owned as f32);
+                            self.close(&order.instrument, instrument.current() * owned as f32);
 
                             message.write(MessageEv {
                                 message: format!(
@@ -301,7 +301,7 @@ impl Player {
                 },
             }
         }
-        
+
         self.orders.retain(|o| !to_drop.contains(&o.id));
     }
 }

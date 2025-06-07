@@ -49,6 +49,9 @@ pub struct Commodity {
     /// The unit the commodity is traded in
     pub unit: Unit,
 
+    /// Default price of the commodity
+    pub base_price: f32,
+    
     /// The prices of the commodity over time
     pub prices: Vec<f32>,
 
@@ -134,15 +137,23 @@ impl Commodity {
     }
 
     pub fn bump(&mut self, economy: f32, inflation: f32) -> f32 {
+        self.base_price *= 1. + inflation / 100. / 365.;
+
         let mut new_price = self.current()
             * (1. + inflation / 100. / 365.)
             * (1. + rng().random_range(-self.volatility / 100. ..self.volatility / 100.));
 
         // If the economy is doing really good or bad, it affects prices
-        if economy < 25. || economy > 75. {
+        if economy < 30. || economy > 70. {
             new_price *= 1. + self.economy_factor * (economy - Economy::DEFAULT) / 300.;
         }
 
+        // Adjust price to tend towards the base price
+        // At 100% deviation, there's a 20% adjustment towards the base price
+        // At 50% deviation, there's a 5% adjustment towards the base price
+        let deviation = (new_price - self.base_price) / self.base_price;
+        new_price *= 1. + -deviation * deviation.abs() / 5.;
+        
         new_price = new_price.max(0.);
 
         self.prices.push(new_price);
@@ -181,6 +192,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Aluminium,
             unit: Unit::MetricTon,
+            base_price: 2200.,
             prices: vec![2200.],
             volatility: 0.6,
             economy_factor: 0.05,
@@ -189,6 +201,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Cocoa,
             unit: Unit::MetricTon,
+            base_price: 9762.,
             prices: vec![9762.],
             volatility: 6.2,
             economy_factor: -0.05,
@@ -197,6 +210,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Coffee,
             unit: Unit::MetricTon,
+            base_price: 3300.,
             prices: vec![3300.],
             volatility: 4.5,
             economy_factor: 0.04,
@@ -205,6 +219,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Copper,
             unit: Unit::MetricTon,
+            base_price: 9623.,
             prices: vec![9623.],
             volatility: 4.4,
             economy_factor: 0.05,
@@ -213,6 +228,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Corn,
             unit: Unit::MetricTon,
+            base_price: 215.,
             prices: vec![215.],
             volatility: 2.5,
             economy_factor: -0.02,
@@ -221,6 +237,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Gold,
             unit: Unit::Gram,
+            base_price: 93.,
             prices: vec![93.],
             volatility: 0.3,
             economy_factor: -0.01,
@@ -229,6 +246,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Iron,
             unit: Unit::MetricTon,
+            base_price: 125.,
             prices: vec![125.],
             volatility: 0.5,
             economy_factor: 0.08,
@@ -237,6 +255,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::LNG,
             unit: Unit::MillionBritishThermalUnits,
+            base_price: 13.,
             prices: vec![13.],
             volatility: 7.2,
             economy_factor: 0.12,
@@ -245,6 +264,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Oil,
             unit: Unit::Barrel,
+            base_price: 65.,
             prices: vec![65.],
             volatility: 5.,
             economy_factor: 0.09,
@@ -253,6 +273,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Silicon,
             unit: Unit::MetricTon,
+            base_price: 6000.,
             prices: vec![6000.],
             volatility: 6.5,
             economy_factor: 0.07,
@@ -261,6 +282,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Wheat,
             unit: Unit::MetricTon,
+            base_price: 201.,
             prices: vec![201.],
             volatility: 2.3,
             economy_factor: -0.05,
