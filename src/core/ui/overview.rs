@@ -172,6 +172,7 @@ pub fn order_overview(
         "Id",
         "Name",
         "Order",
+        "Kind",
         "Amount",
         "Limit price",
         "Current price",
@@ -186,8 +187,8 @@ pub fn order_overview(
                 OrderOptions::Alphabetical => {
                     a.instrument.lowername().cmp(&b.instrument.lowername())
                 },
-                OrderOptions::LowestPrice => a.price.cmp(&b.price),
-                OrderOptions::HighestPrice => b.price.cmp(&a.price),
+                OrderOptions::LowestPrice => a.threshold.cmp(&b.threshold),
+                OrderOptions::HighestPrice => b.threshold.cmp(&a.threshold),
                 _ => unreachable!(),
             });
 
@@ -214,8 +215,9 @@ pub fn order_overview(
                             &order.id,
                             &order.instrument.name(),
                             &order.order.to_name(),
+                            &order.kind.abbr(),
                             &format!("{} {}", order.amount, instrument.unit()),
-                            &format!("{:.0} {CURRENCY}", order.price),
+                            &format!("{:.0} {CURRENCY}", order.threshold),
                             &format!("{:.0} {CURRENCY}", instrument.current()),
                         ];
 

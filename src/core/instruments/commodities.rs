@@ -51,7 +51,7 @@ pub struct Commodity {
 
     /// Default price of the commodity
     pub base_price: f32,
-    
+
     /// The prices of the commodity over time
     pub prices: Vec<f32>,
 
@@ -153,7 +153,7 @@ impl Commodity {
         // At 50% deviation, there's a 5% adjustment towards the base price
         let deviation = (new_price - self.base_price) / self.base_price;
         new_price *= 1. + -deviation * deviation.abs() / 5.;
-        
+
         new_price = new_price.max(0.);
 
         self.prices.push(new_price);

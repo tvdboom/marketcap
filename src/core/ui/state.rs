@@ -1,8 +1,9 @@
-use crate::core::instruments::bonds::BondKind;
-use crate::core::loans::{LoanKind, LoanProvider, Term};
-use crate::core::player::InstrumentKind;
 use bevy::prelude::*;
 use strum_macros::EnumIter;
+
+use crate::core::instruments::bonds::BondKind;
+use crate::core::loans::{LoanKind, LoanProvider, Term};
+use crate::core::player::{InstrumentKind, OrderKind};
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum Tab {
@@ -101,50 +102,6 @@ impl Default for CreditState {
     }
 }
 
-#[derive(EnumIter, Clone, Copy, Default, Debug, PartialEq)]
-pub enum TradeTab {
-    #[default]
-    MarketOrder,
-    LimitOrder,
-    ShortSelling,
-    Futures,
-}
-
-impl TradeTab {
-    pub fn emoji(&self) -> &str {
-        match self {
-            TradeTab::MarketOrder => "🏪",
-            TradeTab::LimitOrder => "♾",
-            TradeTab::ShortSelling => "📉",
-            TradeTab::Futures => "🔮",
-        }
-    }
-
-    pub fn description(&self) -> &str {
-        match self {
-            TradeTab::MarketOrder => "Buy or sell an instrument at the current market price.",
-            TradeTab::LimitOrder => {
-                "Set a specific price to buy or sell an instrument. The order will automatically \
-                execute if the instrument reaches that price. If there isn't enough cash at the \
-                time of execution, the order will be cancelled."
-            },
-            TradeTab::ShortSelling => {
-                "Short selling is a trading strategy where an investor bets against an instrument, \
-                expecting its price to decline. First, the investor borrows shares from a broker \
-                and immediately sells them at the current market price. If the stock price drops, \
-                the investor can buy the shares back at a lower price and return them to the \
-                broker, pocketing the difference as profit. The investor pays interest during \
-                the time the shares are borrowed. If the stock price rises, the investor must \
-                buy back the shares at a higher price, resulting in a loss."
-            },
-            TradeTab::Futures => {
-                "Financial contracts to buy or sell instruments against a predetermined price \
-                in the future. "
-            },
-        }
-    }
-}
-
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum OrderOptions {
     #[default]
@@ -161,10 +118,11 @@ pub enum OrderOptions {
 
 #[derive(Default)]
 pub struct ModalInfo {
-    pub tab: TradeTab,
+    pub tab: OrderKind,
     pub order: OrderOptions,
     pub amount: u32,
-    pub limit_price: u32,
+    pub limit_stop: u32,
+    pub trailing_stop: u32,
 }
 
 #[derive(Resource, Default)]

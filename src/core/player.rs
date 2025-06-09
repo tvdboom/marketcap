@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-
+use strum_macros::EnumIter;
 use crate::core::factors::Factor;
 use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
@@ -47,13 +47,72 @@ pub enum Order {
     Close,
 }
 
+
+#[derive(EnumIter, Clone, Copy, Default, Debug, PartialEq, Serialize, Deserialize)]
+pub enum OrderKind {
+    #[default]
+    MarketOrder,
+    LimitOrder,
+    TrailingOrder,
+    ShortSelling,
+    Futures,
+}
+
+impl OrderKind {
+    pub fn emoji(&self) -> &str {
+        match self {
+            OrderKind::MarketOrder => "🏪",
+            OrderKind::LimitOrder => "♾",
+            OrderKind::TrailingOrder => "🚶‍",
+            OrderKind::ShortSelling => "📉",
+            OrderKind::Futures => "🔮",
+        }
+    }
+
+    pub fn abbr(&self) -> String {
+        self.to_name().split_whitespace().next().unwrap().to_owned()
+    }
+
+    pub fn description(&self) -> &str {
+        match self {
+            OrderKind::MarketOrder => "Buy or sell an instrument at the current market price.",
+            OrderKind::LimitOrder => {
+                "Set a specific price to buy or sell an instrument. The order automatically \
+                executes when the instrument reaches that price. If there isn't enough cash \
+                to buy or instruments to sell at the time of execution, the order is cancelled."
+            },
+            OrderKind::TrailingOrder => {
+                "A trailing order is a stop order that automatically follows (or trails) the \
+                market once the price of an instrument has begun moving in a favourable direction. \
+                If the market later reverses direction, the stop price remains fixed, and the \
+                order is executed when the limit price is reached. If there isn't enough cash \
+                to buy or instruments to sell at the time of execution, the order is cancelled."
+            },
+            OrderKind::ShortSelling => {
+                "Short selling is a trading strategy where an investor bets against an instrument, \
+                expecting its price to decline. First, the investor borrows shares from a broker \
+                and immediately sells them at the current market price. If the stock price drops, \
+                the investor can buy the shares back at a lower price and return them to the \
+                broker, pocketing the difference as profit. The investor pays interest during \
+                the time the shares are borrowed. If the stock price rises, the investor must \
+                buy back the shares at a higher price, resulting in a loss."
+            },
+            OrderKind::Futures => {
+                "Financial contracts to buy or sell instruments against a predetermined price \
+                in the future. "
+            },
+        }
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct TradeOrder {
     pub id: String,
     pub instrument: InstrumentKind,
     pub order: Order,
+    pub kind: OrderKind,
     pub amount: u32,
-    pub price: u32,
+    pub threshold: u32,
 }
 
 #[derive(Resource, Clone, Default, Serialize, Deserialize)]
@@ -219,7 +278,7 @@ impl Player {
 
             match order.order {
                 Order::Buy => {
-                    if instrument.current() <= order.price as f32 {
+                    if instrument.current() <= order.threshold as f32 {
                         if self.cash.current() >= price {
                             self.buy(&order.instrument, order.amount, price);
 
@@ -246,7 +305,7 @@ impl Player {
                     }
                 },
                 Order::Sell => {
-                    if instrument.current() >= order.price as f32 {
+                    if instrument.current() >= order.threshold as f32 {
                         if owned >= order.amount {
                             self.sell(&order.instrument, order.amount, price);
 
@@ -273,7 +332,7 @@ impl Player {
                     }
                 },
                 Order::Close => {
-                    if instrument.current() >= order.price as f32 {
+                    if instrument.current() >= order.threshold as f32 {
                         if owned > 0 {
                             self.close(&order.instrument, instrument.current() * owned as f32);
 
