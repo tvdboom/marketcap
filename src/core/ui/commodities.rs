@@ -13,7 +13,8 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::Instrument;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::messages::{MessageEv, MessageLevel};
-use crate::core::player::{InstrumentKind, Order, OrderKind, Player, TradeOrder};
+use crate::core::orders::{Order, OrderDirection, OrderKind, PendingOrder};
+use crate::core::player::{InstrumentKind, Player};
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderOptions, UiState};
 use crate::core::ui::utils::CustomUi;
@@ -229,7 +230,7 @@ pub fn commodity_modal(
                             ui.label("Trailing stop:");
 
                             ui.add(
-                                Slider::new(&mut ui_state.commodity_modal.trailing_stop, 0..=100)
+                                Slider::new(&mut ui_state.commodity_modal.trailing_stop, 3..=50)
                                     .show_value(false)
                                     .text(format!("{trailing_stop}%")),
                             )
@@ -263,7 +264,7 @@ pub fn commodity_modal(
                         });
                     });
 
-                    if owned >= amount && tab == OrderKind::MarketOrder {
+                    if tab == OrderKind::MarketOrder && owned >= amount {
                         ui.add(Separator::default().vertical());
 
                         ui.vertical(|ui| {
@@ -297,7 +298,8 @@ pub fn commodity_modal(
                     |ui| {
                         ui.add_enabled_ui(
                             amount > 0
-                                && (tab != OrderKind::MarketOrder || player.cash.current() >= price),
+                                && (tab != OrderKind::MarketOrder
+                                    || player.cash.current() >= price),
                             |ui| {
                                 let button = ui
                                     .add_sized(
@@ -439,11 +441,16 @@ pub fn commodity_modal(
                             level: MessageLevel::Info,
                         });
 
-                        player.orders.push(TradeOrder {
+                        player.orders.pending.push(PendingOrder {
                             id,
                             instrument: kind.clone(),
                             order,
                             kind: tab,
+                            direction: if (limit_stop as f32) < instrument.current() {
+                                OrderDirection::Lower
+                            } else {
+                                OrderDirection::Upper
+                            },
                             amount,
                             threshold: if tab == OrderKind::LimitOrder {
                                 limit_stop

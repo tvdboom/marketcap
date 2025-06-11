@@ -3,7 +3,8 @@ use strum_macros::EnumIter;
 
 use crate::core::instruments::bonds::BondKind;
 use crate::core::loans::{LoanKind, LoanProvider, Term};
-use crate::core::player::{InstrumentKind, OrderKind};
+use crate::core::orders::OrderKind;
+use crate::core::player::InstrumentKind;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum Tab {
@@ -54,7 +55,8 @@ impl OverviewTab {
 #[derive(Default)]
 pub struct OverviewState {
     pub tab: OverviewTab,
-    pub order_book_order: OrderOptions,
+    pub order_pending: OrderOptions,
+    pub order_processed: OrderOptions,
 }
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]

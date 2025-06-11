@@ -8,6 +8,7 @@ mod global_economy;
 mod instruments;
 mod loans;
 pub mod messages;
+mod orders;
 mod pause;
 mod persistence;
 mod player;

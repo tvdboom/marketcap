@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::egui::{Align, ComboBox, Frame, Layout, Sense, Ui};
+use bevy_egui::egui::{ComboBox, Frame, Sense, Sides, Ui};
 use egui_extras::{Column, TableBuilder};
 use itertools::Itertools;
 use strum::IntoEnumIterator;
@@ -8,6 +8,7 @@ use crate::core::constants::{CURRENCY, DATE_FORMAT};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::loans::Loan;
 use crate::core::messages::{MessageEv, MessageLevel};
+use crate::core::orders::{OrderStatus, PendingOrder};
 use crate::core::player::{OwnedInstrument, Player};
 use crate::core::ui::state::{CreditTab, OrderOptions, OverviewTab, Tab, UiState};
 use crate::utils::NameFromEnum;
@@ -55,12 +56,49 @@ pub fn overview_panel(
             }
         },
         OverviewTab::OrderBook => {
-            if player.orders.is_empty() {
+            Sides::new().show(
+                ui,
+                |ui| ui.heading("Pending orders"),
+                |ui| {
+                    ComboBox::from_id_salt("order")
+                        .selected_text("Order by")
+                        .show_ui(ui, |ui| {
+                            for order in [
+                                OrderOptions::Alphabetical,
+                                OrderOptions::HighestPrice,
+                                OrderOptions::LowestPrice,
+                            ] {
+                                ui.selectable_value(
+                                    &mut ui_state.overview.order_pending,
+                                    order,
+                                    order.to_name(),
+                                );
+                            }
+                        });
+                },
+            );
+
+            let pending = player
+                .orders
+                .pending
+                .iter()
+                .sorted_by(|a, b| match ui_state.overview.order_pending {
+                    OrderOptions::Alphabetical => {
+                        a.instrument.lowername().cmp(&b.instrument.lowername())
+                    },
+                    OrderOptions::LowestPrice => a.threshold.cmp(&b.threshold),
+                    OrderOptions::HighestPrice => b.threshold.cmp(&a.threshold),
+                    _ => unreachable!(),
+                })
+                .cloned()
+                .collect::<Vec<_>>();
+
+            if pending.is_empty() {
                 ui.add_space(window.height() * 0.02);
 
-                ui.label("No orders in the order book.");
+                ui.label("No pending orders.");
             } else {
-                order_overview(ui, ui_state, economy, player, messages);
+                pending_order_table(ui, pending, economy, player, messages);
                 ui.small("Click on a row to cancel the order.");
             }
         },
@@ -115,7 +153,7 @@ pub fn commodity_overview(
 
                         let content = [
                             &instrument.name(),
-                            &format!("{} {CURRENCY}", instrument.current()),
+                            &format!("{:.0} {CURRENCY}", instrument.current()),
                             &format!("{} {}", owned.amount, instrument.unit()),
                             &format!(
                                 "{} {CURRENCY}",
@@ -143,31 +181,13 @@ pub fn commodity_overview(
         });
 }
 
-pub fn order_overview(
+pub fn pending_order_table(
     ui: &mut Ui,
-    ui_state: &mut UiState,
+    orders: Vec<PendingOrder>,
     economy: &GlobalEconomy,
     player: &mut Player,
     messages: &mut EventWriter<MessageEv>,
 ) {
-    ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-        ComboBox::from_id_salt("order")
-            .selected_text("Order by")
-            .show_ui(ui, |ui| {
-                for order in [
-                    OrderOptions::Alphabetical,
-                    OrderOptions::HighestPrice,
-                    OrderOptions::LowestPrice,
-                ] {
-                    ui.selectable_value(
-                        &mut ui_state.overview.order_book_order,
-                        order,
-                        order.to_name(),
-                    );
-                }
-            });
-    });
-
     let columns = [
         "Id",
         "Name",
@@ -177,20 +197,6 @@ pub fn order_overview(
         "Limit price",
         "Current price",
     ];
-
-    let orders =
-        player
-            .orders
-            .iter()
-            .cloned()
-            .sorted_by(|a, b| match ui_state.overview.order_book_order {
-                OrderOptions::Alphabetical => {
-                    a.instrument.lowername().cmp(&b.instrument.lowername())
-                },
-                OrderOptions::LowestPrice => a.threshold.cmp(&b.threshold),
-                OrderOptions::HighestPrice => b.threshold.cmp(&a.threshold),
-                _ => unreachable!(),
-            });
 
     Frame::new()
         .inner_margin(ui.spacing().menu_margin)
@@ -229,7 +235,12 @@ pub fn order_overview(
                             }
 
                             if row.response().clicked() {
-                                player.orders.retain(|o| o.id != order.id);
+                                player.orders.pending.retain(|o| o.id != order.id);
+                                player.orders.processed.push(order.to_processed(
+                                    economy.date,
+                                    OrderStatus::Canceled,
+                                    "canceled by user",
+                                ));
 
                                 messages.write(MessageEv {
                                     message: format!("Canceled order {}.", order.id),

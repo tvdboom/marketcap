@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use strum_macros::EnumIter;
+
 use crate::core::factors::Factor;
 use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
@@ -9,6 +9,9 @@ use crate::core::instruments::bonds::BondName;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::loans::Loan;
 use crate::core::messages::{MessageEv, MessageLevel};
+use crate::core::orders::{
+    Order, OrderDirection, OrderKind, OrderStatus, PendingOrder, ProcessedOrder,
+};
 use crate::utils::NameFromEnum;
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
@@ -40,79 +43,10 @@ pub struct OwnedInstrument {
     pub interest: f32,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum Order {
-    Buy,
-    Sell,
-    Close,
-}
-
-
-#[derive(EnumIter, Clone, Copy, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub enum OrderKind {
-    #[default]
-    MarketOrder,
-    LimitOrder,
-    TrailingOrder,
-    ShortSelling,
-    Futures,
-}
-
-impl OrderKind {
-    pub fn emoji(&self) -> &str {
-        match self {
-            OrderKind::MarketOrder => "🏪",
-            OrderKind::LimitOrder => "♾",
-            OrderKind::TrailingOrder => "🚶‍",
-            OrderKind::ShortSelling => "📉",
-            OrderKind::Futures => "🔮",
-        }
-    }
-
-    pub fn abbr(&self) -> String {
-        self.to_name().split_whitespace().next().unwrap().to_owned()
-    }
-
-    pub fn description(&self) -> &str {
-        match self {
-            OrderKind::MarketOrder => "Buy or sell an instrument at the current market price.",
-            OrderKind::LimitOrder => {
-                "Set a specific price to buy or sell an instrument. The order automatically \
-                executes when the instrument reaches that price. If there isn't enough cash \
-                to buy or instruments to sell at the time of execution, the order is cancelled."
-            },
-            OrderKind::TrailingOrder => {
-                "A trailing order is a stop order that automatically follows (or trails) the \
-                market once the price of an instrument has begun moving in a favourable direction. \
-                If the market later reverses direction, the stop price remains fixed, and the \
-                order is executed when the limit price is reached. If there isn't enough cash \
-                to buy or instruments to sell at the time of execution, the order is cancelled."
-            },
-            OrderKind::ShortSelling => {
-                "Short selling is a trading strategy where an investor bets against an instrument, \
-                expecting its price to decline. First, the investor borrows shares from a broker \
-                and immediately sells them at the current market price. If the stock price drops, \
-                the investor can buy the shares back at a lower price and return them to the \
-                broker, pocketing the difference as profit. The investor pays interest during \
-                the time the shares are borrowed. If the stock price rises, the investor must \
-                buy back the shares at a higher price, resulting in a loss."
-            },
-            OrderKind::Futures => {
-                "Financial contracts to buy or sell instruments against a predetermined price \
-                in the future. "
-            },
-        }
-    }
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct TradeOrder {
-    pub id: String,
-    pub instrument: InstrumentKind,
-    pub order: Order,
-    pub kind: OrderKind,
-    pub amount: u32,
-    pub threshold: u32,
+#[derive(Resource, Clone, Default, Serialize, Deserialize)]
+pub struct Orders {
+    pub pending: Vec<PendingOrder>,
+    pub processed: Vec<ProcessedOrder>,
 }
 
 #[derive(Resource, Clone, Default, Serialize, Deserialize)]
@@ -120,7 +54,7 @@ pub struct Player {
     pub cash: Cash,
     pub credit_score: CreditScore,
     pub loans: Vec<Loan>,
-    pub orders: Vec<TradeOrder>,
+    pub orders: Orders,
     pub instruments: Vec<OwnedInstrument>,
 }
 
@@ -269,98 +203,119 @@ impl Player {
         economy: &GlobalEconomy,
         message: &mut EventWriter<MessageEv>,
     ) {
-        let mut to_drop = vec![];
+        let mut processed = vec![];
 
-        for order in self.orders.clone() {
+        for order in self.orders.pending.iter().cloned().collect::<Vec<_>>() {
             let instrument = economy.get(&order.instrument);
             let owned = self.get_owned(&order.instrument);
             let price = instrument.current() * order.amount as f32;
 
-            match order.order {
-                Order::Buy => {
-                    if instrument.current() <= order.threshold as f32 {
-                        if self.cash.current() >= price {
-                            self.buy(&order.instrument, order.amount, price);
+            match order.kind {
+                OrderKind::LimitOrder => {
+                    // Execute the order if the price crosses the limit in the lower or upper bound
+                    let condition = if order.direction == OrderDirection::Lower {
+                        instrument.current() <= order.threshold as f32
+                    } else {
+                        instrument.current() >= order.threshold as f32
+                    };
 
-                            message.write(MessageEv {
-                                message: format!(
-                                    "Executed order {}: bought {} {}.",
-                                    order.id,
-                                    order.amount,
-                                    order.instrument.name()
-                                ),
-                                level: MessageLevel::Info,
-                            });
-                        } else {
-                            message.write(MessageEv {
-                                message: format!(
-                                    "Failed to execute order {}: lack of cash.",
-                                    order.id
-                                ),
-                                level: MessageLevel::Warning,
-                            });
+                    if condition {
+                        match order.order {
+                            Order::Buy => {
+                                if self.cash.current() >= price {
+                                    self.buy(&order.instrument, order.amount, price);
+                                    processed.push(order.to_processed(
+                                        economy.date,
+                                        OrderStatus::Executed,
+                                        "",
+                                    ));
+                                } else {
+                                    processed.push(order.to_processed(
+                                        economy.date,
+                                        OrderStatus::Failed,
+                                        "not enough cash",
+                                    ));
+                                }
+                            },
+                            Order::Sell => {
+                                if owned >= order.amount {
+                                    self.sell(&order.instrument, order.amount, price);
+                                    processed.push(order.to_processed(
+                                        economy.date,
+                                        OrderStatus::Executed,
+                                        "",
+                                    ));
+                                } else {
+                                    processed.push(order.to_processed(
+                                        economy.date,
+                                        OrderStatus::Failed,
+                                        "insufficient amount owned",
+                                    ));
+                                }
+                            },
+                            Order::Close => {
+                                if owned > 0 {
+                                    self.close(
+                                        &order.instrument,
+                                        instrument.current() * owned as f32,
+                                    );
+                                    processed.push(order.to_processed(
+                                        economy.date,
+                                        OrderStatus::Executed,
+                                        "",
+                                    ));
+                                } else {
+                                    processed.push(order.to_processed(
+                                        economy.date,
+                                        OrderStatus::Failed,
+                                        "not owned",
+                                    ));
+                                }
+                            },
                         }
-
-                        to_drop.push(order.id);
                     }
                 },
-                Order::Sell => {
-                    if instrument.current() >= order.threshold as f32 {
-                        if owned >= order.amount {
-                            self.sell(&order.instrument, order.amount, price);
-
-                            message.write(MessageEv {
-                                message: format!(
-                                    "Executed order {}: sold {} {}.",
-                                    order.id,
-                                    order.amount,
-                                    order.instrument.name()
-                                ),
-                                level: MessageLevel::Info,
-                            });
-                        } else {
-                            message.write(MessageEv {
-                                message: format!(
-                                    "Failed to execute order {}: insufficient amount owned.",
-                                    order.id
-                                ),
-                                level: MessageLevel::Warning,
-                            });
-                        }
-
-                        to_drop.push(order.id);
-                    }
-                },
-                Order::Close => {
-                    if instrument.current() >= order.threshold as f32 {
-                        if owned > 0 {
-                            self.close(&order.instrument, instrument.current() * owned as f32);
-
-                            message.write(MessageEv {
-                                message: format!(
-                                    "Executed order {}: closed {} position.",
-                                    order.id,
-                                    order.instrument.name(),
-                                ),
-                                level: MessageLevel::Info,
-                            });
-                        } else {
-                            message.write(MessageEv {
-                                message: format!(
-                                    "Failed to execute order {}: no {} owned.",
-                                    order.id,
-                                    order.instrument.name()
-                                ),
-                                level: MessageLevel::Warning,
-                            });
-                        }
-
-                        to_drop.push(order.id);
-                    }
-                },
+                OrderKind::TrailingOrder => {},
+                _ => unreachable!(),
             }
         }
 
-        self.orders.retain(|o| !to_drop.contains(&o.id));
+        self.orders
+            .pending
+            .retain(|o| !processed.iter().any(|p| p.kind == o.kind));
+
+        for order in processed {
+            let msg = if order.status == OrderStatus::Executed {
+                let text = if order.order == Order::Close {
+                    format!(
+                        "Executed order {}: {} {} position.",
+                        order.id,
+                        order.order.past(),
+                        order.instrument.name()
+                    )
+                } else {
+                    format!(
+                        "Executed order {}: {} {} {}.",
+                        order.id,
+                        order.order.past(),
+                        order.amount,
+                        order.instrument.name()
+                    )
+                };
+
+                MessageEv {
+                    message: text,
+                    level: MessageLevel::Info,
+                }
+            } else {
+                MessageEv {
+                    message: format!("Failed to execute order {}: {}.", order.id, order.reason),
+                    level: MessageLevel::Warning,
+                }
+            };
+
+            message.write(msg);
+            self.orders.processed.push(order);
+        }
     }
 }
