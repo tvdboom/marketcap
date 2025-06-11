@@ -52,11 +52,30 @@ impl OverviewTab {
     }
 }
 
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
+pub enum OrderOptions {
+    #[default]
+    Name,
+    Created,
+    Processed,
+    OwnedAmount,
+    OwnedValue,
+    Price,
+    Volatility,
+    Interest,
+}
+
+#[derive(Default)]
+pub struct OrderByState {
+    pub order: OrderOptions,
+    pub descending: bool,
+}
+
 #[derive(Default)]
 pub struct OverviewState {
     pub tab: OverviewTab,
-    pub order_pending: OrderOptions,
-    pub order_processed: OrderOptions,
+    pub pending: OrderByState,
+    pub processed: OrderByState,
 }
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
@@ -104,24 +123,10 @@ impl Default for CreditState {
     }
 }
 
-#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
-pub enum OrderOptions {
-    #[default]
-    Alphabetical,
-    OwnedAmount,
-    OwnedValue,
-    LowestPrice,
-    HighestPrice,
-    LowestVolatility,
-    HighestVolatility,
-    LowestInterest,
-    HighestInterest,
-}
-
 #[derive(Default)]
 pub struct ModalInfo {
     pub tab: OrderKind,
-    pub order: OrderOptions,
+    pub order: OrderByState,
     pub amount: u32,
     pub limit_stop: u32,
     pub trailing_stop: u32,

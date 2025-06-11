@@ -2,7 +2,7 @@ use bevy::prelude::{EventWriter, Res, ResMut, Single, Window};
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::{
-    Align, Button, ComboBox, Id, Image, Layout, Modal, ScrollArea, Separator, Sides, Slider, Ui,
+    Button, ComboBox, Id, Image, Modal, ScrollArea, Separator, Sides, Slider, Ui,
 };
 use itertools::Itertools;
 use strum::IntoEnumIterator;
@@ -43,60 +43,47 @@ pub fn commodities_panel(
     ScrollArea::vertical().show(ui, |ui| {
         ui.set_width(ui.available_width());
 
-        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-            ui.set_max_height(window.height() * 0.05);
+        ui.add_combobox(
+            "",
+            [
+                OrderOptions::Name,
+                OrderOptions::OwnedAmount,
+                OrderOptions::OwnedValue,
+                OrderOptions::Price,
+                OrderOptions::Volatility,
+            ]
+            .into(),
+            &mut ui_state.commodity_modal.order,
+            window,
+        );
 
-            ui.add_space(window.width() * 0.02);
+        let mut commodities = economy
+            .commodities
+            .iter()
+            .sorted_by(|a, b| match ui_state.commodity_modal.order.order {
+                OrderOptions::Name => a.name.to_lowername().cmp(&b.name.to_lowername()),
+                OrderOptions::OwnedAmount => player
+                    .get_owned(&InstrumentKind::Commodity(b.name))
+                    .cmp(&player.get_owned(&InstrumentKind::Commodity(a.name))),
+                OrderOptions::OwnedValue => player
+                    .get_value(&InstrumentKind::Commodity(b.name), economy)
+                    .partial_cmp(&player.get_value(&InstrumentKind::Commodity(a.name), economy))
+                    .unwrap_or(std::cmp::Ordering::Equal),
+                OrderOptions::Price => a
+                    .current()
+                    .partial_cmp(&b.current())
+                    .unwrap_or(std::cmp::Ordering::Equal),
+                OrderOptions::Volatility => a
+                    .volatility
+                    .partial_cmp(&b.volatility)
+                    .unwrap_or(std::cmp::Ordering::Equal),
+                _ => unreachable!(),
+            })
+            .collect::<Vec<_>>();
 
-            ComboBox::from_id_salt("order")
-                .selected_text("Order by")
-                .show_ui(ui, |ui| {
-                    for order in OrderOptions::iter().filter(|o| {
-                        !matches!(
-                            o,
-                            OrderOptions::HighestInterest | OrderOptions::LowestInterest
-                        )
-                    }) {
-                        ui.selectable_value(
-                            &mut ui_state.commodity_modal.order,
-                            order,
-                            order.to_name(),
-                        );
-                    }
-                });
-        });
-
-        let commodities =
-            economy
-                .commodities
-                .iter()
-                .sorted_by(|a, b| match ui_state.commodity_modal.order {
-                    OrderOptions::Alphabetical => a.name.to_lowername().cmp(&b.name.to_lowername()),
-                    OrderOptions::OwnedAmount => player
-                        .get_owned(&InstrumentKind::Commodity(b.name))
-                        .cmp(&player.get_owned(&InstrumentKind::Commodity(a.name))),
-                    OrderOptions::OwnedValue => player
-                        .get_value(&InstrumentKind::Commodity(b.name), economy)
-                        .partial_cmp(&player.get_value(&InstrumentKind::Commodity(a.name), economy))
-                        .unwrap_or(std::cmp::Ordering::Equal),
-                    OrderOptions::LowestPrice => a
-                        .current()
-                        .partial_cmp(&b.current())
-                        .unwrap_or(std::cmp::Ordering::Equal),
-                    OrderOptions::HighestPrice => b
-                        .current()
-                        .partial_cmp(&a.current())
-                        .unwrap_or(std::cmp::Ordering::Equal),
-                    OrderOptions::LowestVolatility => a
-                        .volatility
-                        .partial_cmp(&b.volatility)
-                        .unwrap_or(std::cmp::Ordering::Equal),
-                    OrderOptions::HighestVolatility => b
-                        .volatility
-                        .partial_cmp(&a.volatility)
-                        .unwrap_or(std::cmp::Ordering::Equal),
-                    _ => unreachable!(),
-                });
+        if ui_state.commodity_modal.order.descending {
+            commodities.reverse();
+        }
 
         for commodity in commodities {
             let response = ui.add_commodity(commodity, images, window);
@@ -443,6 +430,7 @@ pub fn commodity_modal(
 
                         player.orders.pending.push(PendingOrder {
                             id,
+                            created: economy.date,
                             instrument: kind.clone(),
                             order,
                             kind: tab,

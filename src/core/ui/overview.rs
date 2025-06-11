@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_egui::egui::{ComboBox, Frame, Sense, Sides, Ui};
+use bevy_egui::egui::{Frame, Sense, Ui};
 use egui_extras::{Column, TableBuilder};
 use itertools::Itertools;
 use strum::IntoEnumIterator;
@@ -11,6 +11,7 @@ use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{OrderStatus, PendingOrder};
 use crate::core::player::{OwnedInstrument, Player};
 use crate::core::ui::state::{CreditTab, OrderOptions, OverviewTab, Tab, UiState};
+use crate::core::ui::utils::CustomUi;
 use crate::utils::NameFromEnum;
 
 pub fn overview_panel(
@@ -56,42 +57,34 @@ pub fn overview_panel(
             }
         },
         OverviewTab::OrderBook => {
-            Sides::new().show(
-                ui,
-                |ui| ui.heading("Pending orders"),
-                |ui| {
-                    ComboBox::from_id_salt("order")
-                        .selected_text("Order by")
-                        .show_ui(ui, |ui| {
-                            for order in [
-                                OrderOptions::Alphabetical,
-                                OrderOptions::HighestPrice,
-                                OrderOptions::LowestPrice,
-                            ] {
-                                ui.selectable_value(
-                                    &mut ui_state.overview.order_pending,
-                                    order,
-                                    order.to_name(),
-                                );
-                            }
-                        });
-                },
+            ui.add_combobox(
+                "Pending orders",
+                [
+                    OrderOptions::Name,
+                    OrderOptions::Created,
+                    OrderOptions::Price,
+                ]
+                .into(),
+                &mut ui_state.overview.pending,
+                window,
             );
 
-            let pending = player
+            let mut pending = player
                 .orders
                 .pending
                 .iter()
-                .sorted_by(|a, b| match ui_state.overview.order_pending {
-                    OrderOptions::Alphabetical => {
-                        a.instrument.lowername().cmp(&b.instrument.lowername())
-                    },
-                    OrderOptions::LowestPrice => a.threshold.cmp(&b.threshold),
-                    OrderOptions::HighestPrice => b.threshold.cmp(&a.threshold),
+                .sorted_by(|a, b| match ui_state.overview.pending.order {
+                    OrderOptions::Name => a.instrument.lowername().cmp(&b.instrument.lowername()),
+                    OrderOptions::Created => a.created.cmp(&b.created),
+                    OrderOptions::Price => a.threshold.cmp(&b.threshold),
                     _ => unreachable!(),
                 })
                 .cloned()
                 .collect::<Vec<_>>();
+
+            if ui_state.overview.pending.descending {
+                pending.reverse();
+            }
 
             if pending.is_empty() {
                 ui.add_space(window.height() * 0.02);
@@ -190,6 +183,7 @@ pub fn pending_order_table(
 ) {
     let columns = [
         "Id",
+        "Created",
         "Name",
         "Order",
         "Kind",
@@ -219,6 +213,7 @@ pub fn pending_order_table(
 
                         let content = [
                             &order.id,
+                            &order.created.format(DATE_FORMAT).to_string(),
                             &order.instrument.name(),
                             &order.order.to_name(),
                             &order.kind.abbr(),

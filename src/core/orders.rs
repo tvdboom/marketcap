@@ -95,6 +95,7 @@ pub enum OrderStatus {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct PendingOrder {
     pub id: String,
+    pub created: NaiveDate,
     pub instrument: InstrumentKind,
     pub order: Order,
     pub kind: OrderKind,
@@ -112,7 +113,8 @@ impl PendingOrder {
     ) -> ProcessedOrder {
         ProcessedOrder {
             id: self.id.clone(),
-            date,
+            created: self.created,
+            processed: date,
             instrument: self.instrument.clone(),
             order: self.order.clone(),
             kind: self.kind.clone(),
@@ -127,7 +129,8 @@ impl PendingOrder {
 #[derive(Clone, Serialize, Deserialize)]
 pub struct ProcessedOrder {
     pub id: String,
-    pub date: NaiveDate,
+    pub created: NaiveDate,
+    pub processed: NaiveDate,
     pub instrument: InstrumentKind,
     pub order: Order,
     pub kind: OrderKind,

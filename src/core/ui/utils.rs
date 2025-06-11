@@ -12,6 +12,7 @@ use crate::core::instruments::Instrument;
 use crate::core::instruments::bonds::Bond;
 use crate::core::instruments::commodities::Commodity;
 use crate::core::resources::ImageIds;
+use crate::core::ui::state::{OrderByState, OrderOptions};
 use crate::utils::{NameFromEnum, format_number, get_ratio};
 
 /// Custom IOS style toggle for UI
@@ -92,6 +93,13 @@ pub fn line_plot(ui: &mut Ui, data: &Vec<f32>) {
 pub trait CustomUi {
     fn add_button(&mut self, text: impl Into<WidgetText>, window: &Window) -> Response;
     fn add_indicator(&mut self, diff: f32) -> Response;
+    fn add_combobox(
+        &mut self,
+        title: &str,
+        options: Vec<OrderOptions>,
+        state: &mut OrderByState,
+        window: &Window,
+    );
     fn add_factor(
         &mut self,
         name: impl Into<RichText>,
@@ -140,6 +148,43 @@ impl CustomUi for Ui {
         .on_hover_text(
             "Percentage difference between the current price and the average price of the last month.",
         )
+    }
+
+    fn add_combobox(
+        &mut self,
+        title: &str,
+        options: Vec<OrderOptions>,
+        state: &mut OrderByState,
+        window: &Window,
+    ) {
+        Sides::new().show(
+            self,
+            |ui| ui.heading(title),
+            |ui| {
+                ui.add_space(window.width() * 0.02);
+
+                ComboBox::from_id_salt(title)
+                    .selected_text("Order by")
+                    .show_ui(ui, |ui| {
+                        for order in options {
+                            ui.selectable_value(&mut state.order, order, order.to_name());
+                        }
+                    });
+
+                let descending = ui
+                    .heading(if state.descending { "▼" } else { "▲" })
+                    .interact(Sense::click())
+                    .on_hover_text(if state.descending {
+                        "Sort ascending."
+                    } else {
+                        "Sort descending."
+                    });
+
+                if descending.clicked() {
+                    state.descending = !state.descending;
+                }
+            },
+        );
     }
 
     fn add_factor(

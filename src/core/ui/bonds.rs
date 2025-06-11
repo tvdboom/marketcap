@@ -1,5 +1,5 @@
 use bevy::prelude::Window;
-use bevy_egui::egui::{Align, ComboBox, Layout, ScrollArea, Ui};
+use bevy_egui::egui::{ScrollArea, Ui};
 use itertools::Itertools;
 use strum::IntoEnumIterator;
 
@@ -52,31 +52,26 @@ pub fn bonds_panel(
     ScrollArea::vertical().show(ui, |ui| {
         ui.set_width(ui.available_width());
 
-        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-            ui.set_max_height(window.height() * 0.05);
+        ui.add_combobox(
+            "",
+            [
+                OrderOptions::Name,
+                OrderOptions::OwnedAmount,
+                OrderOptions::OwnedValue,
+                OrderOptions::Price,
+                OrderOptions::Interest,
+            ]
+            .into(),
+            &mut ui_state.bond_modal.order,
+            window,
+        );
 
-            ui.add_space(window.width() * 0.02);
-
-            ComboBox::from_id_salt("order")
-                .selected_text("Order by")
-                .show_ui(ui, |ui| {
-                    for order in OrderOptions::iter().filter(|o| {
-                        !matches!(
-                            o,
-                            OrderOptions::HighestVolatility | OrderOptions::LowestVolatility
-                        )
-                    }) {
-                        ui.selectable_value(&mut ui_state.bond_modal.order, order, order.to_name());
-                    }
-                });
-        });
-
-        let bonds = economy
+        let mut bonds = economy
             .bonds
             .iter()
             .filter(|b| b.kind == ui_state.bonds)
-            .sorted_by(|a, b| match ui_state.bond_modal.order {
-                OrderOptions::Alphabetical => a.name.to_lowername().cmp(&b.name.to_lowername()),
+            .sorted_by(|a, b| match ui_state.bond_modal.order.order {
+                OrderOptions::Name => a.name.to_lowername().cmp(&b.name.to_lowername()),
                 OrderOptions::OwnedAmount => player
                     .get_owned(&InstrumentKind::Bond(b.name))
                     .cmp(&player.get_owned(&InstrumentKind::Bond(a.name))),
@@ -84,24 +79,21 @@ pub fn bonds_panel(
                     .get_value(&InstrumentKind::Bond(b.name), economy)
                     .partial_cmp(&player.get_value(&InstrumentKind::Bond(a.name), economy))
                     .unwrap_or(std::cmp::Ordering::Equal),
-                OrderOptions::LowestPrice => a
+                OrderOptions::Price => a
                     .current()
                     .partial_cmp(&b.current())
                     .unwrap_or(std::cmp::Ordering::Equal),
-                OrderOptions::HighestPrice => b
-                    .current()
-                    .partial_cmp(&a.current())
-                    .unwrap_or(std::cmp::Ordering::Equal),
-                OrderOptions::LowestInterest => a
-                    .interest
-                    .partial_cmp(&b.interest)
-                    .unwrap_or(std::cmp::Ordering::Equal),
-                OrderOptions::HighestInterest => b
+                OrderOptions::Interest => b
                     .interest
                     .partial_cmp(&a.interest)
                     .unwrap_or(std::cmp::Ordering::Equal),
                 _ => unreachable!(),
-            });
+            })
+            .collect::<Vec<_>>();
+
+        if ui_state.bond_modal.order.descending {
+            bonds.reverse();
+        }
 
         for bond in bonds {
             let response = ui.add_bond(bond, images, window);
