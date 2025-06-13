@@ -15,7 +15,7 @@ use crate::utils::{NameFromEnum, create_guid, first_day_in_two_months};
 
 pub fn credit_panel(
     ui: &mut Ui,
-    ui_state: &mut UiState,
+    state: &mut UiState,
     economy: &GlobalEconomy,
     player: &mut Player,
     message: &mut EventWriter<MessageEv>,
@@ -24,7 +24,7 @@ pub fn credit_panel(
     ui.horizontal(|ui| {
         for tab in CreditTab::iter() {
             ui.selectable_value(
-                &mut ui_state.credit.tab,
+                &mut state.credit.tab,
                 tab,
                 format!("{}  {}", tab.emoji(), tab.to_name()),
             );
@@ -48,24 +48,24 @@ pub fn credit_panel(
 
     ui.add_space(window.height() * 0.02);
 
-    match ui_state.credit.tab {
+    match state.credit.tab {
         CreditTab::NewLoan => {
             let loan = Loan {
                 id: create_guid(),
-                provider: ui_state.credit.provider,
-                principal: ui_state.credit.principal as f32,
-                outstanding: ui_state.credit.principal as f32,
+                provider: state.credit.provider,
+                principal: state.credit.principal as f32,
+                outstanding: state.credit.principal as f32,
                 n_installments: 0,
-                interest_rate: ui_state.credit.provider.interest(
+                interest_rate: state.credit.provider.interest(
                     economy.interest.current(),
                     player.credit_score.current(),
-                    &ui_state.credit.term,
-                    ui_state.credit.no_fee,
+                    &state.credit.term,
+                    state.credit.no_fee,
                 ),
                 global_interest_rate: economy.interest.current(),
-                kind: ui_state.credit.kind.clone(),
-                term: ui_state.credit.term.clone(),
-                no_fee: ui_state.credit.no_fee,
+                kind: state.credit.kind.clone(),
+                term: state.credit.term.clone(),
+                no_fee: state.credit.no_fee,
                 start_date: first_day_in_two_months(economy.date),
                 defaults: 0,
             };
@@ -78,7 +78,7 @@ pub fn credit_panel(
                     ui.horizontal(|ui| {
                         for item in LoanProvider::iter() {
                             ui.selectable_value(
-                                &mut ui_state.credit.provider,
+                                &mut state.credit.provider,
                                 item,
                                 item.to_name(),
                             )
@@ -87,15 +87,15 @@ pub fn credit_panel(
                     });
 
                     ui.label("Principal");
-                    let max_principal = ui_state
+                    let max_principal = state
                         .credit
                         .provider
                         .max_principal(player.enterprise_value(&economy), player.credit_score.current());
 
                     ui.spacing_mut().slider_width = window.width() * 0.13;
-                    let principal = ui_state.credit.principal;
+                    let principal = state.credit.principal;
                     ui.add(
-                        Slider::new(&mut ui_state.credit.principal, 0..=max_principal)
+                        Slider::new(&mut state.credit.principal, 0..=max_principal)
                             .step_by(LOAN_STEP as f64)
                             .show_value(false)
                             .text(principal.to_string()),
@@ -110,7 +110,7 @@ pub fn credit_panel(
                     ui.horizontal(|ui| {
                         for item in LoanKind::iter() {
                             ui.selectable_value(
-                                &mut ui_state.credit.kind,
+                                &mut state.credit.kind,
                                 item,
                                 item.to_name(),
                             )
@@ -122,7 +122,7 @@ pub fn credit_panel(
                     ui.horizontal(|ui| {
                         for item in Term::iter() {
                             ui.selectable_value(
-                                &mut ui_state.credit.term,
+                                &mut state.credit.term,
                                 item,
                                 item.to_name(),
                             )
@@ -132,7 +132,7 @@ pub fn credit_panel(
                     });
 
                     ui.label("Prepayment-free loan");
-                    ui.add(toggle(&mut ui_state.credit.no_fee)).on_hover_text(
+                    ui.add(toggle(&mut state.credit.no_fee)).on_hover_text(
                         "No early repayment fee for an increase in interest."
                     );
 
@@ -140,11 +140,11 @@ pub fn credit_panel(
                     let has_loans = player
                         .loans
                         .iter()
-                        .filter(|l| l.provider == ui_state.credit.provider)
+                        .filter(|l| l.provider == state.credit.provider)
                         .any(|l| l.outstanding > l.principal * 0.5);
 
                     let mut button = ui.add_enabled(
-                        ui_state.credit.principal > 0 && !has_loans,
+                        state.credit.principal > 0 && !has_loans,
                         Button::new("Take the loan"),
                     );
 
@@ -215,7 +215,7 @@ pub fn credit_panel(
                 ui.add_space(window.height() * 0.02);
 
                 if ui.button("Take a new loan").clicked() {
-                    ui_state.credit.tab = CreditTab::NewLoan;
+                    state.credit.tab = CreditTab::NewLoan;
                 }
             } else {
                 let loans = player
@@ -225,11 +225,11 @@ pub fn credit_panel(
                     .collect::<Vec<_>>();
 
                 // Assign the first loan to the repay field if it's not set
-                if ui_state.credit.repay.is_none() {
-                    ui_state.credit.repay = Some(loans[0].clone());
+                if state.credit.repay.is_none() {
+                    state.credit.repay = Some(loans[0].clone());
                 }
 
-                if let Some(id) = &ui_state.credit.repay {
+                if let Some(id) = &state.credit.repay {
                     if let Some(loan) = player.loans.iter_mut().find(|l| l.id == *id) {
                         ui.horizontal(|ui| {
                             ui.vertical(|ui| {
@@ -242,7 +242,7 @@ pub fn credit_panel(
                                     .show_ui(ui, |ui| {
                                         for id in loans.iter() {
                                             ui.selectable_value(
-                                                &mut ui_state.credit.repay,
+                                                &mut state.credit.repay,
                                                 Some(id.clone()),
                                                 id,
                                             );
@@ -251,7 +251,7 @@ pub fn credit_panel(
 
                                 ui.add_space(window.height() * 0.02);
 
-                                let repay_amount = ui_state.credit.repay_amount;
+                                let repay_amount = state.credit.repay_amount;
                                 let fee = if loan.no_fee {
                                     0.
                                 } else if economy.interest.current() >= loan.global_interest_rate {
@@ -275,7 +275,7 @@ pub fn credit_panel(
                                 ui.spacing_mut().slider_width = window.width() * 0.12;
                                 ui.add(
                                     Slider::new(
-                                        &mut ui_state.credit.repay_amount,
+                                        &mut state.credit.repay_amount,
                                         0..=loan.outstanding.min(player.cash.current() - fee)
                                             as u32,
                                     )
@@ -283,7 +283,7 @@ pub fn credit_panel(
                                         .text(format!("{repay_amount} {CURRENCY}")),
                                 );
 
-                                let costs = ui_state.credit.repay_amount as f32 + fee;
+                                let costs = state.credit.repay_amount as f32 + fee;
 
                                 ui.add_space(window.height() * 0.02);
 
@@ -305,7 +305,7 @@ pub fn credit_panel(
                                 let date_diff = economy.date > loan.start_date.checked_add_months(Months::new(6)).unwrap();
 
                                 let mut button = ui.add_enabled(
-                                    ui_state.credit.repay_amount > 0 && date_diff,
+                                    state.credit.repay_amount > 0 && date_diff,
                                     Button::new("Repay loan"),
                                 );
 
@@ -317,15 +317,15 @@ pub fn credit_panel(
 
                                 if button.clicked() {
                                     player.cash.amount -= costs;
-                                    loan.outstanding -= ui_state.credit.repay_amount as f32;
+                                    loan.outstanding -= state.credit.repay_amount as f32;
 
                                     message.write(MessageEv {
-                                        message: format!("You repaid {} of loan {}.", ui_state.credit.repay_amount, loan.id),
+                                        message: format!("You repaid {} of loan {}.", state.credit.repay_amount, loan.id),
                                         level: MessageLevel::Info,
                                     });
                                     
-                                    ui_state.tab = Tab::Overview;
-                                    ui_state.overview.tab = OverviewTab::Debts;
+                                    state.tab = Tab::Overview;
+                                    state.overview.tab = OverviewTab::Debts;
                                 }
                             });
 
@@ -344,7 +344,7 @@ pub fn credit_panel(
                             });
                         });
                     } else {
-                        ui_state.credit.repay = None;
+                        state.credit.repay = None;
                     }
 
                     // Remove loans that are fully repaid

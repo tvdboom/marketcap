@@ -9,9 +9,7 @@ use crate::core::instruments::bonds::BondName;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::loans::Loan;
 use crate::core::messages::{MessageEv, MessageLevel};
-use crate::core::orders::{
-    Order, OrderDirection, OrderKind, OrderStatus, PendingOrder, ProcessedOrder,
-};
+use crate::core::orders::{Command, Order, OrderDirection, OrderEv, OrderKind, OrderStatus};
 use crate::utils::NameFromEnum;
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
@@ -44,17 +42,11 @@ pub struct OwnedInstrument {
 }
 
 #[derive(Resource, Clone, Default, Serialize, Deserialize)]
-pub struct Orders {
-    pub pending: Vec<PendingOrder>,
-    pub processed: Vec<ProcessedOrder>,
-}
-
-#[derive(Resource, Clone, Default, Serialize, Deserialize)]
 pub struct Player {
     pub cash: Cash,
     pub credit_score: CreditScore,
     pub loans: Vec<Loan>,
-    pub orders: Orders,
+    pub orders: Vec<Order>,
     pub instruments: Vec<OwnedInstrument>,
 }
 
@@ -156,6 +148,14 @@ impl Player {
             .collect::<Vec<_>>()
     }
 
+    pub fn get(&self, kind: &InstrumentKind) -> Option<&OwnedInstrument> {
+        self.instruments.iter().find(|c| c.kind == *kind)
+    }
+
+    pub fn get_mut(&mut self, kind: &InstrumentKind) -> Option<&mut OwnedInstrument> {
+        self.instruments.iter_mut().find(|c| c.kind == *kind)
+    }
+
     pub fn get_owned(&self, instrument: &InstrumentKind) -> u32 {
         self.instruments
             .iter()
@@ -168,44 +168,34 @@ impl Player {
         self.get_owned(instrument) as f32 * economy.get_current(instrument)
     }
 
-    pub fn buy(&mut self, instrument: &InstrumentKind, amount: u32, price: f32) {
-        if let Some(owned) = self.instruments.iter_mut().find(|o| o.kind == *instrument) {
-            owned.amount += amount;
-        } else {
-            self.instruments.push(OwnedInstrument {
-                kind: instrument.clone(),
-                amount,
-                interest: 0.,
-            });
-        }
-
-        self.cash.amount -= price;
+    pub fn pending_orders(&self) -> Vec<&Order> {
+        self.orders
+            .iter()
+            .filter(|o| o.status == OrderStatus::Pending)
+            .collect::<Vec<_>>()
     }
 
-    pub fn sell(&mut self, instrument: &InstrumentKind, amount: u32, price: f32) {
-        self.instruments.retain_mut(|o| {
-            if o.kind == *instrument {
-                o.amount = o.amount.saturating_sub(amount);
-            }
-            o.amount > 0
-        });
-
-        self.cash.amount += price;
+    pub fn pending_orders_mut(&mut self) -> Vec<&mut Order> {
+        self.orders
+            .iter_mut()
+            .filter(|o| o.status == OrderStatus::Pending)
+            .collect::<Vec<_>>()
     }
 
-    pub fn close(&mut self, instrument: &InstrumentKind, price: f32) {
-        self.cash.amount += price;
-        self.instruments.retain(|s| s.kind != *instrument);
+    pub fn processed_orders(&self) -> Vec<&Order> {
+        self.orders
+            .iter()
+            .filter(|o| o.status != OrderStatus::Pending)
+            .collect::<Vec<_>>()
     }
 
-    pub fn execute_orders(
+    pub fn resolve_orders(
         &mut self,
         economy: &GlobalEconomy,
+        order_ev: &mut EventWriter<OrderEv>,
         message: &mut EventWriter<MessageEv>,
     ) {
-        let mut processed = vec![];
-
-        for order in self.orders.pending.iter().cloned().collect::<Vec<_>>() {
+        for order in self.pending_orders_mut() {
             let instrument = economy.get(&order.instrument);
             let owned = self.get_owned(&order.instrument);
             let price = instrument.current() * order.amount as f32;
@@ -220,56 +210,40 @@ impl Player {
                     };
 
                     if condition {
-                        match order.order {
-                            Order::Buy => {
+                        order.processed = economy.date;
+
+                        match order.command {
+                            Command::Buy => {
                                 if self.cash.current() >= price {
-                                    self.buy(&order.instrument, order.amount, price);
-                                    processed.push(order.to_processed(
-                                        economy.date,
-                                        OrderStatus::Executed,
-                                        "",
-                                    ));
+                                    order_ev.write(OrderEv {
+                                        id: order.id.clone(),
+                                        price,
+                                    });
                                 } else {
-                                    processed.push(order.to_processed(
-                                        economy.date,
-                                        OrderStatus::Failed,
-                                        "not enough cash",
-                                    ));
+                                    order.status =
+                                        OrderStatus::Failed("not enough cash".to_string());
                                 }
                             },
-                            Order::Sell => {
+                            Command::Sell => {
                                 if owned >= order.amount {
-                                    self.sell(&order.instrument, order.amount, price);
-                                    processed.push(order.to_processed(
-                                        economy.date,
-                                        OrderStatus::Executed,
-                                        "",
-                                    ));
+                                    order_ev.write(OrderEv {
+                                        id: order.id.clone(),
+                                        price,
+                                    });
                                 } else {
-                                    processed.push(order.to_processed(
-                                        economy.date,
-                                        OrderStatus::Failed,
-                                        "insufficient amount owned",
-                                    ));
+                                    order.status = OrderStatus::Failed(
+                                        "insufficient amount owned".to_string(),
+                                    );
                                 }
                             },
-                            Order::Close => {
+                            Command::Close => {
                                 if owned > 0 {
-                                    self.close(
-                                        &order.instrument,
-                                        instrument.current() * owned as f32,
-                                    );
-                                    processed.push(order.to_processed(
-                                        economy.date,
-                                        OrderStatus::Executed,
-                                        "",
-                                    ));
+                                    order_ev.write(OrderEv {
+                                        id: order.id.clone(),
+                                        price,
+                                    });
                                 } else {
-                                    processed.push(order.to_processed(
-                                        economy.date,
-                                        OrderStatus::Failed,
-                                        "not owned",
-                                    ));
+                                    order.status = OrderStatus::Failed("none owned".to_string());
                                 }
                             },
                         }
@@ -280,42 +254,15 @@ impl Player {
             }
         }
 
-        self.orders
-            .pending
-            .retain(|o| !processed.iter().any(|p| p.kind == o.kind));
-
-        for order in processed {
-            let msg = if order.status == OrderStatus::Executed {
-                let text = if order.order == Order::Close {
-                    format!(
-                        "Executed order {}: {} {} position.",
-                        order.id,
-                        order.order.past(),
-                        order.instrument.name()
-                    )
-                } else {
-                    format!(
-                        "Executed order {}: {} {} {}.",
-                        order.id,
-                        order.order.past(),
-                        order.amount,
-                        order.instrument.name()
-                    )
-                };
-
-                MessageEv {
-                    message: text,
-                    level: MessageLevel::Info,
+        for order in self.orders {
+            if order.processed == economy.date {
+                if let OrderStatus::Failed(msg) = order.status {
+                    message.write(MessageEv {
+                        message: format!("Failed to execute order {}: {msg}.", order.id),
+                        level: MessageLevel::Warning,
+                    });
                 }
-            } else {
-                MessageEv {
-                    message: format!("Failed to execute order {}: {}.", order.id, order.reason),
-                    level: MessageLevel::Warning,
-                }
-            };
-
-            message.write(msg);
-            self.orders.processed.push(order);
+            }
         }
     }
 }

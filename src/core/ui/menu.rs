@@ -145,15 +145,15 @@ pub fn in_game_menu(
 
 pub fn toggle_menu_keyboard(
     keyboard: Res<ButtonInput<KeyCode>>,
-    mut ui_state: ResMut<UiState>,
+    mut state: ResMut<UiState>,
     game_state: Res<State<GameState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
 ) {
     if keyboard.just_pressed(KeyCode::Escape) {
         match *game_state.get() {
             GameState::Running | GameState::Paused => {
-                if ui_state.active_modal.is_some() {
-                    ui_state.active_modal = None;
+                if state.active_modal.is_some() {
+                    state.active_modal = None;
                 } else {
                     next_game_state.set(GameState::InGameMenu);
                 }

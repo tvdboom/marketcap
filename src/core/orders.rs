@@ -1,8 +1,11 @@
+use bevy::prelude::*;
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
-use crate::core::player::InstrumentKind;
+use crate::core::global_economy::GlobalEconomy;
+use crate::core::messages::{MessageEv, MessageLevel};
+use crate::core::player::{InstrumentKind, OwnedInstrument, Player};
 use crate::utils::NameFromEnum;
 
 #[derive(EnumIter, Clone, Copy, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -63,20 +66,10 @@ impl OrderKind {
 }
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum Order {
+pub enum Command {
     Buy,
     Sell,
     Close,
-}
-
-impl Order {
-    pub fn past(&self) -> &str {
-        match self {
-            Order::Buy => "bought",
-            Order::Sell => "sold",
-            Order::Close => "closed",
-        }
-    }
 }
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
@@ -87,55 +80,115 @@ pub enum OrderDirection {
 
 #[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub enum OrderStatus {
+    Pending,
     Executed,
-    Failed,
+    Failed(String),
     Canceled,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct PendingOrder {
+pub struct Order {
+    /// Unique identifier for the order
     pub id: String,
+
+    /// Date at which the order was created
     pub created: NaiveDate,
+
+    /// Instrument that his being traded
     pub instrument: InstrumentKind,
-    pub order: Order,
+
+    /// Trade command (buy, sell, close)
+    pub command: Command,
+
+    /// Kind of order
     pub kind: OrderKind,
-    pub direction: OrderDirection,
+
+    /// Amount of instrument to trade
     pub amount: u32,
+
+    /// Price at which the order is executed
+    pub price: f32,
+
+    /// Threshold on which the trade has been executed
     pub threshold: u32,
+
+    /// Whether the threshold is an upper or lower limit
+    pub direction: OrderDirection,
+
+    /// Date of the order execution
+    pub processed: NaiveDate,
+
+    /// Status of the order
+    pub status: OrderStatus,
 }
 
-impl PendingOrder {
-    pub fn to_processed(
-        &self,
-        date: NaiveDate,
-        status: OrderStatus,
-        reason: &str,
-    ) -> ProcessedOrder {
-        ProcessedOrder {
-            id: self.id.clone(),
-            created: self.created,
-            processed: date,
-            instrument: self.instrument.clone(),
-            order: self.order.clone(),
-            kind: self.kind.clone(),
-            amount: self.amount,
-            threshold: self.threshold,
-            status,
-            reason: reason.to_string(),
+#[derive(Event)]
+pub struct OrderEv {
+    pub id: String,
+    pub price: f32,
+}
+
+pub fn execute_orders(
+    economy: Res<GlobalEconomy>,
+    mut player: ResMut<Player>,
+    mut order_ev: EventReader<OrderEv>,
+    mut message: EventWriter<MessageEv>,
+) {
+    for OrderEv { id, price } in order_ev.read() {
+        let order = Order {
+            price: *price,
+            status: OrderStatus::Executed,
+            ..player.orders.iter().find(|o| o.id == *id).unwrap().clone()
+        };
+
+        let instrument = economy.get(&order.instrument);
+
+        match order.command {
+            Command::Buy => {
+                if let Some(owned) = player.get_mut(&order.instrument) {
+                    owned.amount += order.amount;
+                } else {
+                    player.instruments.push(OwnedInstrument {
+                        kind: order.instrument.clone(),
+                        amount: order.amount,
+                        interest: 0.,
+                    });
+                }
+
+                player.cash.amount -= order.price;
+
+                message.write(MessageEv {
+                    message: format!("Bought {} {}.", order.amount, instrument.lowername()),
+                    level: MessageLevel::Info,
+                });
+            },
+            Command::Sell => {
+                player.instruments.retain_mut(|o| {
+                    if o.kind == order.instrument {
+                        o.amount = o.amount.saturating_sub(order.amount);
+                    }
+                    o.amount > 0
+                });
+
+                player.cash.amount += order.price;
+
+                message.write(MessageEv {
+                    message: format!("Sold {} {}.", order.amount, instrument.lowername(),),
+                    level: MessageLevel::Info,
+                });
+            },
+            Command::Close => {
+                player
+                    .instruments
+                    .retain_mut(|o| o.kind != order.instrument);
+
+                player.cash.amount += order.price;
+
+                message.write(MessageEv {
+                    message: format!("Closed {} position.", instrument.lowername()),
+                    level: MessageLevel::Info,
+                });
+            },
         }
     }
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct ProcessedOrder {
-    pub id: String,
-    pub created: NaiveDate,
-    pub processed: NaiveDate,
-    pub instrument: InstrumentKind,
-    pub order: Order,
-    pub kind: OrderKind,
-    pub amount: u32,
-    pub threshold: u32,
-    pub status: OrderStatus,
-    pub reason: String,
 }

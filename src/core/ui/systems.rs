@@ -33,6 +33,10 @@ pub fn set_egui_style(
 ) {
     let context = contexts.ctx_mut();
 
+    context.options_mut(|options| {
+        options.line_scroll_speed = 100.;
+    });
+
     context.set_style(
         game_settings
             .theme
@@ -271,11 +275,7 @@ pub fn top_panel(
         });
 }
 
-pub fn left_panel(
-    mut contexts: EguiContexts,
-    mut ui_state: ResMut<UiState>,
-    window: Single<&Window>,
-) {
+pub fn left_panel(mut contexts: EguiContexts, mut state: ResMut<UiState>, window: Single<&Window>) {
     SidePanel::left("left_panel")
         .exact_width(window.width().min(1.2 * WIDTH) * LEFT_LABEL_FRAC)
         .show_separator_line(false)
@@ -286,7 +286,7 @@ pub fn left_panel(
 
                 for tab in Tab::iter() {
                     ui.selectable_value(
-                        &mut ui_state.tab,
+                        &mut state.tab,
                         tab,
                         format!("{}  {}", tab.emoji(), tab.to_name()),
                     );
@@ -297,7 +297,7 @@ pub fn left_panel(
 
 pub fn central_panel(
     mut contexts: EguiContexts,
-    mut ui_state: ResMut<UiState>,
+    mut state: ResMut<UiState>,
     game_settings: Res<GameSettings>,
     economy: Res<GlobalEconomy>,
     mut player: ResMut<Player>,
@@ -316,40 +316,30 @@ pub fn central_panel(
                     bottom: 40,
                 }),
         )
-        .show(contexts.ctx_mut(), |ui| match ui_state.tab {
-            Tab::Overview => overview_panel(
-                ui,
-                &mut ui_state,
-                &economy,
-                &mut player,
-                &mut message,
-                &window,
-            ),
+        .show(contexts.ctx_mut(), |ui| match state.tab {
+            Tab::Overview => {
+                overview_panel(ui, &mut state, &economy, &mut player, &mut message, &window)
+            },
             Tab::Stocks => {
                 ui.heading("Stocks");
             },
-            Tab::Bonds => bonds_panel(ui, &mut ui_state, &economy, &player, &images, &window),
-            Tab::Forex => forex_panel(ui, &mut ui_state, &window),
-            Tab::Crypto => forex_panel(ui, &mut ui_state, &window),
+            Tab::Bonds => bonds_panel(ui, &mut state, &economy, &player, &images, &window),
+            Tab::Forex => forex_panel(ui, &mut state, &window),
+            Tab::Crypto => forex_panel(ui, &mut state, &window),
             Tab::Commodities => {
-                commodities_panel(ui, &mut ui_state, &economy, &player, &images, &window)
+                commodities_panel(ui, &mut state, &economy, &player, &images, &window)
             },
-            Tab::Credit => credit_panel(
-                ui,
-                &mut ui_state,
-                &economy,
-                &mut player,
-                &mut message,
-                &window,
-            ),
+            Tab::Credit => {
+                credit_panel(ui, &mut state, &economy, &mut player, &mut message, &window)
+            },
             Tab::Policies => {
                 ui.heading("Policies");
             },
         });
 }
 
-pub fn check_keys(keyboard: Res<ButtonInput<KeyCode>>, mut ui_state: ResMut<UiState>) {
+pub fn check_keys(keyboard: Res<ButtonInput<KeyCode>>, mut state: ResMut<UiState>) {
     if keyboard.just_pressed(KeyCode::KeyO) {
-        ui_state.tab = Tab::Overview;
+        state.tab = Tab::Overview;
     }
 }

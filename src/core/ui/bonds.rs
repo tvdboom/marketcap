@@ -14,7 +14,7 @@ use crate::utils::NameFromEnum;
 
 pub fn bonds_panel(
     ui: &mut Ui,
-    ui_state: &mut UiState,
+    state: &mut UiState,
     economy: &GlobalEconomy,
     player: &Player,
     images: &ImageIds,
@@ -23,7 +23,7 @@ pub fn bonds_panel(
     ui.horizontal(|ui| {
         for tab in BondKind::iter() {
             ui.selectable_value(
-                &mut ui_state.bonds,
+                &mut state.bonds,
                 tab,
                 format!("{}  {}", tab.emoji(), tab.to_name()),
             );
@@ -62,15 +62,15 @@ pub fn bonds_panel(
                 OrderOptions::Interest,
             ]
             .into(),
-            &mut ui_state.bond_modal.order,
+            &mut state.bond_modal.order,
             window,
         );
 
         let mut bonds = economy
             .bonds
             .iter()
-            .filter(|b| b.kind == ui_state.bonds)
-            .sorted_by(|a, b| match ui_state.bond_modal.order.order {
+            .filter(|b| b.kind == state.bonds)
+            .sorted_by(|a, b| match state.bond_modal.order.order {
                 OrderOptions::Name => a.name.to_lowername().cmp(&b.name.to_lowername()),
                 OrderOptions::OwnedAmount => player
                     .get_owned(&InstrumentKind::Bond(b.name))
@@ -91,7 +91,7 @@ pub fn bonds_panel(
             })
             .collect::<Vec<_>>();
 
-        if ui_state.bond_modal.order.descending {
+        if state.bond_modal.order.descending {
             bonds.reverse();
         }
 
@@ -99,7 +99,7 @@ pub fn bonds_panel(
             let response = ui.add_bond(bond, images, window);
 
             if response.clicked() {
-                ui_state.active_modal = Some(InstrumentKind::Bond(bond.name));
+                state.active_modal = Some(InstrumentKind::Bond(bond.name));
             }
         }
     });

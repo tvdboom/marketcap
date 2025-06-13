@@ -8,7 +8,7 @@ use crate::core::constants::{CURRENCY, DATE_FORMAT};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::loans::Loan;
 use crate::core::messages::{MessageEv, MessageLevel};
-use crate::core::orders::{OrderStatus, PendingOrder};
+use crate::core::orders::{Order, OrderStatus};
 use crate::core::player::{OwnedInstrument, Player};
 use crate::core::ui::state::{CreditTab, OrderOptions, OverviewTab, Tab, UiState};
 use crate::core::ui::utils::CustomUi;
@@ -16,7 +16,7 @@ use crate::utils::NameFromEnum;
 
 pub fn overview_panel(
     ui: &mut Ui,
-    ui_state: &mut UiState,
+    state: &mut UiState,
     economy: &GlobalEconomy,
     player: &mut Player,
     messages: &mut EventWriter<MessageEv>,
@@ -25,7 +25,7 @@ pub fn overview_panel(
     ui.horizontal(|ui| {
         for tab in OverviewTab::iter() {
             ui.selectable_value(
-                &mut ui_state.overview.tab,
+                &mut state.overview.tab,
                 tab,
                 format!("{}  {}", tab.emoji(), tab.to_name()),
             );
@@ -34,7 +34,7 @@ pub fn overview_panel(
 
     ui.separator();
 
-    match ui_state.overview.tab {
+    match state.overview.tab {
         OverviewTab::Portfolio => {
             let commodities = player.commodities();
             if !commodities.is_empty() {
@@ -42,7 +42,7 @@ pub fn overview_panel(
 
                 ui.add_space(window.height() * 0.02);
 
-                commodity_overview(ui, ui_state, &economy, player.commodities());
+                commodity_overview(ui, state, &economy, player.commodities());
                 ui.small("Click on a row to trade that commodity.");
             } else {
                 ui.add_space(window.height() * 0.02);
@@ -52,7 +52,7 @@ pub fn overview_panel(
                 ui.add_space(window.height() * 0.02);
 
                 if ui.button("Buy stocks").clicked() {
-                    ui_state.tab = Tab::Stocks;
+                    state.tab = Tab::Stocks;
                 }
             }
         },
@@ -65,15 +65,14 @@ pub fn overview_panel(
                     OrderOptions::Price,
                 ]
                 .into(),
-                &mut ui_state.overview.pending,
+                &mut state.overview.pending,
                 window,
             );
 
             let mut pending = player
-                .orders
-                .pending
-                .iter()
-                .sorted_by(|a, b| match ui_state.overview.pending.order {
+                .pending_orders()
+                .into_iter()
+                .sorted_by(|a, b| match state.overview.pending.order {
                     OrderOptions::Name => a.instrument.lowername().cmp(&b.instrument.lowername()),
                     OrderOptions::Created => a.created.cmp(&b.created),
                     OrderOptions::Price => a.threshold.cmp(&b.threshold),
@@ -82,7 +81,7 @@ pub fn overview_panel(
                 .cloned()
                 .collect::<Vec<_>>();
 
-            if ui_state.overview.pending.descending {
+            if state.overview.pending.descending {
                 pending.reverse();
             }
 
@@ -106,11 +105,11 @@ pub fn overview_panel(
                 ui.add_space(window.height() * 0.02);
 
                 if ui.button("Take a new loan").clicked() {
-                    ui_state.tab = Tab::Credit;
-                    ui_state.credit.tab = CreditTab::NewLoan;
+                    state.tab = Tab::Credit;
+                    state.credit.tab = CreditTab::NewLoan;
                 }
             } else {
-                loan_overview(ui, ui_state, &player.loans);
+                loan_overview(ui, state, &player.loans);
                 ui.small("Click on a row to repay the loan early.");
             }
         },
@@ -119,7 +118,7 @@ pub fn overview_panel(
 
 pub fn commodity_overview(
     ui: &mut Ui,
-    ui_state: &mut UiState,
+    state: &mut UiState,
     economy: &GlobalEconomy,
     commodities: Vec<&OwnedInstrument>,
 ) {
@@ -145,14 +144,14 @@ pub fn commodity_overview(
                         let instrument = economy.get(&owned.kind);
 
                         let content = [
-                            &instrument.name(),
-                            &format!("{:.0} {CURRENCY}", instrument.current()),
-                            &format!("{} {}", owned.amount, instrument.unit()),
-                            &format!(
+                            instrument.name(),
+                            format!("{:.0} {CURRENCY}", instrument.current()),
+                            format!("{} {}", owned.amount, instrument.unit()),
+                            format!(
                                 "{} {CURRENCY}",
                                 (owned.amount as f32 * instrument.current()) as u32
                             ),
-                            &format!(
+                            format!(
                                 "{} {CURRENCY}/month",
                                 (30. * owned.amount as f32 * instrument.storage_cost()) as u32
                             ),
@@ -166,7 +165,7 @@ pub fn commodity_overview(
                             }
 
                             if row.response().clicked() {
-                                ui_state.active_modal = Some(owned.kind.clone());
+                                state.active_modal = Some(owned.kind.clone());
                             }
                         });
                     }
@@ -176,7 +175,7 @@ pub fn commodity_overview(
 
 pub fn pending_order_table(
     ui: &mut Ui,
-    orders: Vec<PendingOrder>,
+    orders: Vec<Order>,
     economy: &GlobalEconomy,
     player: &mut Player,
     messages: &mut EventWriter<MessageEv>,
@@ -212,14 +211,14 @@ pub fn pending_order_table(
                         let instrument = economy.get(&order.instrument);
 
                         let content = [
-                            &order.id,
-                            &order.created.format(DATE_FORMAT).to_string(),
-                            &order.instrument.name(),
-                            &order.order.to_name(),
-                            &order.kind.abbr(),
-                            &format!("{} {}", order.amount, instrument.unit()),
-                            &format!("{:.0} {CURRENCY}", order.threshold),
-                            &format!("{:.0} {CURRENCY}", instrument.current()),
+                            order.id.clone(),
+                            order.created.format(DATE_FORMAT).to_string(),
+                            order.instrument.name(),
+                            order.command.to_name(),
+                            order.kind.abbr(),
+                            format!("{} {}", order.amount, instrument.unit()),
+                            format!("{:.0} {CURRENCY}", order.threshold),
+                            format!("{:.0} {CURRENCY}", instrument.current()),
                         ];
 
                         body.row(30., |mut row| {
@@ -230,12 +229,9 @@ pub fn pending_order_table(
                             }
 
                             if row.response().clicked() {
-                                player.orders.pending.retain(|o| o.id != order.id);
-                                player.orders.processed.push(order.to_processed(
-                                    economy.date,
-                                    OrderStatus::Canceled,
-                                    "canceled by user",
-                                ));
+                                if let Some(order) = player.orders.iter_mut().find(|o| o.id == order.id) {
+                                    order.status = OrderStatus::Canceled;
+                                }
 
                                 messages.write(MessageEv {
                                     message: format!("Canceled order {}.", order.id),
@@ -248,7 +244,7 @@ pub fn pending_order_table(
         });
 }
 
-pub fn loan_overview(ui: &mut Ui, ui_state: &mut UiState, loans: &Vec<Loan>) {
+pub fn loan_overview(ui: &mut Ui, state: &mut UiState, loans: &Vec<Loan>) {
     let columns = [
         "Id",
         "Start date",
@@ -281,17 +277,17 @@ pub fn loan_overview(ui: &mut Ui, ui_state: &mut UiState, loans: &Vec<Loan>) {
                 .body(|mut body| {
                     for loan in loans {
                         let content = [
-                            &loan.id,
-                            &loan.start_date.format(DATE_FORMAT).to_string(),
-                            &loan.maturity_date().format(DATE_FORMAT).to_string(),
-                            &loan.provider.to_name(),
-                            &format!("{} {CURRENCY}", &loan.principal),
-                            &format!("{:.0} {CURRENCY}", &loan.outstanding),
-                            &format!("{:.0} {CURRENCY}", &loan.next_installment_amount()),
-                            &format!("{}%", loan.interest_rate.to_string()),
-                            &loan.kind.to_name(),
-                            &loan.no_fee.to_string(),
-                            &loan.defaults.to_string(),
+                            loan.id.clone(),
+                            loan.start_date.format(DATE_FORMAT).to_string(),
+                            loan.maturity_date().format(DATE_FORMAT).to_string(),
+                            loan.provider.to_name(),
+                            format!("{} {CURRENCY}", &loan.principal),
+                            format!("{:.0} {CURRENCY}", &loan.outstanding),
+                            format!("{:.0} {CURRENCY}", &loan.next_installment_amount()),
+                            format!("{}%", loan.interest_rate.to_string()),
+                            loan.kind.to_name(),
+                            loan.no_fee.to_string(),
+                            loan.defaults.to_string(),
                         ];
 
                         body.row(30., |mut row| {
@@ -302,9 +298,9 @@ pub fn loan_overview(ui: &mut Ui, ui_state: &mut UiState, loans: &Vec<Loan>) {
                             }
 
                             if row.response().clicked() {
-                                ui_state.tab = Tab::Credit;
-                                ui_state.credit.tab = CreditTab::RepayLoan;
-                                ui_state.credit.repay = Some(loan.id.clone());
+                                state.tab = Tab::Credit;
+                                state.credit.tab = CreditTab::RepayLoan;
+                                state.credit.repay = Some(loan.id.clone());
                             }
                         });
                     }

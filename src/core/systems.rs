@@ -30,7 +30,7 @@ pub fn time_pass(
             commodity.storage_cost *= 1. + inflation / 100. / 365.;
         }
 
-        player.execute_orders(&economy, &mut message);
+        player.resolve_orders(&economy, &mut message);
 
         if economy.date.day() == 1 {
             // Monthly operations =================================== >>

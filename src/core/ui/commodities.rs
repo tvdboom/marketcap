@@ -4,6 +4,7 @@ use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::{
     Button, ComboBox, Id, Image, Modal, ScrollArea, Separator, Sides, Slider, Ui,
 };
+use chrono::NaiveDate;
 use itertools::Itertools;
 use strum::IntoEnumIterator;
 
@@ -13,7 +14,7 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::Instrument;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::messages::{MessageEv, MessageLevel};
-use crate::core::orders::{Order, OrderDirection, OrderKind, PendingOrder};
+use crate::core::orders::{Command, Order, OrderDirection, OrderEv, OrderKind, OrderStatus};
 use crate::core::player::{InstrumentKind, Player};
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderOptions, UiState};
@@ -22,7 +23,7 @@ use crate::utils::{NameFromEnum, create_guid};
 
 pub fn commodities_panel(
     ui: &mut Ui,
-    ui_state: &mut UiState,
+    state: &mut UiState,
     economy: &GlobalEconomy,
     player: &Player,
     images: &ImageIds,
@@ -53,14 +54,14 @@ pub fn commodities_panel(
                 OrderOptions::Volatility,
             ]
             .into(),
-            &mut ui_state.commodity_modal.order,
+            &mut state.commodity_modal.order,
             window,
         );
 
         let mut commodities = economy
             .commodities
             .iter()
-            .sorted_by(|a, b| match ui_state.commodity_modal.order.order {
+            .sorted_by(|a, b| match state.commodity_modal.order.order {
                 OrderOptions::Name => a.name.to_lowername().cmp(&b.name.to_lowername()),
                 OrderOptions::OwnedAmount => player
                     .get_owned(&InstrumentKind::Commodity(b.name))
@@ -81,7 +82,7 @@ pub fn commodities_panel(
             })
             .collect::<Vec<_>>();
 
-        if ui_state.commodity_modal.order.descending {
+        if state.commodity_modal.order.descending {
             commodities.reverse();
         }
 
@@ -89,7 +90,7 @@ pub fn commodities_panel(
             let response = ui.add_commodity(commodity, images, window);
 
             if response.clicked() {
-                ui_state.active_modal = Some(InstrumentKind::Commodity(commodity.name));
+                state.active_modal = Some(InstrumentKind::Commodity(commodity.name));
             }
         }
     });
@@ -97,14 +98,15 @@ pub fn commodities_panel(
 
 pub fn commodity_modal(
     mut contexts: EguiContexts,
-    mut ui_state: ResMut<UiState>,
+    mut state: ResMut<UiState>,
     economy: Res<GlobalEconomy>,
     mut player: ResMut<Player>,
+    mut order_ev: EventWriter<OrderEv>,
     mut message: EventWriter<MessageEv>,
     images: Res<ImageIds>,
     window: Single<&Window>,
 ) {
-    let kind = if let Some(InstrumentKind::Commodity(name)) = ui_state.active_modal {
+    let kind = if let Some(InstrumentKind::Commodity(name)) = state.active_modal {
         InstrumentKind::Commodity(name)
     } else {
         return;
@@ -112,10 +114,10 @@ pub fn commodity_modal(
 
     let instrument = economy.get(&kind);
     let owned = player.get_owned(&kind);
-    let tab = ui_state.commodity_modal.tab;
-    let amount = ui_state.commodity_modal.amount;
-    let limit_stop = ui_state.commodity_modal.limit_stop;
-    let trailing_stop = ui_state.commodity_modal.trailing_stop;
+    let tab = state.commodity_modal.tab;
+    let amount = state.commodity_modal.amount;
+    let limit_stop = state.commodity_modal.limit_stop;
+    let trailing_stop = state.commodity_modal.trailing_stop;
     let storage_costs = (amount * 30) as f32 * instrument.storage_cost();
 
     let modal = Modal::new(Id::new("modal")).show(contexts.ctx_mut(), |ui| {
@@ -128,7 +130,7 @@ pub fn commodity_modal(
                     .show_ui(ui, |ui| {
                         for item in CommodityName::iter() {
                             ui.selectable_value(
-                                &mut ui_state.active_modal,
+                                &mut state.active_modal,
                                 Some(InstrumentKind::Commodity(item)),
                                 item.to_name(),
                             );
@@ -150,7 +152,7 @@ pub fn commodity_modal(
                         OrderKind::Futures,
                     ] {
                         ui.selectable_value(
-                            &mut ui_state.commodity_modal.tab,
+                            &mut state.commodity_modal.tab,
                             tab,
                             format!("{}  {}", tab.emoji(), tab.to_name()),
                         )
@@ -183,7 +185,7 @@ pub fn commodity_modal(
 
                     ui.add(
                         Slider::new(
-                            &mut ui_state.commodity_modal.amount,
+                            &mut state.commodity_modal.amount,
                             0..=((player.cash.current() / instrument.current()) as u32).max(owned),
                         )
                         .show_value(false)
@@ -198,7 +200,7 @@ pub fn commodity_modal(
 
                             ui.add(
                                 Slider::new(
-                                    &mut ui_state.commodity_modal.limit_stop,
+                                    &mut state.commodity_modal.limit_stop,
                                     0..=(instrument.current() * 5.) as u32,
                                 )
                                 .show_value(false)
@@ -217,7 +219,7 @@ pub fn commodity_modal(
                             ui.label("Trailing stop:");
 
                             ui.add(
-                                Slider::new(&mut ui_state.commodity_modal.trailing_stop, 3..=50)
+                                Slider::new(&mut state.commodity_modal.trailing_stop, 3..=50)
                                     .show_value(false)
                                     .text(format!("{trailing_stop}%")),
                             )
@@ -366,93 +368,60 @@ pub fn commodity_modal(
                     },
                 );
 
-                // Resolve button clicks
-                if tab == OrderKind::MarketOrder {
-                    if buy_clicked {
-                        player.buy(&kind, amount, price - storage_costs);
-
-                        message.write(MessageEv {
-                            message: format!(
-                                "Bought {} {} of {}.",
-                                amount,
-                                instrument.unit(),
-                                instrument.lowername()
-                            ),
-                            level: MessageLevel::Info,
-                        });
-                    }
-
-                    if close_clicked {
-                        player.close(&kind, price - storage_costs);
-
-                        message.write(MessageEv {
-                            message: format!("Closed {} position.", instrument.lowername()),
-                            level: MessageLevel::Info,
-                        });
-                    }
-
-                    if sell_clicked {
-                        player.sell(&kind, amount, price - storage_costs);
-
-                        message.write(MessageEv {
-                            message: format!(
-                                "Sold {} {} of {}.",
-                                amount,
-                                instrument.unit(),
-                                instrument.lowername()
-                            ),
-                            level: MessageLevel::Info,
-                        });
-                    }
+                let command = if buy_clicked {
+                    Some(Command::Buy)
+                } else if sell_clicked {
+                    Some(Command::Sell)
+                } else if close_clicked {
+                    Some(Command::Close)
                 } else {
-                    let order = if buy_clicked {
-                        Some(Order::Buy)
-                    } else if sell_clicked {
-                        Some(Order::Sell)
-                    } else if close_clicked {
-                        Some(Order::Close)
-                    } else {
-                        None
-                    };
+                    None
+                };
 
-                    if let Some(order) = order {
-                        let id = create_guid();
+                if let Some(command) = command {
+                    let id = create_guid();
 
+                    if tab != OrderKind::MarketOrder {
                         message.write(MessageEv {
                             message: format!(
                                 "Created {} {} order {}.",
                                 tab.abbr().to_lowercase(),
-                                order.to_lowername(),
+                                command.to_lowername(),
                                 id
                             ),
                             level: MessageLevel::Info,
                         });
-
-                        player.orders.pending.push(PendingOrder {
-                            id,
-                            created: economy.date,
-                            instrument: kind.clone(),
-                            order,
-                            kind: tab,
-                            direction: if (limit_stop as f32) < instrument.current() {
-                                OrderDirection::Lower
-                            } else {
-                                OrderDirection::Upper
-                            },
-                            amount,
-                            threshold: if tab == OrderKind::LimitOrder {
-                                limit_stop
-                            } else {
-                                trailing_stop
-                            },
-                        });
                     }
+
+                    player.orders.push(Order {
+                        id: id.clone(),
+                        created: economy.date,
+                        instrument: kind,
+                        command,
+                        kind: tab,
+                        direction: if (limit_stop as f32) < instrument.current() {
+                            OrderDirection::Lower
+                        } else {
+                            OrderDirection::Upper
+                        },
+                        amount,
+                        price,
+                        threshold: if tab == OrderKind::LimitOrder {
+                            limit_stop
+                        } else {
+                            trailing_stop
+                        },
+                        processed: NaiveDate::default(),
+                        status: OrderStatus::Pending,
+                    });
+
+                    order_ev.write(OrderEv { id, price });
                 }
             });
         });
     });
 
     if modal.should_close() {
-        ui_state.active_modal = None;
+        state.active_modal = None;
     }
 }
