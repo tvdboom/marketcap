@@ -65,25 +65,34 @@ impl OrderKind {
     }
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Command {
     Buy,
     Sell,
     Close,
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum OrderDirection {
     Upper,
     Lower,
 }
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum OrderStatus {
     Pending,
     Executed,
     Failed(String),
     Canceled,
+}
+
+impl OrderStatus {
+    pub fn reason(&self) -> String {
+        match self {
+            OrderStatus::Failed(reason) => reason.clone(),
+            _ => "---".to_owned(),
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]

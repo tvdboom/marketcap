@@ -12,7 +12,7 @@ use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderDirection, OrderEv, OrderKind, OrderStatus};
 use crate::utils::NameFromEnum;
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum InstrumentKind {
     Bond(BondName),
     Commodity(CommodityName),
@@ -148,10 +148,6 @@ impl Player {
             .collect::<Vec<_>>()
     }
 
-    pub fn get(&self, kind: &InstrumentKind) -> Option<&OwnedInstrument> {
-        self.instruments.iter().find(|c| c.kind == *kind)
-    }
-
     pub fn get_mut(&mut self, kind: &InstrumentKind) -> Option<&mut OwnedInstrument> {
         self.instruments.iter_mut().find(|c| c.kind == *kind)
     }
@@ -175,13 +171,6 @@ impl Player {
             .collect::<Vec<_>>()
     }
 
-    pub fn pending_orders_mut(&mut self) -> Vec<&mut Order> {
-        self.orders
-            .iter_mut()
-            .filter(|o| o.status == OrderStatus::Pending)
-            .collect::<Vec<_>>()
-    }
-
     pub fn processed_orders(&self) -> Vec<&Order> {
         self.orders
             .iter()
@@ -195,7 +184,8 @@ impl Player {
         order_ev: &mut EventWriter<OrderEv>,
         message: &mut EventWriter<MessageEv>,
     ) {
-        for order in self.pending_orders_mut() {
+        let mut processed = vec![];
+        for order in self.pending_orders() {
             let instrument = economy.get(&order.instrument);
             let owned = self.get_owned(&order.instrument);
             let price = instrument.current() * order.amount as f32;
@@ -210,43 +200,31 @@ impl Player {
                     };
 
                     if condition {
-                        order.processed = economy.date;
-
-                        match order.command {
+                        let status = match order.command {
                             Command::Buy => {
                                 if self.cash.current() >= price {
-                                    order_ev.write(OrderEv {
-                                        id: order.id.clone(),
-                                        price,
-                                    });
+                                    OrderStatus::Executed
                                 } else {
-                                    order.status =
-                                        OrderStatus::Failed("not enough cash".to_string());
+                                    OrderStatus::Failed("not enough cash".to_string())
                                 }
                             },
                             Command::Sell => {
                                 if owned >= order.amount {
-                                    order_ev.write(OrderEv {
-                                        id: order.id.clone(),
-                                        price,
-                                    });
+                                    OrderStatus::Executed
                                 } else {
-                                    order.status = OrderStatus::Failed(
-                                        "insufficient amount owned".to_string(),
-                                    );
+                                    OrderStatus::Failed("insufficient amount owned".to_string())
                                 }
                             },
                             Command::Close => {
                                 if owned > 0 {
-                                    order_ev.write(OrderEv {
-                                        id: order.id.clone(),
-                                        price,
-                                    });
+                                    OrderStatus::Executed
                                 } else {
-                                    order.status = OrderStatus::Failed("none owned".to_string());
+                                    OrderStatus::Failed("none owned".to_string())
                                 }
                             },
-                        }
+                        };
+
+                        processed.push((order.id.clone(), price, status));
                     }
                 },
                 OrderKind::TrailingOrder => {},
@@ -254,15 +232,23 @@ impl Player {
             }
         }
 
-        for order in self.orders {
-            if order.processed == economy.date {
-                if let OrderStatus::Failed(msg) = order.status {
-                    message.write(MessageEv {
-                        message: format!("Failed to execute order {}: {msg}.", order.id),
-                        level: MessageLevel::Warning,
-                    });
-                }
+        for (id, price, status) in processed {
+            let order = self.orders.iter_mut().find(|o| o.id == id).unwrap();
+
+            if let OrderStatus::Failed(msg) = &status {
+                message.write(MessageEv {
+                    message: format!("Failed to execute order {id}: {msg}."),
+                    level: MessageLevel::Warning,
+                });
+            } else {
+                order_ev.write(OrderEv {
+                    id: order.id.clone(),
+                    price,
+                });
             }
+
+            order.processed = economy.date;
+            order.status = status;
         }
     }
 }

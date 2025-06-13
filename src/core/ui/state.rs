@@ -61,6 +61,7 @@ pub enum OrderOptions {
     OwnedAmount,
     OwnedValue,
     Price,
+    Status,
     Volatility,
     Interest,
 }
@@ -74,8 +75,15 @@ pub struct OrderByState {
 #[derive(Default)]
 pub struct OverviewState {
     pub tab: OverviewTab,
+    pub commodities: OrderByState,
     pub pending: OrderByState,
     pub processed: OrderByState,
+}
+
+#[derive(Default)]
+pub struct BondState {
+    pub tab: BondKind,
+    pub order: OrderByState,
 }
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
@@ -126,7 +134,6 @@ impl Default for CreditState {
 #[derive(Default)]
 pub struct ModalInfo {
     pub tab: OrderKind,
-    pub order: OrderByState,
     pub amount: u32,
     pub limit_stop: u32,
     pub trailing_stop: u32,
@@ -136,9 +143,9 @@ pub struct ModalInfo {
 pub struct UiState {
     pub tab: Tab,
     pub overview: OverviewState,
-    pub bonds: BondKind,
+    pub bonds: BondState,
+    pub commodities: OrderByState,
     pub credit: CreditState,
-    pub active_modal: Option<InstrumentKind>,
-    pub bond_modal: ModalInfo,
-    pub commodity_modal: ModalInfo,
+    pub modal: Option<InstrumentKind>,
+    pub modal_info: ModalInfo,
 }

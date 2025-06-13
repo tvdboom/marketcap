@@ -23,15 +23,15 @@ use crate::core::audio::{PlayAudioEv, play_audio_event, toggle_music_keyboard};
 use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::messages::MessageEv;
-use crate::core::orders::execute_orders;
+use crate::core::orders::{OrderEv, execute_orders};
 use crate::core::pause::toggle_pause_keyboard;
 use crate::core::persistence::{LoadGameEv, SaveGameEv, load_game, save_game};
 use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::{AppState, GameState};
 use crate::core::systems::time_pass;
-use crate::core::ui::commodities::commodity_modal;
 use crate::core::ui::menu::{in_game_menu, toggle_menu_keyboard};
+use crate::core::ui::modal::trade_modal;
 use crate::core::ui::state::UiState;
 use crate::core::ui::systems::{
     add_egui_images, central_panel, check_keys, left_panel, on_resize_system, set_egui_style,
@@ -66,6 +66,7 @@ impl Plugin for GamePlugin {
             .add_event::<SaveGameEv>()
             .add_event::<PlayAudioEv>()
             .add_event::<MessageEv>()
+            .add_event::<OrderEv>()
             // Sets
             .configure_sets(Update, InGameSet.run_if(in_state(AppState::Game)))
             .configure_sets(
@@ -93,7 +94,7 @@ impl Plugin for GamePlugin {
                     left_panel,
                     central_panel,
                     in_game_menu,
-                    commodity_modal,
+                    trade_modal,
                 )
                     .chain()
                     .in_set(InGameSet),

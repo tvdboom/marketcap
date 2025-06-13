@@ -3,6 +3,7 @@ pub mod commodities;
 pub mod credit;
 pub mod forex;
 pub mod menu;
+pub mod modal;
 mod overview;
 pub mod state;
 pub mod systems;

@@ -5,11 +5,13 @@ use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondKind;
 use crate::core::messages::{MessageEv, MessageLevel};
+use crate::core::orders::OrderEv;
 use crate::core::player::Player;
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
     mut player: ResMut<Player>,
+    mut order_ev: EventWriter<OrderEv>,
     mut message: EventWriter<MessageEv>,
     time: Res<Time>,
 ) {
@@ -30,7 +32,7 @@ pub fn time_pass(
             commodity.storage_cost *= 1. + inflation / 100. / 365.;
         }
 
-        player.resolve_orders(&economy, &mut message);
+        player.resolve_orders(&economy, &mut order_ev, &mut message);
 
         if economy.date.day() == 1 {
             // Monthly operations =================================== >>

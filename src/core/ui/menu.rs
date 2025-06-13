@@ -152,8 +152,8 @@ pub fn toggle_menu_keyboard(
     if keyboard.just_pressed(KeyCode::Escape) {
         match *game_state.get() {
             GameState::Running | GameState::Paused => {
-                if state.active_modal.is_some() {
-                    state.active_modal = None;
+                if state.modal.is_some() {
+                    state.modal = None;
                 } else {
                     next_game_state.set(GameState::InGameMenu);
                 }

@@ -10,7 +10,7 @@ use crate::core::loans::Loan;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Order, OrderStatus};
 use crate::core::player::{OwnedInstrument, Player};
-use crate::core::ui::state::{CreditTab, OrderOptions, OverviewTab, Tab, UiState};
+use crate::core::ui::state::{CreditTab, ModalInfo, OrderOptions, OverviewTab, Tab, UiState};
 use crate::core::ui::utils::CustomUi;
 use crate::utils::NameFromEnum;
 
@@ -36,23 +36,53 @@ pub fn overview_panel(
 
     match state.overview.tab {
         OverviewTab::Portfolio => {
-            let commodities = player.commodities();
+            ui.add_combobox(
+                "Commodities",
+                [
+                    OrderOptions::Name,
+                    OrderOptions::Price,
+                    OrderOptions::OwnedAmount,
+                    OrderOptions::OwnedValue,
+                ]
+                .into(),
+                &mut state.overview.commodities,
+                window,
+            );
+
+            let mut commodities = player
+                .commodities()
+                .into_iter()
+                .sorted_by(|a, b| match state.overview.commodities.order {
+                    OrderOptions::Name => a.kind.lowername().cmp(&b.kind.lowername()),
+                    OrderOptions::Price => economy
+                        .get_current(&a.kind)
+                        .partial_cmp(&economy.get_current(&b.kind))
+                        .unwrap(),
+                    OrderOptions::OwnedAmount => a.amount.cmp(&b.amount),
+                    OrderOptions::OwnedValue => player
+                        .get_value(&a.kind, economy)
+                        .partial_cmp(&player.get_value(&b.kind, economy))
+                        .unwrap(),
+                    _ => unreachable!(),
+                })
+                .collect::<Vec<_>>();
+
+            if state.overview.commodities.descending {
+                commodities.reverse();
+            }
+
             if !commodities.is_empty() {
-                ui.heading("Commodities");
-
-                ui.add_space(window.height() * 0.02);
-
-                commodity_overview(ui, state, &economy, player.commodities());
+                commodity_overview(ui, state, &economy, commodities);
                 ui.small("Click on a row to trade that commodity.");
             } else {
                 ui.add_space(window.height() * 0.02);
 
-                ui.label("You don't own any instruments yet.");
+                ui.label("You don't own any commodities yet.");
 
                 ui.add_space(window.height() * 0.02);
 
-                if ui.button("Buy stocks").clicked() {
-                    state.tab = Tab::Stocks;
+                if ui.button("Buy commodities").clicked() {
+                    state.tab = Tab::Commodities;
                 }
             }
         },
@@ -92,6 +122,49 @@ pub fn overview_panel(
             } else {
                 pending_order_table(ui, pending, economy, player, messages);
                 ui.small("Click on a row to cancel the order.");
+            }
+
+            ui.add_space(window.height() * 0.05);
+
+            ui.add_combobox(
+                "Processed orders",
+                [
+                    OrderOptions::Name,
+                    OrderOptions::Created,
+                    OrderOptions::Processed,
+                    OrderOptions::Price,
+                    OrderOptions::Status,
+                ]
+                .into(),
+                &mut state.overview.processed,
+                window,
+            );
+
+            let mut processed = player
+                .processed_orders()
+                .into_iter()
+                .sorted_by(|a, b| match state.overview.processed.order {
+                    OrderOptions::Name => a.instrument.lowername().cmp(&b.instrument.lowername()),
+                    OrderOptions::Created => a.created.cmp(&b.created),
+                    OrderOptions::Price => a.threshold.cmp(&b.threshold),
+                    OrderOptions::Processed => a.processed.cmp(&b.processed),
+                    OrderOptions::Status => a.status.to_lowername().cmp(&b.status.to_lowername()),
+                    _ => unreachable!(),
+                })
+                .cloned()
+                .collect::<Vec<_>>();
+
+            if state.overview.processed.descending {
+                processed.reverse();
+            }
+
+            if processed.is_empty() {
+                ui.add_space(window.height() * 0.02);
+
+                ui.label("No processed orders.");
+            } else {
+                processed_order_table(ui, state, processed, economy);
+                ui.small("Click on a row to recreate the order.");
             }
         },
         OverviewTab::Debts => {
@@ -165,7 +238,7 @@ pub fn commodity_overview(
                             }
 
                             if row.response().clicked() {
-                                state.active_modal = Some(owned.kind.clone());
+                                state.modal = Some(owned.kind.clone());
                             }
                         });
                     }
@@ -181,7 +254,6 @@ pub fn pending_order_table(
     messages: &mut EventWriter<MessageEv>,
 ) {
     let columns = [
-        "Id",
         "Created",
         "Name",
         "Order",
@@ -196,6 +268,7 @@ pub fn pending_order_table(
         .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
         .show(ui, |ui| {
             TableBuilder::new(ui)
+                .id_salt("pending_order_table")
                 .striped(false)
                 .sense(Sense::click())
                 .columns(Column::remainder(), columns.len())
@@ -211,7 +284,6 @@ pub fn pending_order_table(
                         let instrument = economy.get(&order.instrument);
 
                         let content = [
-                            order.id.clone(),
                             order.created.format(DATE_FORMAT).to_string(),
                             order.instrument.name(),
                             order.command.to_name(),
@@ -229,7 +301,9 @@ pub fn pending_order_table(
                             }
 
                             if row.response().clicked() {
-                                if let Some(order) = player.orders.iter_mut().find(|o| o.id == order.id) {
+                                if let Some(order) =
+                                    player.orders.iter_mut().find(|o| o.id == order.id)
+                                {
                                     order.status = OrderStatus::Canceled;
                                 }
 
@@ -237,6 +311,78 @@ pub fn pending_order_table(
                                     message: format!("Canceled order {}.", order.id),
                                     level: MessageLevel::Info,
                                 });
+                            }
+                        });
+                    }
+                });
+        });
+}
+
+pub fn processed_order_table(
+    ui: &mut Ui,
+    state: &mut UiState,
+    orders: Vec<Order>,
+    economy: &GlobalEconomy,
+) {
+    let columns = [
+        "Created",
+        "Processed",
+        "Name",
+        "Order",
+        "Kind",
+        "Amount",
+        "Limit price",
+        "Status",
+        "Reason",
+    ];
+
+    Frame::new()
+        .inner_margin(ui.spacing().menu_margin)
+        .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
+        .show(ui, |ui| {
+            TableBuilder::new(ui)
+                .id_salt("processed_order_table")
+                .striped(false)
+                .sense(Sense::click())
+                .columns(Column::remainder(), columns.len())
+                .header(30., |mut header| {
+                    for col in columns {
+                        header.col(|ui| {
+                            ui.strong(col);
+                        });
+                    }
+                })
+                .body(|mut body| {
+                    for order in orders {
+                        let instrument = economy.get(&order.instrument);
+
+                        let content = [
+                            order.created.format(DATE_FORMAT).to_string(),
+                            order.processed.format(DATE_FORMAT).to_string(),
+                            order.instrument.name(),
+                            order.command.to_name(),
+                            order.kind.abbr(),
+                            format!("{} {}", order.amount, instrument.unit()),
+                            format!("{:.0} {CURRENCY}", order.threshold),
+                            order.status.to_name(),
+                            order.status.reason(),
+                        ];
+
+                        body.row(30., |mut row| {
+                            for col in content {
+                                row.col(|ui| {
+                                    ui.label(col);
+                                });
+                            }
+
+                            if row.response().clicked() {
+                                state.modal = Some(order.instrument.clone());
+                                state.modal_info = ModalInfo {
+                                    tab: order.kind.clone(),
+                                    amount: order.amount,
+                                    limit_stop: order.threshold,
+                                    trailing_stop: order.threshold,
+                                };
                             }
                         });
                     }
