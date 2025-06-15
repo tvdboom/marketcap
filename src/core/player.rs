@@ -9,7 +9,7 @@ use crate::core::instruments::bonds::BondName;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::loans::Loan;
 use crate::core::messages::{MessageEv, MessageLevel};
-use crate::core::orders::{Command, Order, OrderDirection, OrderEv, OrderKind, OrderStatus};
+use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
 use crate::utils::NameFromEnum;
 
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -44,6 +44,7 @@ pub struct OwnedInstrument {
 #[derive(Resource, Clone, Default, Serialize, Deserialize)]
 pub struct Player {
     pub cash: Cash,
+    pub collateral: f32,
     pub credit_score: CreditScore,
     pub loans: Vec<Loan>,
     pub orders: Vec<Order>,
@@ -53,6 +54,7 @@ pub struct Player {
 impl Player {
     pub fn enterprise_value(&self, economy: &GlobalEconomy) -> f32 {
         self.cash.amount
+            + self.collateral
             + self
                 .instruments
                 .iter()
@@ -171,6 +173,13 @@ impl Player {
             .collect::<Vec<_>>()
     }
 
+    pub fn pending_orders_mut(&mut self) -> Vec<&mut Order> {
+        self.orders
+            .iter_mut()
+            .filter(|o| o.status == OrderStatus::Pending)
+            .collect::<Vec<_>>()
+    }
+
     pub fn processed_orders(&self) -> Vec<&Order> {
         self.orders
             .iter()
@@ -188,47 +197,58 @@ impl Player {
         for order in self.pending_orders() {
             let instrument = economy.get(&order.instrument);
             let owned = self.get_owned(&order.instrument);
-            let price = instrument.current() * order.amount as f32;
+            let price = (instrument.current()
+                - if order.command == Command::Buy {
+                    0.
+                } else {
+                    instrument.storage_cost() * 30.
+                })
+                * order.amount as f32;
 
-            match order.kind {
+            let condition = match order.kind {
                 OrderKind::LimitOrder => {
-                    // Execute the order if the price crosses the limit in the lower or upper bound
-                    let condition = if order.direction == OrderDirection::Lower {
-                        instrument.current() <= order.threshold as f32
-                    } else {
+                    if order.lower_bound {
                         instrument.current() >= order.threshold as f32
-                    };
-
-                    if condition {
-                        let status = match order.command {
-                            Command::Buy => {
-                                if self.cash.current() >= price {
-                                    OrderStatus::Executed
-                                } else {
-                                    OrderStatus::Failed("not enough cash".to_string())
-                                }
-                            },
-                            Command::Sell => {
-                                if owned >= order.amount {
-                                    OrderStatus::Executed
-                                } else {
-                                    OrderStatus::Failed("insufficient amount owned".to_string())
-                                }
-                            },
-                            Command::Close => {
-                                if owned > 0 {
-                                    OrderStatus::Executed
-                                } else {
-                                    OrderStatus::Failed("none owned".to_string())
-                                }
-                            },
-                        };
-
-                        processed.push((order.id.clone(), price, status));
+                    } else {
+                        instrument.current() <= order.threshold as f32
                     }
                 },
-                OrderKind::TrailingOrder => {},
+                OrderKind::TrailingOrder => {
+                    if order.lower_bound {
+                        instrument.current() >= (1. + order.threshold as f32 / 100.) * order.bound
+                    } else {
+                        instrument.current() <= (1. - order.threshold as f32 / 100.) * order.bound
+                    }
+                },
                 _ => unreachable!(),
+            };
+
+            if condition {
+                let status = match order.command {
+                    Command::Buy => {
+                        if self.cash.current() >= price {
+                            OrderStatus::Executed
+                        } else {
+                            OrderStatus::Failed("not enough cash".to_string())
+                        }
+                    },
+                    Command::Sell => {
+                        if owned >= order.amount {
+                            OrderStatus::Executed
+                        } else {
+                            OrderStatus::Failed("insufficient owned".to_string())
+                        }
+                    },
+                    Command::Close => {
+                        if owned > 0 {
+                            OrderStatus::Executed
+                        } else {
+                            OrderStatus::Failed("none owned".to_string())
+                        }
+                    },
+                };
+
+                processed.push((order.id.clone(), price, status));
             }
         }
 
@@ -248,6 +268,7 @@ impl Player {
             }
 
             order.processed = economy.date;
+            order.price = price;
             order.status = status;
         }
     }

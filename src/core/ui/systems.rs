@@ -133,11 +133,13 @@ pub fn top_panel(
                         of the player. If the enterprise value drops below zero, the company \
                         goes bankrupt and the game is lost.\n\n\
                         Cash: {}\n\
+                        Collateral: {}\n\
                         Commodities: {}\n\
                         Debt: {}\n\
                         -------------------\n\
                         Enterprise value: {}",
                         player.cash.current().signed(),
+                        player.collateral.signed(),
                         player
                             .commodities()
                             .iter()

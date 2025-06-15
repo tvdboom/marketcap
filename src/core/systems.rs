@@ -32,6 +32,15 @@ pub fn time_pass(
             commodity.storage_cost *= 1. + inflation / 100. / 365.;
         }
 
+        // Update bounds for trailing orders
+        for order in player.pending_orders_mut() {
+            if order.lower_bound {
+                order.bound = order.bound.min(economy.get_current(&order.instrument));
+            } else {
+                order.bound = order.bound.max(economy.get_current(&order.instrument));
+            }
+        }
+
         player.resolve_orders(&economy, &mut order_ev, &mut message);
 
         if economy.date.day() == 1 {

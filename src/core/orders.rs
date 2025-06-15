@@ -72,12 +72,6 @@ pub enum Command {
     Close,
 }
 
-#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub enum OrderDirection {
-    Upper,
-    Lower,
-}
-
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum OrderStatus {
     Pending,
@@ -121,8 +115,11 @@ pub struct Order {
     /// Threshold on which the trade has been executed
     pub threshold: u32,
 
+    /// Upper or lower bound for trailing order
+    pub bound: f32,
+
     /// Whether the threshold is an upper or lower limit
-    pub direction: OrderDirection,
+    pub lower_bound: bool,
 
     /// Date of the order execution
     pub processed: NaiveDate,

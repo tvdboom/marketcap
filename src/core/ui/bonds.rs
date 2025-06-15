@@ -59,6 +59,7 @@ pub fn bonds_panel(
                 OrderOptions::OwnedAmount,
                 OrderOptions::OwnedValue,
                 OrderOptions::Price,
+                OrderOptions::Quality,
                 OrderOptions::Interest,
             ]
             .into(),
@@ -83,6 +84,7 @@ pub fn bonds_panel(
                     .current()
                     .partial_cmp(&b.current())
                     .unwrap_or(std::cmp::Ordering::Equal),
+                OrderOptions::Quality => a.quality.to_lowername().cmp(&b.quality.to_lowername()),
                 OrderOptions::Interest => b
                     .interest
                     .partial_cmp(&a.interest)

@@ -172,13 +172,12 @@ impl CustomUi for Ui {
                     });
 
                 let descending = ui
-                    .heading(if state.descending { "▼" } else { "▲" })
-                    .interact(Sense::click())
-                    .on_hover_text(if state.descending {
-                        "Sort ascending."
+                    .label(if state.descending {
+                        "▼ Descending"
                     } else {
-                        "Sort descending."
-                    });
+                        "▲ Ascending"
+                    })
+                    .interact(Sense::click());
 
                 if descending.clicked() {
                     state.descending = !state.descending;

@@ -8,7 +8,7 @@ use crate::core::constants::{CURRENCY, DATE_FORMAT};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::loans::Loan;
 use crate::core::messages::{MessageEv, MessageLevel};
-use crate::core::orders::{Order, OrderStatus};
+use crate::core::orders::{Order, OrderKind, OrderStatus};
 use crate::core::player::{OwnedInstrument, Player};
 use crate::core::ui::state::{CreditTab, ModalInfo, OrderOptions, OverviewTab, Tab, UiState};
 use crate::core::ui::utils::CustomUi;
@@ -331,7 +331,9 @@ pub fn processed_order_table(
         "Order",
         "Kind",
         "Amount",
-        "Limit price",
+        "Price",
+        "Threshold",
+        "Bound",
         "Status",
         "Reason",
     ];
@@ -363,7 +365,17 @@ pub fn processed_order_table(
                             order.command.to_name(),
                             order.kind.abbr(),
                             format!("{} {}", order.amount, instrument.unit()),
-                            format!("{:.0} {CURRENCY}", order.threshold),
+                            format!("{:.0} {CURRENCY}", order.price),
+                            if order.kind == OrderKind::LimitOrder {
+                                format!("{} {CURRENCY}", order.threshold)
+                            } else {
+                                format!("{}%", order.threshold)
+                            },
+                            if order.lower_bound {
+                                "▼".to_string()
+                            } else {
+                                "▲".to_string()
+                            },
                             order.status.to_name(),
                             order.status.reason(),
                         ];
@@ -382,6 +394,7 @@ pub fn processed_order_table(
                                     amount: order.amount,
                                     limit_stop: order.threshold,
                                     trailing_stop: order.threshold,
+                                    lower_bound: order.lower_bound,
                                 };
                             }
                         });

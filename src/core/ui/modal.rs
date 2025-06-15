@@ -1,7 +1,7 @@
 use bevy::prelude::{EventWriter, Res, ResMut, Single, Window};
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::{Button, ComboBox, Id, Image, Modal, Separator, Sides, Slider};
+use bevy_egui::egui::{Button, ComboBox, Id, Image, Modal, Sense, Sides, Slider};
 use chrono::NaiveDate;
 use strum::IntoEnumIterator;
 
@@ -10,7 +10,7 @@ use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::messages::{MessageEv, MessageLevel};
-use crate::core::orders::{Command, Order, OrderDirection, OrderEv, OrderKind, OrderStatus};
+use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
 use crate::core::player::{InstrumentKind, Player};
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::UiState;
@@ -46,7 +46,7 @@ pub fn trade_modal(
 
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
-                ComboBox::from_id_salt("commodity")
+                ComboBox::from_id_salt("instrument")
                     .selected_text(instrument.name())
                     .show_ui(ui, |ui| {
                         for item in CommodityName::iter() {
@@ -70,6 +70,7 @@ pub fn trade_modal(
                         OrderKind::MarketOrder,
                         OrderKind::LimitOrder,
                         OrderKind::TrailingOrder,
+                        OrderKind::ShortSelling,
                         OrderKind::Futures,
                     ] {
                         ui.selectable_value(
@@ -122,15 +123,12 @@ pub fn trade_modal(
                             ui.add(
                                 Slider::new(
                                     &mut state.modal_info.limit_stop,
-                                    0..=(instrument.current() * 5.) as u32,
+                                    0..=(instrument.current() * 2.) as u32,
                                 )
                                 .show_value(false)
                                 .text(format!("{limit_stop} {CURRENCY}")),
                             )
-                            .on_hover_text(
-                                "If the commodity's price crosses this limit, the order \
-                                    is executed.",
-                            );
+                            .on_hover_text("If the price crosses this limit, the order is executed.");
                         });
 
                         (limit_stop * amount) as f32
@@ -140,62 +138,63 @@ pub fn trade_modal(
                             ui.label("Trailing stop:");
 
                             ui.add(
-                                Slider::new(&mut state.modal_info.trailing_stop, 3..=50)
+                                Slider::new(&mut state.modal_info.trailing_stop, 5..=30)
                                     .show_value(false)
                                     .text(format!("{trailing_stop}%")),
                             )
                             .on_hover_text(
-                                "If the commodity's price evolves more than this percentage \
+                                "If the price evolves more than this percentage \
                                     away from the min/max price, the order is executed.",
                             );
                         });
+                        
+                        ui.horizontal(|ui| {
+                            ui.label("Bound:").on_hover_text(
+                                "Whether the trailing stop should be applied to the \
+                                    upper or lower bound.",
+                            );
+                            let dir = ui.label(if state.modal_info.lower_bound {
+                                "▼ Lower"
+                            } else {
+                                "▲ Upper"
+                            }).on_hover_text(if state.modal_info.lower_bound {
+                                format!("Lower bound, i.e., the order is executed when te price surpasses {trailing_stop}% above the minimum.")
+                            } else {
+                                format!("Upper bound, i.e., the order is executed when the price decreases {trailing_stop}% below the maximum.")
+                            }).interact(Sense::click());
+                            
+                            if dir.clicked() {
+                                state.modal_info.lower_bound = !state.modal_info.lower_bound;
+                            }
+                        });
 
-                        ((100 + trailing_stop) / 100 * amount) as f32 * instrument.current()
+                        if state.modal_info.lower_bound {
+                            (100 + trailing_stop) as f32 / 100. * amount as f32 * instrument.current()
+                        } else {
+                            (100 - trailing_stop) as f32 / 100. * amount as f32 * instrument.current()
+                        }
                     },
                     _ => instrument.current() * amount as f32,
                 };
 
-                ui.add_space(window.height() * 0.02);
+                if matches!(kind, InstrumentKind::Commodity(_)) {
+                    ui.label(format!("Storage costs: {storage_costs:.0} {CURRENCY}/month"))
+                        .on_hover_text(
+                            "Storage costs for the selected amount. This amount is deducted \
+                            from the proceeds of a sale to pay for the open costs of the current \
+                            month.",
+                        );
+                }
 
-                ui.horizontal(|ui| {
-                    ui.vertical(|ui| {
-                        ui.vertical(|ui| {
-                            ui.label(format!(
-                                "Storage costs: {:.0} {CURRENCY}/month",
-                                amount as f32 * instrument.storage_cost() * 30.,
-                            ))
-                            .on_hover_text("Storage costs for the selected amount.");
-
-                            ui.label(format!("{} price: {price:.0} {CURRENCY}", tab.abbr()))
-                                .on_hover_text(format!(
-                                    "{} price for the selected amount.",
-                                    tab.abbr()
-                                ));
-                        });
-                    });
-
-                    if tab == OrderKind::MarketOrder && owned >= amount {
-                        ui.add(Separator::default().vertical());
-
-                        ui.vertical(|ui| {
-                            ui.label(format!("Open storage costs: {storage_costs:.0} {CURRENCY}"))
-                                .on_hover_text(
-                                    "Storage costs for this month. If the commodity is sold, \
-                                   the costs are deducted from the proceeds.",
-                                );
-
-                            ui.label(format!("Proceeds: {:.0} {CURRENCY}", price - storage_costs))
-                                .on_hover_text(format!(
-                                    "Amount of money earned when selling {} {} of {}. This \
-                                    is equal to the selling price of the commodity minus the \
-                                    open storage costs.",
-                                    amount,
-                                    instrument.unit(),
-                                    instrument.lowername()
-                                ));
-                        });
-                    }
-                });
+                if tab == OrderKind::TrailingOrder {
+                    ui.label(format!("Trailing price: {:.0} {CURRENCY}", if amount == 0 { 0. } else { price / amount as f32}))
+                        .on_hover_text(
+                            "If the price surpasses this value (greater for lower bound \
+                            or lesser for upper bound), the order is executed.",
+                        );
+                }
+                
+                ui.label(format!("Total price: {price:.0} {CURRENCY}"));
 
                 ui.add_space(window.height() * 0.02);
 
@@ -306,18 +305,24 @@ pub fn trade_modal(
                         instrument: kind,
                         command,
                         kind: tab,
-                        direction: if (limit_stop as f32) < instrument.current() {
-                            OrderDirection::Lower
+                        lower_bound: if tab == OrderKind::LimitOrder {
+                            (limit_stop as f32) < instrument.current()
                         } else {
-                            OrderDirection::Upper
+                            state.modal_info.lower_bound
                         },
                         amount,
-                        price,
+                        price: price
+                            - if command == Command::Buy {
+                                0.
+                            } else {
+                                storage_costs
+                            },
                         threshold: if tab == OrderKind::LimitOrder {
                             limit_stop
                         } else {
                             trailing_stop
                         },
+                        bound: instrument.current(),
                         processed: NaiveDate::default(),
                         status: OrderStatus::Executed,
                     };

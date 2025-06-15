@@ -64,6 +64,7 @@ pub enum OrderOptions {
     Status,
     Volatility,
     Interest,
+    Quality,
 }
 
 #[derive(Default)]
@@ -137,6 +138,7 @@ pub struct ModalInfo {
     pub amount: u32,
     pub limit_stop: u32,
     pub trailing_stop: u32,
+    pub lower_bound: bool,
 }
 
 #[derive(Resource, Default)]
