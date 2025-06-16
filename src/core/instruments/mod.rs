@@ -15,8 +15,13 @@ pub trait Instrument {
 
     /// Calculates the percentage difference from the average of the last 30 values
     fn diff(&self) -> f32 {
-        let len = self.all().len();
-        let slice = &self.all()[len - len.min(30)..];
+        // Add 30 initial values to ensure we always have at least 30 values
+        let mut slice = vec![self.all()[0]; 29];
+        slice.extend(self.all());
+
+        let len = slice.len();
+        let slice = &slice[len - 30..];
+
         let avg = slice.iter().sum::<f32>() / slice.len() as f32;
 
         if avg == 0.0 {

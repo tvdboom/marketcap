@@ -4,7 +4,7 @@ use egui_extras::{Column, TableBuilder};
 use itertools::Itertools;
 use strum::IntoEnumIterator;
 
-use crate::core::constants::{CURRENCY, DATE_FORMAT};
+use crate::core::constants::{CURRENCY, DATE_FORMAT, NA};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::loans::Loan;
 use crate::core::messages::{MessageEv, MessageLevel};
@@ -49,13 +49,13 @@ pub fn overview_panel(
                 economy,
                 player,
             );
-            
+
             if commodities.is_empty() && crypto.is_empty() {
                 ui.add_space(window.height() * 0.02);
 
                 ui.label("No assets owned.");
             }
-            
+
             if !commodities.is_empty() {
                 ui.add_combobox(
                     "Commodities",
@@ -385,15 +385,20 @@ pub fn processed_order_table(
                             order.kind.abbr(),
                             format!("{} {}", order.amount, instrument.unit()),
                             format!("{:.0} {CURRENCY}", order.price),
-                            if order.kind == OrderKind::LimitOrder {
-                                format!("{} {CURRENCY}", order.threshold)
-                            } else {
-                                format!("{}%", order.threshold)
+                            match order.kind {
+                                OrderKind::LimitOrder => format!("{} {CURRENCY}", order.threshold),
+                                OrderKind::TrailingOrder => format!("{}%", order.threshold),
+                                _ => NA.to_string(),
                             },
-                            if order.lower_bound {
-                                "▼".to_string()
-                            } else {
-                                "▲".to_string()
+                            match order.kind {
+                                OrderKind::LimitOrder | OrderKind::TrailingOrder => {
+                                    if order.lower_bound {
+                                        "▼".to_string()
+                                    } else {
+                                        "▲".to_string()
+                                    }
+                                },
+                                _ => NA.to_string(),
                             },
                             order.status.to_name(),
                             order.status.reason(),

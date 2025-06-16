@@ -98,10 +98,13 @@ impl Round1 for f32 {
     }
 
     fn clean(self) -> String {
-        format!("{:.1}", self.round1())
-            .trim_end_matches('0')
-            .trim_end_matches('.')
-            .to_string()
+        let n = format!("{:.1}", self.round1());
+
+        if self < 10. {
+            n.trim_end_matches('0').trim_end_matches('.').to_string()
+        } else {
+            n
+        }
     }
 
     fn signed(self) -> String {
