@@ -35,6 +35,7 @@ pub fn create_guid() -> String {
 /// Format a number with k or M suffix
 pub fn format_number(number: f32) -> String {
     match number {
+        n if n > 1_000_000_000. => format!("{:.1}B", number / 1_000_000_000.),
         n if n > 1_000_000. => format!("{:.1}M", number / 1_000_000.),
         n if n >= 1_000. => format!("{:.1}k", number / 1_000.),
         n if n < 10. => format!("{:.1}", number),

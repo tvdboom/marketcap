@@ -9,6 +9,7 @@ use crate::core::constants::CURRENCY;
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::commodities::CommodityName;
+use crate::core::instruments::crypto::CryptoName;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
 use crate::core::player::{InstrumentKind, Player};
@@ -27,8 +28,8 @@ pub fn trade_modal(
     images: Res<ImageIds>,
     window: Single<&Window>,
 ) {
-    let kind = if let Some(InstrumentKind::Commodity(name)) = state.modal {
-        InstrumentKind::Commodity(name)
+    let kind = if let Some(kind) = state.modal {
+        kind
     } else {
         return;
     };
@@ -53,6 +54,16 @@ pub fn trade_modal(
                             ui.selectable_value(
                                 &mut state.modal,
                                 Some(InstrumentKind::Commodity(item)),
+                                item.to_name(),
+                            );
+                        }
+
+                        ui.separator();
+                        
+                        for item in CryptoName::iter() {
+                            ui.selectable_value(
+                                &mut state.modal,
+                                Some(InstrumentKind::Crypto(item)),
                                 item.to_name(),
                             );
                         }

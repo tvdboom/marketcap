@@ -4,6 +4,7 @@ use strum_macros::EnumIter;
 
 use crate::core::factors::economy::Economy;
 use crate::core::instruments::Instrument;
+use crate::core::player::InstrumentKind;
 use crate::utils::NameFromEnum;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -46,14 +47,14 @@ pub struct Commodity {
     /// The name of the commodity
     pub name: CommodityName,
 
-    /// The unit the commodity is traded in
-    pub unit: Unit,
-
     /// Default price of the commodity
     pub base_price: f32,
 
     /// The prices over time
     pub prices: Vec<f32>,
+
+    /// The unit the commodity is traded in
+    pub unit: Unit,
 
     /// Percentage of price that can change daily
     pub volatility: f32,
@@ -68,7 +69,41 @@ pub struct Commodity {
 }
 
 impl Commodity {
-    pub fn description(&self) -> &str {
+    pub fn bump(&mut self, economy: f32, inflation: f32) -> f32 {
+        self.base_price *= 1. + inflation / 100. / 365.;
+
+        let mut new_price = self.current()
+            * (1. + inflation / 100. / 365.)
+            * (1. + rng().random_range(-self.volatility / 100. ..self.volatility / 100.));
+
+        // If the economy is doing really good or bad, it affects prices
+        if economy < 30. || economy > 70. {
+            new_price *= 1. + self.economy_factor * (economy - Economy::DEFAULT) / 300.;
+        }
+
+        // Adjust price to tend towards the base price
+        // At 100% deviation, there's a 20% adjustment towards the base price
+        // At 50% deviation, there's a 5% adjustment towards the base price
+        let deviation = (new_price - self.base_price) / self.base_price;
+        new_price *= 1. + -deviation * deviation.abs() / 5.;
+
+        new_price = new_price.max(1.);
+
+        self.prices.push(new_price);
+        new_price
+    }
+}
+
+impl Instrument for Commodity {
+    fn name(&self) -> String {
+        self.name.to_name()
+    }
+
+    fn lowername(&self) -> String {
+        self.name.to_lowername()
+    }
+
+    fn description(&self) -> &str {
         match self.name {
             CommodityName::Aluminium => {
                 "A lightweight, durable metal used in construction, transportation, and \
@@ -136,38 +171,8 @@ impl Commodity {
         }
     }
 
-    pub fn bump(&mut self, economy: f32, inflation: f32) -> f32 {
-        self.base_price *= 1. + inflation / 100. / 365.;
-
-        let mut new_price = self.current()
-            * (1. + inflation / 100. / 365.)
-            * (1. + rng().random_range(-self.volatility / 100. ..self.volatility / 100.));
-
-        // If the economy is doing really good or bad, it affects prices
-        if economy < 30. || economy > 70. {
-            new_price *= 1. + self.economy_factor * (economy - Economy::DEFAULT) / 300.;
-        }
-
-        // Adjust price to tend towards the base price
-        // At 100% deviation, there's a 20% adjustment towards the base price
-        // At 50% deviation, there's a 5% adjustment towards the base price
-        let deviation = (new_price - self.base_price) / self.base_price;
-        new_price *= 1. + -deviation * deviation.abs() / 5.;
-
-        new_price = new_price.max(0.);
-
-        self.prices.push(new_price);
-        new_price
-    }
-}
-
-impl Instrument for Commodity {
-    fn name(&self) -> String {
-        self.name.to_name()
-    }
-
-    fn lowername(&self) -> String {
-        self.name.to_lowername()
+    fn kind(&self) -> InstrumentKind {
+        InstrumentKind::Commodity(self.name)
     }
 
     fn all(&self) -> &Vec<f32> {
@@ -178,12 +183,12 @@ impl Instrument for Commodity {
         *self.prices.last().unwrap()
     }
 
-    fn unit(&self) -> String {
-        self.unit.abbr().to_string()
-    }
-
     fn storage_cost(&self) -> f32 {
         self.storage_cost
+    }
+
+    fn unit(&self) -> String {
+        self.unit.abbr().to_string()
     }
 }
 
@@ -191,99 +196,99 @@ pub fn start_commodities() -> Vec<Commodity> {
     vec![
         Commodity {
             name: CommodityName::Aluminium,
-            unit: Unit::MetricTon,
             base_price: 2200.,
             prices: vec![2200.],
+            unit: Unit::MetricTon,
             volatility: 0.6,
             economy_factor: 0.05,
             storage_cost: 0.5,
         },
         Commodity {
             name: CommodityName::Cocoa,
-            unit: Unit::MetricTon,
             base_price: 9762.,
             prices: vec![9762.],
+            unit: Unit::MetricTon,
             volatility: 6.2,
             economy_factor: -0.05,
             storage_cost: 0.2,
         },
         Commodity {
             name: CommodityName::Coffee,
-            unit: Unit::MetricTon,
             base_price: 3300.,
             prices: vec![3300.],
+            unit: Unit::MetricTon,
             volatility: 4.5,
             economy_factor: 0.04,
             storage_cost: 0.5,
         },
         Commodity {
             name: CommodityName::Copper,
-            unit: Unit::MetricTon,
             base_price: 9623.,
             prices: vec![9623.],
+            unit: Unit::MetricTon,
             volatility: 4.4,
             economy_factor: 0.05,
             storage_cost: 0.6,
         },
         Commodity {
             name: CommodityName::Corn,
-            unit: Unit::MetricTon,
             base_price: 215.,
             prices: vec![215.],
+            unit: Unit::MetricTon,
             volatility: 2.5,
             economy_factor: -0.02,
             storage_cost: 0.1,
         },
         Commodity {
             name: CommodityName::Gold,
-            unit: Unit::Gram,
             base_price: 93.,
             prices: vec![93.],
+            unit: Unit::Gram,
             volatility: 0.3,
             economy_factor: -0.01,
             storage_cost: 0.05,
         },
         Commodity {
             name: CommodityName::Iron,
-            unit: Unit::MetricTon,
             base_price: 125.,
             prices: vec![125.],
+            unit: Unit::MetricTon,
             volatility: 0.5,
             economy_factor: 0.08,
             storage_cost: 0.2,
         },
         Commodity {
             name: CommodityName::LNG,
-            unit: Unit::MillionBritishThermalUnits,
             base_price: 13.,
             prices: vec![13.],
+            unit: Unit::MillionBritishThermalUnits,
             volatility: 7.2,
             economy_factor: 0.12,
             storage_cost: 0.05,
         },
         Commodity {
             name: CommodityName::Oil,
-            unit: Unit::Barrel,
             base_price: 65.,
             prices: vec![65.],
+            unit: Unit::Barrel,
             volatility: 5.,
             economy_factor: 0.09,
             storage_cost: 0.1,
         },
         Commodity {
             name: CommodityName::Silicon,
-            unit: Unit::MetricTon,
             base_price: 6000.,
             prices: vec![6000.],
+            unit: Unit::MetricTon,
             volatility: 6.5,
             economy_factor: 0.07,
             storage_cost: 0.4,
         },
         Commodity {
             name: CommodityName::Wheat,
-            unit: Unit::MetricTon,
             base_price: 201.,
             prices: vec![201.],
+            unit: Unit::MetricTon,
             volatility: 2.3,
             economy_factor: -0.05,
             storage_cost: 0.1,

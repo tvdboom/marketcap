@@ -1,13 +1,19 @@
+use crate::core::instruments::bonds::BondQuality;
+use crate::core::player::InstrumentKind;
+
 pub mod bonds;
 pub mod commodities;
-pub mod cryptos;
+pub mod crypto;
 
 pub trait Instrument {
     fn name(&self) -> String;
     fn lowername(&self) -> String;
+    fn description(&self) -> &str;
+    fn kind(&self) -> InstrumentKind;
     fn all(&self) -> &Vec<f32>;
     fn current(&self) -> f32;
 
+    /// Calculates the percentage difference from the average of the last 30 values
     fn diff(&self) -> f32 {
         let len = self.all().len();
         let slice = &self.all()[len - len.min(30)..];
@@ -20,11 +26,29 @@ pub trait Instrument {
         }
     }
 
+    fn interest(&self) -> f32 {
+        0.0
+    }
+    fn market_cap(&self) -> f32 {
+        0.
+    }
+    fn quality(&self) -> BondQuality {
+        BondQuality::InvestmentGrade
+    }
+    fn storage_cost(&self) -> f32 {
+        0.0
+    }
+    fn volatility(&self) -> f32 {
+        0.0
+    }
     fn unit(&self) -> String {
         "".to_string()
     }
-
-    fn storage_cost(&self) -> f32 {
-        0.0
+    fn per_unit(&self) -> String {
+        if self.unit().is_empty() {
+            "".to_string()
+        } else {
+            format!("/{}", self.unit())
+        }
     }
 }

@@ -7,7 +7,7 @@ use crate::core::factors::credit_score::CreditScore;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondName;
 use crate::core::instruments::commodities::CommodityName;
-use crate::core::instruments::cryptos::CryptoName;
+use crate::core::instruments::crypto::CryptoName;
 use crate::core::loans::Loan;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
@@ -154,7 +154,7 @@ impl Player {
             .collect::<Vec<_>>()
     }
     
-    pub fn cryptos(&self) -> Vec<&OwnedInstrument> {
+    pub fn crypto(&self) -> Vec<&OwnedInstrument> {
         self.instruments
             .iter()
             .filter(|o| matches!(o.kind, InstrumentKind::Crypto(_)))

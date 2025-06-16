@@ -1,6 +1,7 @@
 pub mod bonds;
 pub mod commodities;
 pub mod credit;
+mod crypto;
 pub mod forex;
 pub mod menu;
 pub mod modal;
@@ -9,4 +10,3 @@ pub mod state;
 pub mod systems;
 pub mod themes;
 pub mod utils;
-mod crypto;

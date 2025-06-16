@@ -7,6 +7,7 @@ use strum::IntoEnumIterator;
 
 use crate::core::instruments::bonds::BondName;
 use crate::core::instruments::commodities::CommodityName;
+use crate::core::instruments::crypto::CryptoName;
 use crate::utils::NameFromEnum;
 
 pub struct WorldAssets {
@@ -69,6 +70,11 @@ impl FromWorld for WorldAssets {
                 name,
                 assets.load(format!("images/commodities/{}.png", name)),
             );
+        }
+
+        for crypto in CryptoName::iter() {
+            let name = Box::leak(Box::new(crypto.to_lowername())).as_str();
+            images.insert(name, assets.load(format!("images/crypto/{}.png", name)));
         }
 
         Self { audio, images }

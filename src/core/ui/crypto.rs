@@ -23,9 +23,8 @@ pub fn crypto_panel(
         network. They are decentralized digital assets, meaning that they are not controlled \
         by any central authority like a government or bank.\n\n\
         Cryptos are highly volatile and speculative, with prices that can fluctuate dramatically \
-        in a short period of time. The value of a cryptocurrency is purely based on supply and \
-        demand. If the price reaches zero, the currency is removed from the exchange and can no \
-        longer be traded.",
+        in a short period of time. If the price reaches zero, the currency is removed from the \
+        exchange and can no longer be traded.",
     );
 
     ui.separator();
@@ -43,7 +42,7 @@ pub fn crypto_panel(
                 OrderOptions::Volatility,
             ]
             .into(),
-            &mut state.commodities,
+            &mut state.cryptos,
             window,
         );
 
@@ -76,7 +75,7 @@ pub fn crypto_panel(
         }
 
         for crypto in cryptos {
-            let response = ui.add_commodity(crypto, images, window);
+            let response = ui.add_instrument(crypto, images, window);
 
             if response.clicked() {
                 state.modal = Some(InstrumentKind::Crypto(crypto.name));

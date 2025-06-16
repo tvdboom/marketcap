@@ -9,8 +9,7 @@ use crate::core::constants::{CURRENCY, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
 use crate::core::countries::Country;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::Instrument;
-use crate::core::instruments::bonds::Bond;
-use crate::core::instruments::commodities::Commodity;
+use crate::core::player::InstrumentKind;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderByState, OrderOptions};
 use crate::utils::{NameFromEnum, format_number, get_ratio};
@@ -110,10 +109,9 @@ pub trait CustomUi {
         plot: Option<&Vec<f32>>,
         window: &Window,
     ) -> Response;
-    fn add_bond(&mut self, bond: &Bond, images: &ImageIds, window: &Window) -> Response;
-    fn add_commodity(
+    fn add_instrument(
         &mut self,
-        commodity: &Commodity,
+        instrument: &dyn Instrument,
         images: &ImageIds,
         window: &Window,
     ) -> Response;
@@ -217,55 +215,9 @@ impl CustomUi for Ui {
         })
     }
 
-    fn add_bond(&mut self, bond: &Bond, images: &ImageIds, window: &Window) -> Response {
-        Frame::new()
-            .stroke(Stroke::new(1.0, Color32::GRAY))
-            .corner_radius(5.0)
-            .inner_margin(25.0)
-            .show(self, |ui| {
-                ui.set_width(ui.available_width() * 0.98);
-
-                ui.horizontal(|ui| {
-                    ui.add(Image::new(SizedTexture::new(
-                        images.get(bond.name.to_lowername().as_str()),
-                        [window.height() * 0.2; 2],
-                    )));
-
-                    ui.vertical(|ui| {
-                        ui.heading(bond.name.to_name());
-
-                        ui.horizontal(|ui| {
-                            ui.label(format!("Face value: {:.0} {CURRENCY}", bond.current(),))
-                                .on_hover_text(
-                                    "Price of the bond. The same amount is returned at maturity.",
-                                );
-                        });
-
-                        ui.label(format!("Quality: {}", bond.quality.to_name()))
-                            .on_hover_text(bond.quality.description());
-
-                        ui.label(format!("Interest: {:.1}%", bond.interest,))
-                            .on_hover_text(
-                                "Also known as the coupon payment. Fixed interest paid to the \
-                            holder as percentage of the face value.",
-                            );
-
-                        ui.label("Term").on_hover_text(
-                            "Period before the bond matures. At maturity, the face value \
-                            is returned to the holder.",
-                        );
-                    });
-                })
-            })
-            .inner
-            .response
-            .interact(Sense::hover())
-            .interact(Sense::click())
-    }
-
-    fn add_commodity(
+    fn add_instrument(
         &mut self,
-        commodity: &Commodity,
+        instrument: &dyn Instrument,
         images: &ImageIds,
         window: &Window,
     ) -> Response {
@@ -278,68 +230,93 @@ impl CustomUi for Ui {
 
                 ui.horizontal(|ui| {
                     ui.add(Image::new(SizedTexture::new(
-                        images.get(commodity.name.to_lowername().as_str()),
+                        images.get(instrument.lowername().as_str()),
                         [window.height() * 0.2; 2],
                     )))
                     .on_hover_ui(|ui| {
                         ui.set_min_width(window.width() * 0.4);
 
-                        ui.label(commodity.name.to_name());
+                        ui.label(instrument.name());
                         ui.add_space(window.height() * 0.01);
-                        ui.label(commodity.description());
+                        ui.label(instrument.description());
                         ui.add_space(window.height() * 0.01);
-                        line_plot(ui, &commodity.prices);
+                        line_plot(ui, instrument.all());
                     });
 
                     ui.vertical(|ui| {
-                        ui.heading(commodity.name.to_name());
+                        ui.heading(instrument.name());
 
                         ui.horizontal(|ui| {
                             ui.label(format!(
-                                "Price: {:.0} {CURRENCY}/{}",
-                                commodity.current(),
-                                commodity.unit()
-                            ))
-                            .on_hover_text(format!(
-                                "Current price of the commodity per {}.",
-                                commodity.unit.to_lowername()
+                                "Price: {:.0} {CURRENCY}{}",
+                                instrument.current(),
+                                instrument.per_unit()
                             ));
 
-                            ui.add_indicator(commodity.diff());
+                            ui.add_indicator(instrument.diff());
                         });
 
-                        ui.label(
-                            format!("Volatility: {:.1}%", commodity.volatility),
-                        )
-                        .on_hover_text(
-                            "Maximum daily price fluctuation as percentage of the current price.",
-                        );
+                        if instrument.volatility() > 0. {
+                            ui.label(format!("Volatility: {:.1}%", instrument.volatility() * 0.5))
+                                .on_hover_text(
+                                    "Median daily price fluctuation as percentage of the price.",
+                                );
+                        }
 
-                        ui.label(format!(
-                            "Storage costs: {:.0} {CURRENCY}/{}/month",
-                            commodity.storage_cost * 30.,
-                            commodity.unit.abbr(),
-                        ))
-                        .on_hover_text(
-                            "Current price of storage per month. Note that this price \
-                            increases with inflation. Storage costs are deducted every month \
-                            or when the commodity is sold.",
-                        );
+                        match instrument.kind() {
+                            InstrumentKind::Bond(_) => {
+                                ui.label(format!("Quality: {}", instrument.quality().to_name()))
+                                    .on_hover_text(instrument.quality().description());
 
-                        ui.label(format!(
-                            "Production: {}",
-                            Country::iter()
-                                .filter_map(|c| c
-                                    .production()
-                                    .contains(&commodity.name)
-                                    .then_some(c.to_name()))
-                                .collect::<Vec<_>>()
-                                .join(", ")
-                        ))
-                        .on_hover_text(
-                            "Countries producing this commodity. Bond prices for \
-                            these countries might be affected by the commodity price.",
-                        );
+                                ui.label(format!("Interest: {:.1}%", instrument.interest()))
+                                    .on_hover_text(
+                                        "Also known as the coupon payment. Fixed interest \
+                                        paid to the holder as percentage of the face value.",
+                                    );
+
+                                ui.label("Term").on_hover_text(
+                                    "Period before the bond matures. At maturity, the face \
+                                    value is returned to the holder.",
+                                );
+                            },
+                            InstrumentKind::Commodity(name) => {
+                                ui.label(format!(
+                                    "Storage costs: {:.0} {CURRENCY}{}/month",
+                                    instrument.storage_cost() * 30.,
+                                    instrument.per_unit(),
+                                ))
+                                .on_hover_text(
+                                    "Current price of storage per month. Note that this \
+                                        price increases with inflation. Storage costs are deducted \
+                                        every month or when the commodity is sold.",
+                                );
+
+                                ui.label(format!(
+                                    "Production: {}",
+                                    Country::iter()
+                                        .filter_map(|c| c
+                                            .production()
+                                            .contains(&name)
+                                            .then_some(c.to_name()))
+                                        .collect::<Vec<_>>()
+                                        .join(", ")
+                                ))
+                                .on_hover_text(
+                                    "Countries producing this commodity. Bond prices for \
+                                        these countries might be affected by the commodity price.",
+                                );
+                            },
+                            InstrumentKind::Crypto(_) => {
+                                ui.label(format!(
+                                    "Market cap: {} {CURRENCY}",
+                                    format_number(instrument.market_cap())
+                                ))
+                                .on_hover_text(
+                                    "Total market capitalization of the cryptocurrency. This \
+                                    is a good indication of the coin's popularity and adoption.",
+                                );
+                            },
+                        }
                     });
                 })
             })

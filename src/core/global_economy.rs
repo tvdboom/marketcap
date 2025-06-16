@@ -11,7 +11,7 @@ use crate::core::factors::interest::Interest;
 use crate::core::instruments::Instrument;
 use crate::core::instruments::bonds::{Bond, start_bonds};
 use crate::core::instruments::commodities::{Commodity, start_commodities};
-use crate::core::instruments::cryptos::{start_cryptos, Crypto};
+use crate::core::instruments::crypto::{Crypto, start_cryptos};
 use crate::core::player::InstrumentKind;
 
 #[derive(Resource, Clone, Serialize, Deserialize)]
@@ -36,7 +36,7 @@ pub struct GlobalEconomy {
 
     /// Information of all commodities
     pub commodities: Vec<Commodity>,
-    
+
     /// Information about all cryptocurrencies
     pub cryptos: Vec<Crypto>,
 }
@@ -52,6 +52,10 @@ impl GlobalEconomy {
             commodity.bump(economy, inflation);
         }
 
+        for crypto in &mut self.cryptos {
+            crypto.bump(inflation);
+        }
+
         (economy, inflation, interest)
     }
 
@@ -61,6 +65,7 @@ impl GlobalEconomy {
             InstrumentKind::Commodity(name) => {
                 self.commodities.iter().find(|c| c.name == *name).unwrap()
             },
+            InstrumentKind::Crypto(name) => self.cryptos.iter().find(|c| c.name == *name).unwrap(),
         }
     }
 

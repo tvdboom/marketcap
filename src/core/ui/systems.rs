@@ -136,6 +136,7 @@ pub fn top_panel(
                         Cash: {}\n\
                         Collateral: {}\n\
                         Commodities: {}\n\
+                        Crypto: {}\n\
                         Debt: {}\n\
                         -------------------\n\
                         Enterprise value: {}",
@@ -143,6 +144,12 @@ pub fn top_panel(
                         player.collateral.signed(),
                         player
                             .commodities()
+                            .iter()
+                            .map(|o| o.amount as f32 * economy.get_current(&o.kind))
+                            .sum::<f32>()
+                            .signed(),
+                        player
+                            .crypto()
                             .iter()
                             .map(|o| o.amount as f32 * economy.get_current(&o.kind))
                             .sum::<f32>()
@@ -328,7 +335,7 @@ pub fn central_panel(
             },
             Tab::Bonds => bonds_panel(ui, &mut state, &economy, &player, &images, &window),
             Tab::Forex => forex_panel(ui, &mut state, &window),
-            Tab::Crypto => crypto_panel(ui, &mut state, &window),
+            Tab::Crypto => crypto_panel(ui, &mut state, &economy, &player, &images, &window),
             Tab::Commodities => {
                 commodities_panel(ui, &mut state, &economy, &player, &images, &window)
             },

@@ -76,7 +76,7 @@ pub fn commodities_panel(
         }
 
         for commodity in commodities {
-            let response = ui.add_commodity(commodity, images, window);
+            let response = ui.add_instrument(commodity, images, window);
 
             if response.clicked() {
                 state.modal = Some(InstrumentKind::Commodity(commodity.name));

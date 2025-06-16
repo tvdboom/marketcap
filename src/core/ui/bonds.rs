@@ -98,7 +98,7 @@ pub fn bonds_panel(
         }
 
         for bond in bonds {
-            let response = ui.add_bond(bond, images, window);
+            let response = ui.add_instrument(bond, images, window);
 
             if response.clicked() {
                 state.modal = Some(InstrumentKind::Bond(bond.name));
