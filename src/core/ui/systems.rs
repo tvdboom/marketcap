@@ -20,6 +20,7 @@ use crate::core::states::GameState;
 use crate::core::ui::bonds::bonds_panel;
 use crate::core::ui::commodities::commodities_panel;
 use crate::core::ui::credit::credit_panel;
+use crate::core::ui::crypto::crypto_panel;
 use crate::core::ui::forex::forex_panel;
 use crate::core::ui::overview::overview_panel;
 use crate::core::ui::state::{Tab, UiState};
@@ -327,7 +328,7 @@ pub fn central_panel(
             },
             Tab::Bonds => bonds_panel(ui, &mut state, &economy, &player, &images, &window),
             Tab::Forex => forex_panel(ui, &mut state, &window),
-            Tab::Crypto => forex_panel(ui, &mut state, &window),
+            Tab::Crypto => crypto_panel(ui, &mut state, &window),
             Tab::Commodities => {
                 commodities_panel(ui, &mut state, &economy, &player, &images, &window)
             },

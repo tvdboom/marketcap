@@ -13,8 +13,8 @@ pub enum Tab {
     Stocks,
     Bonds,
     Forex,
-    Crypto,
     Commodities,
+    Crypto,
     Credit,
     Policies,
 }
@@ -26,8 +26,8 @@ impl Tab {
             Tab::Stocks => "📈",
             Tab::Bonds => "💵",
             Tab::Forex => "💱",
-            Tab::Crypto => "💸",
             Tab::Commodities => "🌾",
+            Tab::Crypto => "💸",
             Tab::Credit => "💳",
             Tab::Policies => "📜",
         }
@@ -147,6 +147,7 @@ pub struct UiState {
     pub overview: OverviewState,
     pub bonds: BondState,
     pub commodities: OrderByState,
+    pub cryptos: OrderByState,
     pub credit: CreditState,
     pub modal: Option<InstrumentKind>,
     pub modal_info: ModalInfo,

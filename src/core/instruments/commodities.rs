@@ -52,7 +52,7 @@ pub struct Commodity {
     /// Default price of the commodity
     pub base_price: f32,
 
-    /// The prices of the commodity over time
+    /// The prices over time
     pub prices: Vec<f32>,
 
     /// Percentage of price that can change daily

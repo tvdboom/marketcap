@@ -11,6 +11,7 @@ use crate::core::factors::interest::Interest;
 use crate::core::instruments::Instrument;
 use crate::core::instruments::bonds::{Bond, start_bonds};
 use crate::core::instruments::commodities::{Commodity, start_commodities};
+use crate::core::instruments::cryptos::{start_cryptos, Crypto};
 use crate::core::player::InstrumentKind;
 
 #[derive(Resource, Clone, Serialize, Deserialize)]
@@ -35,6 +36,9 @@ pub struct GlobalEconomy {
 
     /// Information of all commodities
     pub commodities: Vec<Commodity>,
+    
+    /// Information about all cryptocurrencies
+    pub cryptos: Vec<Crypto>,
 }
 
 impl GlobalEconomy {
@@ -75,6 +79,7 @@ impl Default for GlobalEconomy {
             interest: Interest::default(),
             bonds: start_bonds(),
             commodities: start_commodities(),
+            cryptos: start_cryptos(),
         }
     }
 }

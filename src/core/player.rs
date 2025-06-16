@@ -7,6 +7,7 @@ use crate::core::factors::credit_score::CreditScore;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondName;
 use crate::core::instruments::commodities::CommodityName;
+use crate::core::instruments::cryptos::CryptoName;
 use crate::core::loans::Loan;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
@@ -16,6 +17,7 @@ use crate::utils::NameFromEnum;
 pub enum InstrumentKind {
     Bond(BondName),
     Commodity(CommodityName),
+    Crypto(CryptoName),
 }
 
 impl InstrumentKind {
@@ -23,6 +25,7 @@ impl InstrumentKind {
         match self {
             InstrumentKind::Bond(name) => name.to_name(),
             InstrumentKind::Commodity(name) => name.to_name(),
+            InstrumentKind::Crypto(name) => name.to_name(),
         }
     }
 
@@ -30,6 +33,7 @@ impl InstrumentKind {
         match self {
             InstrumentKind::Bond(name) => name.to_lowername(),
             InstrumentKind::Commodity(name) => name.to_lowername(),
+            InstrumentKind::Crypto(name) => name.to_lowername(),
         }
     }
 }
@@ -147,6 +151,13 @@ impl Player {
         self.instruments
             .iter()
             .filter(|o| matches!(o.kind, InstrumentKind::Commodity(_)))
+            .collect::<Vec<_>>()
+    }
+    
+    pub fn cryptos(&self) -> Vec<&OwnedInstrument> {
+        self.instruments
+            .iter()
+            .filter(|o| matches!(o.kind, InstrumentKind::Crypto(_)))
             .collect::<Vec<_>>()
     }
 
