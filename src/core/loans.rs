@@ -4,7 +4,7 @@ use strum_macros::EnumIter;
 
 use crate::core::constants::LOAN_STEP;
 use crate::core::factors::credit_score::CreditScore;
-use crate::utils::Round1;
+use crate::utils::EnhFloat;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum LoanProvider {

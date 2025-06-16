@@ -16,7 +16,7 @@ use crate::core::player::{InstrumentKind, Player};
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::UiState;
 use crate::core::ui::utils::CustomUi;
-use crate::utils::{NameFromEnum, Round1, create_guid};
+use crate::utils::{EnhFloat, NameFromEnum, create_guid};
 
 pub fn trade_modal(
     mut contexts: EguiContexts,
@@ -111,8 +111,8 @@ pub fn trade_modal(
 
                 ui.label(format!("Owned: {owned} {}", instrument.unit()));
                 ui.label(format!(
-                    "Value: {:.0} {CURRENCY}",
-                    player.get_value(&kind, &economy)
+                    "Value: {} {CURRENCY}",
+                    player.get_value(&kind, &economy).clean()
                 ));
 
                 ui.spacing_mut().slider_width = window.width() * 0.17;
@@ -138,22 +138,23 @@ pub fn trade_modal(
                             ui.add(
                                 Slider::new(
                                     &mut state.modal_info.limit_stop,
-                                    0..=(instrument.current() * 2.) as u32,
+                                    0.0..=instrument.current() * 2.,
                                 )
+                                .step_by(instrument.current() as f64 / 50.)
                                 .show_value(false)
-                                .text(format!("{limit_stop} {CURRENCY}")),
+                                .text(format!("{} {CURRENCY}", limit_stop.clean())),
                             )
                             .on_hover_text("If the price crosses this limit, the order is executed.");
                         });
 
-                        (limit_stop * amount) as f32
+                        limit_stop * amount as f32
                     },
                     OrderKind::TrailingOrder => {
                         ui.horizontal(|ui| {
                             ui.label("Trailing stop:");
 
                             ui.add(
-                                Slider::new(&mut state.modal_info.trailing_stop, 5..=30)
+                                Slider::new(&mut state.modal_info.trailing_stop, 5..=50)
                                     .show_value(false)
                                     .text(format!("{trailing_stop}%")),
                             )
@@ -202,14 +203,14 @@ pub fn trade_modal(
                 }
 
                 if tab == OrderKind::TrailingOrder {
-                    ui.label(format!("Trailing price: {:.0} {CURRENCY}", if amount == 0 { 0. } else { price / amount as f32}))
+                    ui.label(format!("Trailing price: {} {CURRENCY}", if amount == 0 { 0. } else { (price / amount as f32).clean() }))
                         .on_hover_text(
                             "If the price surpasses this value (greater for lower bound \
                             or lesser for upper bound), the order is executed.",
                         );
                 }
                 
-                ui.label(format!("Total price: {price:.0} {CURRENCY}"));
+                ui.label(format!("Total price: {} {CURRENCY}", price.clean()));
 
                 ui.add_space(window.height() * 0.02);
 
@@ -320,7 +321,7 @@ pub fn trade_modal(
                         command,
                         kind: tab,
                         lower_bound: if tab == OrderKind::LimitOrder {
-                            (limit_stop as f32) < instrument.current()
+                            limit_stop < instrument.current()
                         } else {
                             state.modal_info.lower_bound
                         },
@@ -334,7 +335,7 @@ pub fn trade_modal(
                         threshold: if tab == OrderKind::LimitOrder {
                             limit_stop
                         } else {
-                            trailing_stop
+                            trailing_stop as f32
                         },
                         bound: instrument.current(),
                         processed: NaiveDate::default(),

@@ -12,7 +12,7 @@ use crate::core::instruments::Instrument;
 use crate::core::player::InstrumentKind;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderByState, OrderOptions};
-use crate::utils::{NameFromEnum, Round1, format_number, get_ratio};
+use crate::utils::{EnhFloat, NameFromEnum, get_ratio};
 
 /// Custom IOS style toggle for UI
 pub fn toggle(on: &mut bool) -> impl Widget + '_ {
@@ -173,7 +173,7 @@ impl CustomUi for Ui {
                 format!("{:02}-{}", d.month(), d.year())
             })])
             .custom_y_axes(vec![
-                AxisHints::new_x().formatter(|mark, _| format_number(mark.value as f32)),
+                AxisHints::new_x().formatter(|mark, _| (mark.value as f32).format()),
             ])
             .show(self, |plot_ui| {
                 plot_ui.line(
@@ -309,7 +309,7 @@ impl CustomUi for Ui {
                             InstrumentKind::Crypto(_) => {
                                 ui.label(format!(
                                     "Market cap: {} {CURRENCY}",
-                                    format_number(instrument.market_cap())
+                                    instrument.market_cap().format()
                                 ))
                                 .on_hover_text(
                                     "Total market capitalization of the cryptocurrency. This \

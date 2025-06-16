@@ -32,18 +32,6 @@ pub fn create_guid() -> String {
         .collect()
 }
 
-/// Format a number with k or M suffix
-pub fn format_number(number: f32) -> String {
-    match number {
-        n if n > 1_000_000_000. => format!("{:.1}B", number / 1_000_000_000.),
-        n if n > 1_000_000. => format!("{:.1}M", number / 1_000_000.),
-        n if n >= 1_000. => format!("{:.1}k", number / 1_000.),
-        n if n < 10. => format!("{:.1}", number),
-        n if n < 1. => format!("{:.2}", number),
-        _ => format!("{}", number as u32),
-    }
-}
-
 /// Gets the first day of the next month after the next month
 pub fn first_day_in_two_months(date: NaiveDate) -> NaiveDate {
     let (mut month, mut year) = (date.month() + 2, date.year());
@@ -85,32 +73,53 @@ impl<T: Debug> NameFromEnum for T {
     }
 }
 
-/// Trait to round a number to one decimal place
-pub trait Round1 {
+pub trait EnhFloat {
     fn round1(self) -> Self;
-    fn clean(self) -> String;
+    fn clean(self) -> Self;
+    fn format(self) -> String;
     fn signed(self) -> String;
 }
 
-impl Round1 for f32 {
+impl EnhFloat for f32 {
     fn round1(self) -> Self {
         (self * 10.).round() / 10.
     }
 
-    fn clean(self) -> String {
-        let n = format!("{:.1}", self.round1());
+    fn clean(self) -> Self {
+        if self == 0. {
+            return 0.;
+        }
 
-        if self < 10. {
-            n.trim_end_matches('0').trim_end_matches('.').to_string()
-        } else {
-            n
+        match self {
+            n if n < 1. => {
+                // Round to first two non-zero decimals
+                let mut scaled = self.abs();
+                let mut factor = 1.0;
+                while scaled < 1.0 {
+                    scaled *= 10.0;
+                    factor *= 10.0;
+                }
+
+                (self * factor * 10.0).round() / (factor * 10.0)
+            },
+            n if n < 10. => n.round1(),
+            _ => self.floor(),
+        }
+    }
+
+    fn format(self) -> String {
+        match self {
+            n if n > 1_000_000_000. => format!("{}B", (self / 1_000_000_000.).clean()),
+            n if n > 1_000_000. => format!("{}M", (self / 1_000_000.).clean()),
+            n if n >= 1_000. => format!("{}k", (self / 1_000.).clean()),
+            _ => format!("{}", self.clean()),
         }
     }
 
     fn signed(self) -> String {
-        match self as i32 {
-            x if x > 0 => format!("+{}", x),
-            x if x < 0 => x.to_string(),
+        match self.clean() {
+            x if x > 0. => format!("+{}", x),
+            x if x < 0. => x.to_string(),
             _ => "0".to_string(),
         }
     }

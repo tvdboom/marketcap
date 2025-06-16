@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::core::factors::Factor;
 use crate::core::factors::economy::Economy;
 use crate::core::factors::interest::Interest;
-use crate::utils::Round1;
+use crate::utils::EnhFloat;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Inflation(pub Vec<f32>);

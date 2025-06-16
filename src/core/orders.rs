@@ -1,12 +1,13 @@
+use bevy::prelude::*;
+use chrono::NaiveDate;
+use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
+
 use crate::core::constants::NA;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::player::{InstrumentKind, OwnedInstrument, Player};
 use crate::utils::NameFromEnum;
-use bevy::prelude::*;
-use chrono::NaiveDate;
-use serde::{Deserialize, Serialize};
-use strum_macros::EnumIter;
 
 #[derive(EnumIter, Clone, Copy, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub enum OrderKind {
@@ -72,7 +73,7 @@ pub enum Command {
     Close,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd, Serialize, Deserialize)]
 pub enum OrderStatus {
     Pending,
     Executed,
@@ -113,7 +114,7 @@ pub struct Order {
     pub price: f32,
 
     /// Threshold on which the trade has been executed
-    pub threshold: u32,
+    pub threshold: f32,
 
     /// Upper or lower bound for trailing order
     pub bound: f32,

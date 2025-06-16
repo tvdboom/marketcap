@@ -8,7 +8,7 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::Instrument;
 use crate::core::instruments::bonds::BondKind;
 use crate::core::loans::{LoanKind, LoanProvider, Term};
-use crate::core::orders::OrderKind;
+use crate::core::orders::{Order, OrderKind};
 use crate::core::player::{InstrumentKind, OwnedInstrument, Player};
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
@@ -147,6 +147,27 @@ impl OrderOptions {
 
         data
     }
+
+    pub fn sort_order(data: Vec<&Order>, state: &OrderByState) -> Vec<Order> {
+        let mut data = data
+            .into_iter()
+            .cloned()
+            .sorted_by(|a, b| match state.order {
+                OrderOptions::Name => a.instrument.lowername().cmp(&b.instrument.lowername()),
+                OrderOptions::Created => a.created.cmp(&b.created),
+                OrderOptions::Processed => a.created.cmp(&b.created),
+                OrderOptions::Price => a.threshold.partial_cmp(&b.threshold).unwrap(),
+                OrderOptions::Status => a.status.cmp(&b.status),
+                _ => unreachable!(),
+            })
+            .collect::<Vec<_>>();
+
+        if state.descending {
+            data.reverse();
+        }
+
+        data
+    }
 }
 
 #[derive(Default)]
@@ -219,7 +240,7 @@ impl Default for CreditState {
 pub struct ModalInfo {
     pub tab: OrderKind,
     pub amount: u32,
-    pub limit_stop: u32,
+    pub limit_stop: f32,
     pub trailing_stop: u32,
     pub lower_bound: bool,
 }

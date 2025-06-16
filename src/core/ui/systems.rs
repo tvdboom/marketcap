@@ -25,7 +25,7 @@ use crate::core::ui::forex::forex_panel;
 use crate::core::ui::overview::overview_panel;
 use crate::core::ui::state::{Tab, UiState};
 use crate::core::ui::utils::CustomUi;
-use crate::utils::{NameFromEnum, Round1, format_number};
+use crate::utils::{EnhFloat, NameFromEnum};
 
 pub fn set_egui_style(
     mut contexts: EguiContexts,
@@ -123,7 +123,7 @@ pub fn top_panel(
 
                 ui.add_factor(
                     "Enterprise value",
-                    format_number(player.enterprise_value(&economy)),
+                    player.enterprise_value(&economy).format(),
                     CUSTOM_GREEN,
                     images.get("enterprise"),
                     format!(

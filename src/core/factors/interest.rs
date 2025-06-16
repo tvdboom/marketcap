@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::core::factors::Factor;
-use crate::utils::Round1;
+use crate::utils::EnhFloat;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Interest {

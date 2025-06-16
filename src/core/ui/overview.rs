@@ -12,7 +12,7 @@ use crate::core::orders::{Order, OrderKind, OrderStatus};
 use crate::core::player::{InstrumentKind, OwnedInstrument, Player};
 use crate::core::ui::state::{CreditTab, ModalInfo, OrderOptions, OverviewTab, Tab, UiState};
 use crate::core::ui::utils::CustomUi;
-use crate::utils::{NameFromEnum, Round1};
+use crate::utils::{EnhFloat, NameFromEnum};
 
 pub fn overview_panel(
     ui: &mut Ui,
@@ -105,21 +105,8 @@ pub fn overview_panel(
                 window,
             );
 
-            let mut pending = player
-                .pending_orders()
-                .into_iter()
-                .sorted_by(|a, b| match state.overview.pending.order {
-                    OrderOptions::Name => a.instrument.lowername().cmp(&b.instrument.lowername()),
-                    OrderOptions::Created => a.created.cmp(&b.created),
-                    OrderOptions::Price => a.threshold.cmp(&b.threshold),
-                    _ => unreachable!(),
-                })
-                .cloned()
-                .collect::<Vec<_>>();
-
-            if state.overview.pending.descending {
-                pending.reverse();
-            }
+            let pending =
+                OrderOptions::sort_order(player.pending_orders(), &state.overview.pending);
 
             if pending.is_empty() {
                 ui.add_space(window.height() * 0.02);
@@ -146,23 +133,8 @@ pub fn overview_panel(
                 window,
             );
 
-            let mut processed = player
-                .processed_orders()
-                .into_iter()
-                .sorted_by(|a, b| match state.overview.processed.order {
-                    OrderOptions::Name => a.instrument.lowername().cmp(&b.instrument.lowername()),
-                    OrderOptions::Created => a.created.cmp(&b.created),
-                    OrderOptions::Price => a.threshold.cmp(&b.threshold),
-                    OrderOptions::Processed => a.processed.cmp(&b.processed),
-                    OrderOptions::Status => a.status.to_lowername().cmp(&b.status.to_lowername()),
-                    _ => unreachable!(),
-                })
-                .cloned()
-                .collect::<Vec<_>>();
-
-            if state.overview.processed.descending {
-                processed.reverse();
-            }
+            let processed =
+                OrderOptions::sort_order(player.processed_orders(), &state.overview.processed);
 
             if processed.is_empty() {
                 ui.add_space(window.height() * 0.02);
@@ -417,7 +389,7 @@ pub fn processed_order_table(
                                     tab: order.kind.clone(),
                                     amount: order.amount,
                                     limit_stop: order.threshold,
-                                    trailing_stop: order.threshold,
+                                    trailing_stop: order.threshold as u32,
                                     lower_bound: order.lower_bound,
                                 };
                             }
