@@ -1,9 +1,10 @@
-use crate::core::instruments::Instrument;
-use crate::core::player::InstrumentKind;
-use crate::utils::NameFromEnum;
 use rand::{Rng, rng};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
+
+use crate::core::instruments::Instrument;
+use crate::core::player::InstrumentKind;
+use crate::utils::NameFromEnum;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum CryptoName {

@@ -9,10 +9,10 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::loans::Loan;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Order, OrderKind, OrderStatus};
-use crate::core::player::{OwnedInstrument, Player};
+use crate::core::player::{InstrumentKind, OwnedInstrument, Player};
 use crate::core::ui::state::{CreditTab, ModalInfo, OrderOptions, OverviewTab, Tab, UiState};
 use crate::core::ui::utils::CustomUi;
-use crate::utils::NameFromEnum;
+use crate::utils::{NameFromEnum, Round1};
 
 pub fn overview_panel(
     ui: &mut Ui,
@@ -36,54 +36,60 @@ pub fn overview_panel(
 
     match state.overview.tab {
         OverviewTab::Portfolio => {
-            ui.add_combobox(
-                "Commodities",
-                [
-                    OrderOptions::Name,
-                    OrderOptions::Price,
-                    OrderOptions::OwnedAmount,
-                    OrderOptions::OwnedValue,
-                ]
-                .into(),
-                &mut state.overview.commodities,
-                window,
+            let commodities = OrderOptions::sort_owned(
+                &mut player.commodities(),
+                &state.overview.commodities,
+                economy,
+                player,
             );
 
-            let mut commodities = player
-                .commodities()
-                .into_iter()
-                .sorted_by(|a, b| match state.overview.commodities.order {
-                    OrderOptions::Name => a.kind.lowername().cmp(&b.kind.lowername()),
-                    OrderOptions::Price => economy
-                        .get_current(&a.kind)
-                        .partial_cmp(&economy.get_current(&b.kind))
-                        .unwrap(),
-                    OrderOptions::OwnedAmount => a.amount.cmp(&b.amount),
-                    OrderOptions::OwnedValue => player
-                        .get_value(&a.kind, economy)
-                        .partial_cmp(&player.get_value(&b.kind, economy))
-                        .unwrap(),
-                    _ => unreachable!(),
-                })
-                .collect::<Vec<_>>();
+            let crypto = OrderOptions::sort_owned(
+                &mut player.crypto(),
+                &state.overview.crypto,
+                economy,
+                player,
+            );
+            
+            if commodities.is_empty() && crypto.is_empty() {
+                ui.add_space(window.height() * 0.02);
 
-            if state.overview.commodities.descending {
-                commodities.reverse();
+                ui.label("No assets owned.");
+            }
+            
+            if !commodities.is_empty() {
+                ui.add_combobox(
+                    "Commodities",
+                    [
+                        OrderOptions::Name,
+                        OrderOptions::Price,
+                        OrderOptions::OwnedAmount,
+                        OrderOptions::OwnedValue,
+                    ]
+                    .into(),
+                    &mut state.overview.commodities,
+                    window,
+                );
+
+                instrument_table(ui, state, &economy, commodities);
+                ui.small("Click on a row to trade that commodity.");
             }
 
-            if !commodities.is_empty() {
-                commodity_overview(ui, state, &economy, commodities);
-                ui.small("Click on a row to trade that commodity.");
-            } else {
-                ui.add_space(window.height() * 0.02);
+            if !crypto.is_empty() {
+                ui.add_combobox(
+                    "Cryptocurrencies",
+                    [
+                        OrderOptions::Name,
+                        OrderOptions::Price,
+                        OrderOptions::OwnedAmount,
+                        OrderOptions::OwnedValue,
+                    ]
+                    .into(),
+                    &mut state.overview.crypto,
+                    window,
+                );
 
-                ui.label("You don't own any commodities yet.");
-
-                ui.add_space(window.height() * 0.02);
-
-                if ui.button("Buy commodities").clicked() {
-                    state.tab = Tab::Commodities;
-                }
+                instrument_table(ui, state, &economy, crypto);
+                ui.small("Click on a row to trade that crypto.");
             }
         },
         OverviewTab::OrderBook => {
@@ -189,13 +195,20 @@ pub fn overview_panel(
     }
 }
 
-pub fn commodity_overview(
+pub fn instrument_table(
     ui: &mut Ui,
     state: &mut UiState,
     economy: &GlobalEconomy,
-    commodities: Vec<&OwnedInstrument>,
+    instruments: Vec<&OwnedInstrument>,
 ) {
-    let columns = ["Name", "Price", "Owned", "Value", "Storage costs"];
+    let mut columns = vec!["Name", "Price", "Owned", "Value"];
+
+    if matches!(
+        instruments.first().unwrap().kind,
+        InstrumentKind::Commodity(_)
+    ) {
+        columns.push("Storage cost");
+    }
 
     Frame::new()
         .inner_margin(ui.spacing().menu_margin)
@@ -213,22 +226,28 @@ pub fn commodity_overview(
                     }
                 })
                 .body(|mut body| {
-                    for owned in commodities.iter().sorted_by_key(|o| o.kind.lowername()) {
+                    for owned in instruments.iter().sorted_by_key(|o| o.kind.lowername()) {
                         let instrument = economy.get(&owned.kind);
 
-                        let content = [
+                        let mut content = vec![
                             instrument.name(),
-                            format!("{:.0} {CURRENCY}", instrument.current()),
+                            format!("{} {CURRENCY}", instrument.current().clean()),
                             format!("{} {}", owned.amount, instrument.unit()),
                             format!(
                                 "{} {CURRENCY}",
                                 (owned.amount as f32 * instrument.current()) as u32
                             ),
-                            format!(
+                        ];
+
+                        if matches!(
+                            instruments.first().unwrap().kind,
+                            InstrumentKind::Commodity(_)
+                        ) {
+                            content.push(format!(
                                 "{} {CURRENCY}/month",
                                 (30. * owned.amount as f32 * instrument.storage_cost()) as u32
-                            ),
-                        ];
+                            ));
+                        }
 
                         body.row(30., |mut row| {
                             for col in content {

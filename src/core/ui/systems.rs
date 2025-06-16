@@ -15,7 +15,7 @@ use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::messages::MessageEv;
 use crate::core::player::Player;
-use crate::core::resources::ImageIds;
+use crate::core::resources::{ImageIds, KeyMap};
 use crate::core::states::GameState;
 use crate::core::ui::bonds::bonds_panel;
 use crate::core::ui::commodities::commodities_panel;
@@ -348,8 +348,39 @@ pub fn central_panel(
         });
 }
 
-pub fn check_keys(keyboard: Res<ButtonInput<KeyCode>>, mut state: ResMut<UiState>) {
+pub fn check_keys(
+    keyboard: Res<ButtonInput<KeyCode>>,
+    mut state: ResMut<UiState>,
+    mut key_map: ResMut<KeyMap>,
+) {
     if keyboard.just_pressed(KeyCode::KeyO) {
         state.tab = Tab::Overview;
+        state.modal = None;
+    }
+
+    for key in keyboard.get_just_released() {
+        let digit = match key {
+            KeyCode::Digit0 => Some(0),
+            KeyCode::Digit1 => Some(1),
+            KeyCode::Digit2 => Some(2),
+            KeyCode::Digit3 => Some(3),
+            KeyCode::Digit4 => Some(4),
+            KeyCode::Digit5 => Some(5),
+            KeyCode::Digit6 => Some(6),
+            KeyCode::Digit7 => Some(7),
+            KeyCode::Digit8 => Some(8),
+            KeyCode::Digit9 => Some(9),
+            _ => None,
+        };
+
+        if let Some(index) = digit {
+            if keyboard.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight]) {
+                if let Some(instrument) = state.modal {
+                    key_map.0.insert(index, instrument);
+                }
+            } else if let Some(map) = key_map.0.get(&index) {
+                state.modal = Some(*map);
+            }
+        }
     }
 }

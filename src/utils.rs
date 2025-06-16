@@ -88,12 +88,20 @@ impl<T: Debug> NameFromEnum for T {
 /// Trait to round a number to one decimal place
 pub trait Round1 {
     fn round1(self) -> Self;
+    fn clean(self) -> String;
     fn signed(self) -> String;
 }
 
 impl Round1 for f32 {
     fn round1(self) -> Self {
         (self * 10.).round() / 10.
+    }
+
+    fn clean(self) -> String {
+        format!("{:.1}", self.round1())
+            .trim_end_matches('0')
+            .trim_end_matches('.')
+            .to_string()
     }
 
     fn signed(self) -> String {

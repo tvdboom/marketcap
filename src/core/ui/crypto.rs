@@ -1,14 +1,12 @@
 use bevy::prelude::Window;
 use bevy_egui::egui::{ScrollArea, Ui};
-use itertools::Itertools;
 
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::Instrument;
-use crate::core::player::{InstrumentKind, Player};
+use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderOptions, UiState};
 use crate::core::ui::utils::CustomUi;
-use crate::utils::NameFromEnum;
 
 pub fn crypto_panel(
     ui: &mut Ui,
@@ -46,39 +44,17 @@ pub fn crypto_panel(
             window,
         );
 
-        let mut cryptos = economy
+        let mut instruments = economy
             .cryptos
             .iter()
-            .sorted_by(|a, b| match state.cryptos.order {
-                OrderOptions::Name => a.name.to_lowername().cmp(&b.name.to_lowername()),
-                OrderOptions::OwnedAmount => player
-                    .get_owned(&InstrumentKind::Crypto(b.name))
-                    .cmp(&player.get_owned(&InstrumentKind::Crypto(a.name))),
-                OrderOptions::OwnedValue => player
-                    .get_value(&InstrumentKind::Crypto(b.name), economy)
-                    .partial_cmp(&player.get_value(&InstrumentKind::Crypto(a.name), economy))
-                    .unwrap_or(std::cmp::Ordering::Equal),
-                OrderOptions::Price => a
-                    .current()
-                    .partial_cmp(&b.current())
-                    .unwrap_or(std::cmp::Ordering::Equal),
-                OrderOptions::Volatility => a
-                    .volatility
-                    .partial_cmp(&b.volatility)
-                    .unwrap_or(std::cmp::Ordering::Equal),
-                _ => unreachable!(),
-            })
+            .map(|c| c as &dyn Instrument)
             .collect::<Vec<_>>();
 
-        if state.cryptos.descending {
-            cryptos.reverse();
-        }
-
-        for crypto in cryptos {
-            let response = ui.add_instrument(crypto, images, window);
+        for inst in OrderOptions::sort(&mut instruments, &state.cryptos, economy, player) {
+            let response = ui.add_instrument(inst, images, window);
 
             if response.clicked() {
-                state.modal = Some(InstrumentKind::Crypto(crypto.name));
+                state.modal = Some(inst.kind());
             }
         }
     });

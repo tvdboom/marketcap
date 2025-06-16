@@ -1,12 +1,11 @@
 use bevy::prelude::Window;
 use bevy_egui::egui::{ScrollArea, Ui};
-use itertools::Itertools;
 use strum::IntoEnumIterator;
 
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::Instrument;
 use crate::core::instruments::bonds::BondKind;
-use crate::core::player::{InstrumentKind, Player};
+use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderOptions, UiState};
 use crate::core::ui::utils::CustomUi;
@@ -67,41 +66,17 @@ pub fn bonds_panel(
             window,
         );
 
-        let mut bonds = economy
+        let mut instruments = economy
             .bonds
             .iter()
-            .filter(|b| b.kind == state.bonds.tab)
-            .sorted_by(|a, b| match state.bonds.order.order {
-                OrderOptions::Name => a.name.to_lowername().cmp(&b.name.to_lowername()),
-                OrderOptions::OwnedAmount => player
-                    .get_owned(&InstrumentKind::Bond(b.name))
-                    .cmp(&player.get_owned(&InstrumentKind::Bond(a.name))),
-                OrderOptions::OwnedValue => player
-                    .get_value(&InstrumentKind::Bond(b.name), economy)
-                    .partial_cmp(&player.get_value(&InstrumentKind::Bond(a.name), economy))
-                    .unwrap_or(std::cmp::Ordering::Equal),
-                OrderOptions::Price => a
-                    .current()
-                    .partial_cmp(&b.current())
-                    .unwrap_or(std::cmp::Ordering::Equal),
-                OrderOptions::Quality => a.quality.to_lowername().cmp(&b.quality.to_lowername()),
-                OrderOptions::Interest => b
-                    .interest
-                    .partial_cmp(&a.interest)
-                    .unwrap_or(std::cmp::Ordering::Equal),
-                _ => unreachable!(),
-            })
+            .map(|c| c as &dyn Instrument)
             .collect::<Vec<_>>();
 
-        if state.bonds.order.descending {
-            bonds.reverse();
-        }
-
-        for bond in bonds {
-            let response = ui.add_instrument(bond, images, window);
+        for inst in OrderOptions::sort(&mut instruments, &state.bonds.order, economy, player) {
+            let response = ui.add_instrument(inst, images, window);
 
             if response.clicked() {
-                state.modal = Some(InstrumentKind::Bond(bond.name));
+                state.modal = Some(inst.kind());
             }
         }
     });

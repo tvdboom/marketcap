@@ -1,7 +1,7 @@
 use bevy::prelude::{EventWriter, Res, ResMut, Single, Window};
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::{Button, ComboBox, Id, Image, Modal, Sense, Sides, Slider};
+use bevy_egui::egui::{Align, Button, ComboBox, Id, Image, Layout, Modal, Sense, Sides, Slider};
 use chrono::NaiveDate;
 use strum::IntoEnumIterator;
 
@@ -16,7 +16,7 @@ use crate::core::player::{InstrumentKind, Player};
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::UiState;
 use crate::core::ui::utils::CustomUi;
-use crate::utils::{NameFromEnum, create_guid};
+use crate::utils::{NameFromEnum, Round1, create_guid};
 
 pub fn trade_modal(
     mut contexts: EguiContexts,
@@ -44,28 +44,33 @@ pub fn trade_modal(
 
     let modal = Modal::new(Id::new("modal")).show(contexts.ctx_mut(), |ui| {
         ui.set_min_width(window.width() * 0.5);
+        ui.set_min_height(window.height() * 0.6);
 
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 ComboBox::from_id_salt("instrument")
                     .selected_text(instrument.name())
                     .show_ui(ui, |ui| {
-                        for item in CommodityName::iter() {
-                            ui.selectable_value(
-                                &mut state.modal,
-                                Some(InstrumentKind::Commodity(item)),
-                                item.to_name(),
-                            );
-                        }
-
-                        ui.separator();
-                        
-                        for item in CryptoName::iter() {
-                            ui.selectable_value(
-                                &mut state.modal,
-                                Some(InstrumentKind::Crypto(item)),
-                                item.to_name(),
-                            );
+                        match kind {
+                            InstrumentKind::Commodity(_) => {
+                                for item in CommodityName::iter() {
+                                    ui.selectable_value(
+                                        &mut state.modal,
+                                        Some(InstrumentKind::Commodity(item)),
+                                        item.to_name(),
+                                    );
+                                }
+                            },
+                            InstrumentKind::Crypto(_) => {
+                                for item in CryptoName::iter() {
+                                    ui.selectable_value(
+                                        &mut state.modal,
+                                        Some(InstrumentKind::Crypto(item)),
+                                        item.to_name(),
+                                    );
+                                }
+                            },
+                            _ => {}
                         }
                     });
 
@@ -97,9 +102,9 @@ pub fn trade_modal(
 
                 ui.horizontal(|ui| {
                     ui.label(format!(
-                        "Price: {:.0} {CURRENCY}/{}",
-                        instrument.current(),
-                        instrument.unit()
+                        "Price: {} {CURRENCY}{}",
+                        instrument.current().clean(),
+                        instrument.per_unit()
                     ));
 
                     ui.add_indicator(instrument.diff());
@@ -213,91 +218,93 @@ pub fn trade_modal(
                 let mut sell_clicked = false;
                 let mut close_clicked = false;
 
-                Sides::new().show(
-                    ui,
-                    |ui| {
-                        ui.add_enabled_ui(
-                            amount > 0
-                                && (tab != OrderKind::MarketOrder
-                                    || player.cash.current() >= price),
-                            |ui| {
-                                let button = ui
-                                    .add_sized(
-                                        [window.width() * 0.08, window.height() * 0.05],
-                                        Button::new(if tab == OrderKind::MarketOrder {
-                                            "Buy"
-                                        } else {
-                                            "Buy order"
-                                        }),
-                                    )
-                                    .on_hover_text(format!(
-                                        "Buy {} {} of {}.",
-                                        amount,
-                                        instrument.unit(),
-                                        instrument.lowername(),
-                                    ));
-
-                                if button.clicked() {
-                                    buy_clicked = true;
-                                }
-                            },
-                        );
-                    },
-                    |ui| {
-                        ui.add_enabled_ui(owned > 0 || tab != OrderKind::MarketOrder, |ui| {
-                            let button = ui
-                                .add_sized(
-                                    [window.width() * 0.08, window.height() * 0.05],
-                                    Button::new(if tab == OrderKind::MarketOrder {
-                                        "Close position"
-                                    } else {
-                                        "Close order"
-                                    }),
-                                )
-                                .on_hover_text(format!(
-                                    "Sell all owned {}.",
-                                    instrument.lowername()
-                                ))
-                                .on_disabled_hover_text(format!(
-                                    "No {} to sell",
-                                    instrument.lowername()
-                                ));
-
-                            if button.clicked() {
-                                close_clicked = true;
-                            }
-
+                ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
+                    Sides::new().show(
+                        ui,
+                        |ui| {
                             ui.add_enabled_ui(
-                                amount > 0 && (tab != OrderKind::MarketOrder || owned >= amount),
+                                amount > 0
+                                    && (tab != OrderKind::MarketOrder
+                                    || player.cash.current() >= price),
                                 |ui| {
                                     let button = ui
                                         .add_sized(
                                             [window.width() * 0.08, window.height() * 0.05],
                                             Button::new(if tab == OrderKind::MarketOrder {
-                                                "Sell"
+                                                "Buy"
                                             } else {
-                                                "Sell order"
+                                                "Buy order"
                                             }),
                                         )
                                         .on_hover_text(format!(
-                                            "Sell {} {} of {}.",
+                                            "Buy {} {} of {}.",
                                             amount,
                                             instrument.unit(),
-                                            instrument.lowername()
-                                        ))
-                                        .on_disabled_hover_text(format!(
-                                            "Not enough units of {} to sell.",
                                             instrument.lowername(),
                                         ));
 
                                     if button.clicked() {
-                                        sell_clicked = true;
+                                        buy_clicked = true;
                                     }
                                 },
                             );
-                        });
-                    },
-                );
+                        },
+                        |ui| {
+                            ui.add_enabled_ui(owned > 0 || tab != OrderKind::MarketOrder, |ui| {
+                                let button = ui
+                                    .add_sized(
+                                        [window.width() * 0.08, window.height() * 0.05],
+                                        Button::new(if tab == OrderKind::MarketOrder {
+                                            "Close position"
+                                        } else {
+                                            "Close order"
+                                        }),
+                                    )
+                                    .on_hover_text(format!(
+                                        "Sell all owned {}.",
+                                        instrument.lowername()
+                                    ))
+                                    .on_disabled_hover_text(format!(
+                                        "No {} to sell",
+                                        instrument.lowername()
+                                    ));
+
+                                if button.clicked() {
+                                    close_clicked = true;
+                                }
+
+                                ui.add_enabled_ui(
+                                    amount > 0 && (tab != OrderKind::MarketOrder || owned >= amount),
+                                    |ui| {
+                                        let button = ui
+                                            .add_sized(
+                                                [window.width() * 0.08, window.height() * 0.05],
+                                                Button::new(if tab == OrderKind::MarketOrder {
+                                                    "Sell"
+                                                } else {
+                                                    "Sell order"
+                                                }),
+                                            )
+                                            .on_hover_text(format!(
+                                                "Sell {} {} of {}.",
+                                                amount,
+                                                instrument.unit(),
+                                                instrument.lowername()
+                                            ))
+                                            .on_disabled_hover_text(format!(
+                                                "Not enough units of {} to sell.",
+                                                instrument.lowername(),
+                                            ));
+
+                                        if button.clicked() {
+                                            sell_clicked = true;
+                                        }
+                                    },
+                                );
+                            });
+                        },
+                    );
+                });
 
                 let command = if buy_clicked {
                     Some(Command::Buy)

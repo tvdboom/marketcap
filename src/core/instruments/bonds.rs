@@ -22,20 +22,20 @@ impl BondKind {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum BondQuality {
-    InvestmentGrade,
     HighYield,
+    InvestmentGrade,
 }
 
 impl BondQuality {
     pub fn description(&self) -> &str {
         match self {
-            BondQuality::InvestmentGrade => "Bonds rated AAA to BBB. Low risk of default.",
             BondQuality::HighYield => {
                 "Bonds rated BB or lower. Considered junk bonds, offering high yields due \
                 to the increased risk of default."
             },
+            BondQuality::InvestmentGrade => "Bonds rated AAA to BBB. Low risk of default.",
         }
     }
 }

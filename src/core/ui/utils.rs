@@ -12,7 +12,7 @@ use crate::core::instruments::Instrument;
 use crate::core::player::InstrumentKind;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderByState, OrderOptions};
-use crate::utils::{NameFromEnum, format_number, get_ratio};
+use crate::utils::{NameFromEnum, Round1, format_number, get_ratio};
 
 /// Custom IOS style toggle for UI
 pub fn toggle(on: &mut bool) -> impl Widget + '_ {
@@ -49,46 +49,6 @@ pub fn toggle(on: &mut bool) -> impl Widget + '_ {
     }
 }
 
-/// Make a line plot with the last 6 months of data
-pub fn line_plot(ui: &mut Ui, data: &Vec<f32>) {
-    let start = data.len().saturating_sub(190); // 6 months approx.
-    let points: PlotPoints = data
-        .iter()
-        .skip(start)
-        .enumerate()
-        .map(|(i, &v)| [(start + i) as f64, v as f64])
-        .collect();
-
-    Plot::new("plot")
-        .view_aspect(WIDTH / HEIGHT)
-        .show_background(false)
-        .x_grid_spacer(|grid| {
-            (grid.bounds.0 as i64..grid.bounds.1 as i64)
-                .map(|x| {
-                    let d = GlobalEconomy::default().date + Duration::days(x);
-                    GridMark {
-                        value: x as f64,
-                        step_size: if d.day() == 1 { 30. } else { 0. },
-                    }
-                })
-                .collect()
-        })
-        .custom_x_axes(vec![AxisHints::new_x().formatter(|mark, _| {
-            let d = GlobalEconomy::default().date + Duration::days(mark.value as i64);
-            format!("{:02}-{}", d.month(), d.year())
-        })])
-        .custom_y_axes(vec![
-            AxisHints::new_x().formatter(|mark, _| format_number(mark.value as f32)),
-        ])
-        .show(ui, |plot_ui| {
-            plot_ui.line(
-                Line::new("line", points)
-                    .width(LINE_WIDTH)
-                    .color(LINE_COLOR),
-            )
-        });
-}
-
 pub trait CustomUi {
     fn add_button(&mut self, text: impl Into<WidgetText>, window: &Window) -> Response;
     fn add_indicator(&mut self, diff: f32) -> Response;
@@ -99,6 +59,7 @@ pub trait CustomUi {
         state: &mut OrderByState,
         window: &Window,
     );
+    fn add_plot(&mut self, data: &Vec<f32>);
     fn add_factor(
         &mut self,
         name: impl Into<RichText>,
@@ -137,15 +98,15 @@ impl CustomUi for Ui {
                     _ => "▼",
                 }
             ))
-            .color(match diff {
-                d if d >= 0.05 => Color32::GREEN,
-                d if d <= -0.05 => Color32::RED,
-                _ => Color32::WHITE,
-            }),
+                .color(match diff {
+                    d if d >= 0.05 => Color32::GREEN,
+                    d if d <= -0.05 => Color32::RED,
+                    _ => Color32::WHITE,
+                }),
         )
-        .on_hover_text(
-            "Percentage difference between the current price and the average price of the last month.",
-        )
+            .on_hover_text(
+                "Percentage difference between the current price and the average price of the last month.",
+            )
     }
 
     fn add_combobox(
@@ -184,6 +145,45 @@ impl CustomUi for Ui {
         );
     }
 
+    fn add_plot(&mut self, data: &Vec<f32>) {
+        let start = data.len().saturating_sub(190); // 6 months approx.
+        let points: PlotPoints = data
+            .iter()
+            .skip(start)
+            .enumerate()
+            .map(|(i, &v)| [(start + i) as f64, v as f64])
+            .collect();
+
+        Plot::new("plot")
+            .view_aspect(WIDTH / HEIGHT)
+            .show_background(false)
+            .x_grid_spacer(|grid| {
+                (grid.bounds.0 as i64..grid.bounds.1 as i64)
+                    .map(|x| {
+                        let d = GlobalEconomy::default().date + Duration::days(x);
+                        GridMark {
+                            value: x as f64,
+                            step_size: if d.day() == 1 { 30. } else { 0. },
+                        }
+                    })
+                    .collect()
+            })
+            .custom_x_axes(vec![AxisHints::new_x().formatter(|mark, _| {
+                let d = GlobalEconomy::default().date + Duration::days(mark.value as i64);
+                format!("{:02}-{}", d.month(), d.year())
+            })])
+            .custom_y_axes(vec![
+                AxisHints::new_x().formatter(|mark, _| format_number(mark.value as f32)),
+            ])
+            .show(self, |plot_ui| {
+                plot_ui.line(
+                    Line::new("line", points)
+                        .width(LINE_WIDTH)
+                        .color(LINE_COLOR),
+                )
+            });
+    }
+
     fn add_factor(
         &mut self,
         name: impl Into<RichText>,
@@ -210,7 +210,7 @@ impl CustomUi for Ui {
             ui.label(description);
             if let Some(values) = plot {
                 ui.add_space(window.height() * 0.01);
-                line_plot(ui, values);
+                ui.add_plot(values);
             }
         })
     }
@@ -240,7 +240,7 @@ impl CustomUi for Ui {
                         ui.add_space(window.height() * 0.01);
                         ui.label(instrument.description());
                         ui.add_space(window.height() * 0.01);
-                        line_plot(ui, instrument.all());
+                        ui.add_plot(instrument.all());
                     });
 
                     ui.vertical(|ui| {
@@ -248,8 +248,8 @@ impl CustomUi for Ui {
 
                         ui.horizontal(|ui| {
                             ui.label(format!(
-                                "Price: {:.0} {CURRENCY}{}",
-                                instrument.current(),
+                                "Price: {} {CURRENCY}{}",
+                                instrument.current().clean(),
                                 instrument.per_unit()
                             ));
 

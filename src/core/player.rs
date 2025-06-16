@@ -153,7 +153,7 @@ impl Player {
             .filter(|o| matches!(o.kind, InstrumentKind::Commodity(_)))
             .collect::<Vec<_>>()
     }
-    
+
     pub fn crypto(&self) -> Vec<&OwnedInstrument> {
         self.instruments
             .iter()
