@@ -73,7 +73,7 @@ pub fn bonds_panel(
             .collect::<Vec<_>>();
 
         for inst in OrderOptions::sort(&mut instruments, &state.bonds.order, economy, player) {
-            let response = ui.add_instrument(inst, images, window);
+            let response = ui.add_instrument(inst, economy, images, window);
 
             if response.clicked() {
                 state.modal = Some(inst.kind());

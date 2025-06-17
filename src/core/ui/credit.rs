@@ -173,7 +173,7 @@ pub fn credit_panel(
                     ui.heading("Conditions");
 
                     ui.label(
-                        format!("Interest rate: {}%", loan.interest_rate),
+                        format!("Interest rate: {:.1}%", loan.interest_rate),
                     )
                         .on_hover_text(
                             "Percentage of the outstanding amount that must be paid as \
@@ -339,7 +339,7 @@ pub fn credit_panel(
                                 ui.label(format!("Principal: {:.0} {CURRENCY}", loan.principal));
                                 ui.label(format!("Outstanding: {:.0} {CURRENCY}", loan.outstanding));
                                 ui.label(format!("Installment: {:.0} {CURRENCY}", loan.next_installment_amount()));
-                                ui.label(format!("Interest rate: {}%", loan.interest_rate));
+                                ui.label(format!("Interest rate: {:.1}%", loan.interest_rate));
                                 ui.label(format!("Defaults: {}", loan.defaults));
                             });
                         });

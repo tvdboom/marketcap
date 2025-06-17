@@ -26,7 +26,7 @@ impl Unit {
     }
 }
 
-#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Copy, Debug, Default, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum CommodityName {
     #[default]
     Aluminium,

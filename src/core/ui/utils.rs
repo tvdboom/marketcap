@@ -3,10 +3,9 @@ use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::*;
 use chrono::{Datelike, Duration};
 use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
-use strum::IntoEnumIterator;
+use itertools::Itertools;
 
 use crate::core::constants::{CURRENCY, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
-use crate::core::countries::Country;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::Instrument;
 use crate::core::player::InstrumentKind;
@@ -73,6 +72,7 @@ pub trait CustomUi {
     fn add_instrument(
         &mut self,
         instrument: &dyn Instrument,
+        economy: &GlobalEconomy,
         images: &ImageIds,
         window: &Window,
     ) -> Response;
@@ -218,6 +218,7 @@ impl CustomUi for Ui {
     fn add_instrument(
         &mut self,
         instrument: &dyn Instrument,
+        economy: &GlobalEconomy,
         images: &ImageIds,
         window: &Window,
     ) -> Response {
@@ -293,11 +294,14 @@ impl CustomUi for Ui {
 
                                 ui.label(format!(
                                     "Production: {}",
-                                    Country::iter()
+                                    economy
+                                        .countries
+                                        .iter()
                                         .filter_map(|c| c
-                                            .production()
+                                            .production
+                                            .keys()
                                             .contains(&name)
-                                            .then_some(c.to_name()))
+                                            .then_some(c.name.to_name()))
                                         .collect::<Vec<_>>()
                                         .join(", ")
                                 ))

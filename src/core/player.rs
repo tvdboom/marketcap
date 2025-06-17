@@ -1,21 +1,21 @@
-use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
-
 use crate::core::factors::Factor;
 use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::instruments::bonds::BondName;
+use crate::core::instruments::bonds::BondIssuer;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::crypto::CryptoName;
 use crate::core::loans::Loan;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
 use crate::utils::NameFromEnum;
+use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
 
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum InstrumentKind {
-    Bond(BondName),
+    Bond(BondIssuer),
     Commodity(CommodityName),
     Crypto(CryptoName),
 }
@@ -36,12 +36,29 @@ impl InstrumentKind {
             InstrumentKind::Crypto(name) => name.to_lowername(),
         }
     }
+
+    pub fn order_options(&self) -> Vec<OrderKind> {
+        match self {
+            InstrumentKind::Commodity(_) => vec![
+                OrderKind::MarketOrder,
+                OrderKind::LimitOrder,
+                OrderKind::TrailingOrder,
+                OrderKind::ShortSelling,
+            ],
+            InstrumentKind::Crypto(_) => vec![
+                OrderKind::MarketOrder,
+                OrderKind::LimitOrder,
+                OrderKind::TrailingOrder,
+            ],
+            _ => OrderKind::iter().collect(),
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct OwnedInstrument {
     pub kind: InstrumentKind,
-    pub amount: u32,
+    pub amount: i32,
     pub interest: f32,
 }
 
@@ -56,6 +73,8 @@ pub struct Player {
 }
 
 impl Player {
+    // Factors ===================================================== >>
+
     pub fn enterprise_value(&self, economy: &GlobalEconomy) -> f32 {
         self.cash.amount
             + self.collateral
@@ -74,7 +93,7 @@ impl Player {
     pub fn storage_costs(&self, economy: &GlobalEconomy) -> f32 {
         self.instruments
             .iter()
-            .map(|o| o.amount as f32 * economy.get(&o.kind).storage_cost())
+            .map(|o| (o.amount as f32 * economy.get(&o.kind).storage_cost()).max(0.))
             .sum()
     }
 
@@ -82,6 +101,13 @@ impl Player {
         self.loans.iter().map(|l| l.next_installment_amount()).sum()
     }
 
+    pub fn short_positions(&self) -> f32 {
+        self.instruments
+            .iter()
+            .filter_map(|o| (o.amount < 0). then_some(o.interest))
+            .sum()
+    }
+    
     pub fn outflow(&self, economy: &GlobalEconomy) -> f32 {
         self.storage_costs(economy) + self.loan_installments()
     }
@@ -95,10 +121,12 @@ impl Player {
         let mut has_paid = true;
 
         for instrument in self.instruments.iter() {
-            has_debt = true;
-
             let storage_cost =
                 instrument.amount as f32 * economy.get(&instrument.kind).storage_cost();
+
+            if storage_cost > 0. {
+                has_debt = true;
+            }
 
             if self.cash.current() > storage_cost {
                 self.cash.amount -= storage_cost;
@@ -140,6 +168,8 @@ impl Player {
         has_paid
     }
 
+    // Instruments ================================================= >>
+
     pub fn bonds(&self) -> Vec<&OwnedInstrument> {
         self.instruments
             .iter()
@@ -165,7 +195,7 @@ impl Player {
         self.instruments.iter_mut().find(|c| c.kind == *kind)
     }
 
-    pub fn get_owned(&self, instrument: &InstrumentKind) -> u32 {
+    pub fn get_owned(&self, instrument: &InstrumentKind) -> i32 {
         self.instruments
             .iter()
             .find(|c| c.kind == *instrument)
@@ -176,6 +206,8 @@ impl Player {
     pub fn get_value(&self, instrument: &InstrumentKind, economy: &GlobalEconomy) -> f32 {
         self.get_owned(instrument) as f32 * economy.get_current(instrument)
     }
+
+    // Orders ====================================================== >>
 
     pub fn pending_orders(&self) -> Vec<&Order> {
         self.orders

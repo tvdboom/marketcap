@@ -64,9 +64,9 @@ impl Instrument for Crypto {
     fn description(&self) -> &str {
         match self.name {
             CryptoName::Bitcoin => {
-                "Bitcoin is a digital currency launched in 2009 by an unknown person using the 
-                name Satoshi Nakamoto. Bitcoin has a fixed supply of 21 million coins, with new
-                coins created through a process called mining, where participants solve
+                "Bitcoin is a digital currency launched in 2009 by an unknown person using the \
+                name Satoshi Nakamoto. Bitcoin has a fixed supply of 21 million coins, with new \
+                coins created through a process called mining, where participants solve \
                 computational puzzles to validate transactions and secure the network."
             },
             CryptoName::Cardano => {

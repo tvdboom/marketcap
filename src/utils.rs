@@ -90,7 +90,7 @@ impl EnhFloat for f32 {
             return 0.;
         }
 
-        match self {
+        match self.abs() {
             n if n < 1. => {
                 // Round to first two non-zero decimals
                 let mut scaled = self.abs();

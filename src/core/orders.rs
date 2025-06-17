@@ -16,7 +16,7 @@ pub enum OrderKind {
     LimitOrder,
     TrailingOrder,
     ShortSelling,
-    Futures,
+    Derivatives,
 }
 
 impl OrderKind {
@@ -26,7 +26,7 @@ impl OrderKind {
             OrderKind::LimitOrder => "♾",
             OrderKind::TrailingOrder => "🚶‍",
             OrderKind::ShortSelling => "📉",
-            OrderKind::Futures => "🔮",
+            OrderKind::Derivatives => "🔮",
         }
     }
 
@@ -58,7 +58,7 @@ impl OrderKind {
                 the time the shares are borrowed. If the stock price rises, the investor must \
                 buy back the shares at a higher price, resulting in a loss."
             },
-            OrderKind::Futures => {
+            OrderKind::Derivatives => {
                 "Financial contracts to buy or sell instruments against a predetermined price \
                 in the future. "
             },
@@ -107,13 +107,13 @@ pub struct Order {
     /// Kind of order
     pub kind: OrderKind,
 
-    /// Amount of instrument to trade
-    pub amount: u32,
+    /// Amount of the instrument to trade
+    pub amount: i32,
 
     /// Price at which the order is executed
     pub price: f32,
 
-    /// Threshold on which the trade has been executed
+    /// The limit price or trailing percentage on which the trade has been executed
     pub threshold: f32,
 
     /// Upper or lower bound for trailing order
@@ -121,6 +121,12 @@ pub struct Order {
 
     /// Whether the threshold is an upper or lower limit
     pub lower_bound: bool,
+
+    /// Interest rate for short selling
+    pub interest: f32,
+
+    /// Fraction of margin for short selling
+    pub margin_frac: f32,
 
     /// Date of the order execution
     pub processed: NaiveDate,
@@ -158,29 +164,38 @@ pub fn execute_orders(
                     player.instruments.push(OwnedInstrument {
                         kind: order.instrument.clone(),
                         amount: order.amount,
-                        interest: 0.,
                     });
                 }
 
-                player.cash.amount -= order.price;
+                if order.kind != OrderKind::ShortSelling {
+                    player.cash.amount -= order.price;
 
-                message.write(MessageEv {
-                    message: format!("Bought {} {}.", order.amount, instrument.lowername()),
-                    level: MessageLevel::Info,
-                });
+                    message.write(MessageEv {
+                        message: format!("Bought {} {}.", order.amount, instrument.lowername()),
+                        level: MessageLevel::Info,
+                    });
+                } else {
+                    player.cash.amount -= order.price * 0.5;
+
+                    message.write(MessageEv {
+                        message: format!(
+                            "Opened short position for {} {}.",
+                            order.amount,
+                            instrument.lowername()
+                        ),
+                        level: MessageLevel::Info,
+                    });
+                }
             },
             Command::Sell => {
-                player.instruments.retain_mut(|o| {
-                    if o.kind == order.instrument {
-                        o.amount = o.amount.saturating_sub(order.amount);
-                    }
-                    o.amount > 0
-                });
+                if let Some(owned) = player.get_mut(&order.instrument) {
+                    owned.amount -= order.amount;
+                }
 
                 player.cash.amount += order.price;
 
                 message.write(MessageEv {
-                    message: format!("Sold {} {}.", order.amount, instrument.lowername(),),
+                    message: format!("Sold {} {}.", order.amount, instrument.lowername()),
                     level: MessageLevel::Info,
                 });
             },
@@ -197,5 +212,7 @@ pub fn execute_orders(
                 });
             },
         }
+
+        player.instruments.retain_mut(|o| o.amount != 0);
     }
 }

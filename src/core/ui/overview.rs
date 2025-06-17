@@ -8,6 +8,7 @@ use crate::core::constants::{CURRENCY, DATE_FORMAT, NA};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::loans::Loan;
 use crate::core::messages::{MessageEv, MessageLevel};
+use crate::core::orders::Command;
 use crate::core::orders::{Order, OrderKind, OrderStatus};
 use crate::core::player::{InstrumentKind, OwnedInstrument, Player};
 use crate::core::ui::state::{CreditTab, ModalInfo, OrderOptions, OverviewTab, Tab, UiState};
@@ -198,7 +199,7 @@ pub fn instrument_table(
                     }
                 })
                 .body(|mut body| {
-                    for owned in instruments.iter().sorted_by_key(|o| o.kind.lowername()) {
+                    for owned in &instruments {
                         let instrument = economy.get(&owned.kind);
 
                         let mut content = vec![
@@ -207,7 +208,7 @@ pub fn instrument_table(
                             format!("{} {}", owned.amount, instrument.unit()),
                             format!(
                                 "{} {CURRENCY}",
-                                (owned.amount as f32 * instrument.current()) as u32
+                                (owned.amount as f32 * instrument.current()).clean()
                             ),
                         ];
 
@@ -250,7 +251,7 @@ pub fn pending_order_table(
         "Order",
         "Kind",
         "Amount",
-        "Limit price",
+        "Threshold",
         "Current price",
     ];
 
@@ -280,7 +281,11 @@ pub fn pending_order_table(
                             order.command.to_name(),
                             order.kind.abbr(),
                             format!("{} {}", order.amount, instrument.unit()),
-                            format!("{:.0} {CURRENCY}", order.threshold),
+                            match order.kind {
+                                OrderKind::LimitOrder => format!("{} {CURRENCY}", order.threshold),
+                                OrderKind::TrailingOrder => format!("{}%", order.threshold),
+                                _ => NA.to_string(),
+                            },
                             format!("{:.0} {CURRENCY}", instrument.current()),
                         ];
 
@@ -353,7 +358,11 @@ pub fn processed_order_table(
                             order.created.format(DATE_FORMAT).to_string(),
                             order.processed.format(DATE_FORMAT).to_string(),
                             order.instrument.name(),
-                            order.command.to_name(),
+                            if order.kind != OrderKind::ShortSelling {
+                                Command::Sell.to_name()
+                            } else {
+                                order.command.to_name()
+                            },
                             order.kind.abbr(),
                             format!("{} {}", order.amount, instrument.unit()),
                             format!("{:.0} {CURRENCY}", order.price),
@@ -387,7 +396,7 @@ pub fn processed_order_table(
                                 state.modal = Some(order.instrument.clone());
                                 state.modal_info = ModalInfo {
                                     tab: order.kind.clone(),
-                                    amount: order.amount,
+                                    amount: order.amount as u32,
                                     limit_stop: order.threshold,
                                     trailing_stop: order.threshold as u32,
                                     lower_bound: order.lower_bound,
@@ -439,7 +448,7 @@ pub fn loan_overview(ui: &mut Ui, state: &mut UiState, loans: &Vec<Loan>) {
                             format!("{} {CURRENCY}", &loan.principal),
                             format!("{:.0} {CURRENCY}", &loan.outstanding),
                             format!("{:.0} {CURRENCY}", &loan.next_installment_amount()),
-                            format!("{}%", loan.interest_rate.to_string()),
+                            format!("{:.1}%", loan.interest_rate),
                             loan.kind.to_name(),
                             loan.no_fee.to_string(),
                             loan.defaults.to_string(),

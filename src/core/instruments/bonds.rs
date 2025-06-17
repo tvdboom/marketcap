@@ -1,10 +1,11 @@
-use serde::{Deserialize, Serialize};
-use strum_macros::EnumIter;
-
+use crate::core::countries::CountryName;
 use crate::core::instruments::Instrument;
+use crate::core::instruments::stocks::CompanyName;
 use crate::core::loans::Term;
 use crate::core::player::InstrumentKind;
 use crate::utils::NameFromEnum;
+use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum BondKind {
@@ -24,43 +25,54 @@ impl BondKind {
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
 pub enum BondQuality {
-    HighYield,
-    InvestmentGrade,
+    AAA,
+    AA,
+    A,
+    BBB,
+    BB,
+    B,
+    CCC,
+    CC,
+    C,
 }
 
 impl BondQuality {
     pub fn description(&self) -> &str {
         match self {
-            BondQuality::HighYield => {
-                "Bonds rated BB or lower. Considered junk bonds, offering high yields due \
-                to the increased risk of default."
+            BondQuality::B | BondQuality::CCC | BondQuality::CC | BondQuality::C => {
+                "High yield (junk) bond. Offers higher interest due to the increased risk of default."
             },
-            BondQuality::InvestmentGrade => "Bonds rated AAA to BBB. Low risk of default.",
+            _ => "Investment grade bond. Low risk of default.",
         }
     }
 }
 
-#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub enum BondName {
-    #[default]
-    Australia,
-    Brazil,
-    Canada,
-    China,
-    EU,
-    Japan,
-    Russia,
-    SaudiArabia,
-    SouthAfrica,
-    Ukraine,
-    USA,
-    Venezuela,
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
+pub enum BondIssuer {
+    Government(CountryName),
+    Corporate(CompanyName),
+}
+
+impl BondIssuer {
+    pub fn to_name(&self) -> String {
+        match self {
+            BondIssuer::Government(country) => country.to_name(),
+            BondIssuer::Corporate(company) => company.to_name(),
+        }
+    }
+
+    pub fn to_lowername(&self) -> String {
+        match self {
+            BondIssuer::Government(country) => country.to_lowername(),
+            BondIssuer::Corporate(company) => company.to_lowername(),
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Bond {
-    /// The name of the bond
-    pub name: BondName,
+    /// The issuer of the bond
+    pub issuer: BondIssuer,
 
     /// The kind of bond (government or corporate)
     pub kind: BondKind,
@@ -88,11 +100,11 @@ impl Bond {
 
 impl Instrument for Bond {
     fn name(&self) -> String {
-        self.name.to_name()
+        self.issuer.to_name()
     }
 
     fn lowername(&self) -> String {
-        self.name.to_lowername()
+        self.issuer.to_lowername()
     }
 
     fn description(&self) -> &str {
@@ -100,7 +112,7 @@ impl Instrument for Bond {
     }
 
     fn kind(&self) -> InstrumentKind {
-        InstrumentKind::Bond(self.name)
+        InstrumentKind::Bond(self.issuer)
     }
 
     fn all(&self) -> &Vec<f32> {
@@ -123,89 +135,97 @@ impl Instrument for Bond {
 pub fn start_bonds() -> Vec<Bond> {
     vec![
         Bond {
-            name: BondName::Australia,
+            issuer: BondIssuer::Government(CountryName::Australia),
             kind: BondKind::Government,
-            quality: BondQuality::InvestmentGrade,
+            quality: BondQuality::AA,
             prices: vec![10000.],
             interest: 4.8,
             term: Term::FiveYears,
         },
         Bond {
-            name: BondName::Brazil,
+            issuer: BondIssuer::Government(CountryName::Brazil),
             kind: BondKind::Government,
-            quality: BondQuality::HighYield,
+            quality: BondQuality::BBB,
             prices: vec![10000.],
             interest: 6.5,
             term: Term::FiveYears,
         },
         Bond {
-            name: BondName::Canada,
+            issuer: BondIssuer::Government(CountryName::Canada),
             kind: BondKind::Government,
-            quality: BondQuality::InvestmentGrade,
+            quality: BondQuality::AAA,
             prices: vec![10000.],
             interest: 4.2,
             term: Term::FiveYears,
         },
         Bond {
-            name: BondName::China,
+            issuer: BondIssuer::Government(CountryName::China),
             kind: BondKind::Government,
-            quality: BondQuality::InvestmentGrade,
+            quality: BondQuality::A,
             prices: vec![10000.],
             interest: 3.5,
             term: Term::FiveYears,
         },
         Bond {
-            name: BondName::Japan,
+            issuer: BondIssuer::Government(CountryName::EU),
             kind: BondKind::Government,
-            quality: BondQuality::InvestmentGrade,
+            quality: BondQuality::AAA,
+            prices: vec![10000.],
+            interest: 3.0,
+            term: Term::FiveYears,
+        },
+        Bond {
+            issuer: BondIssuer::Government(CountryName::Japan),
+            kind: BondKind::Government,
+            quality: BondQuality::AAA,
             prices: vec![10000.],
             interest: 0.5,
             term: Term::FiveYears,
         },
         Bond {
-            name: BondName::Russia,
+            issuer: BondIssuer::Government(CountryName::Russia),
             kind: BondKind::Government,
-            quality: BondQuality::HighYield,
+            quality: BondQuality::CCC,
             prices: vec![10000.],
             interest: 7.5,
             term: Term::FiveYears,
         },
         Bond {
-            name: BondName::SaudiArabia,
+            issuer: BondIssuer::Government(CountryName::SaudiArabia),
             kind: BondKind::Government,
-            quality: BondQuality::InvestmentGrade,
+            quality: BondQuality::BBB,
             prices: vec![10000.],
             interest: 3.8,
             term: Term::FiveYears,
         },
         Bond {
-            name: BondName::SouthAfrica,
+            issuer: BondIssuer::Government(CountryName::SouthAfrica),
             kind: BondKind::Government,
-            quality: BondQuality::HighYield,
+            quality: BondQuality::CC,
             prices: vec![10000.],
             interest: 8.0,
             term: Term::FiveYears,
         },
         Bond {
-            name: BondName::Ukraine,
+            issuer: BondIssuer::Government(CountryName::Ukraine),
             kind: BondKind::Government,
-            quality: BondQuality::HighYield,
+            quality: BondQuality::CC,
             prices: vec![10000.],
             interest: 10.0,
             term: Term::FiveYears,
         },
         Bond {
-            name: BondName::USA,
+            issuer: BondIssuer::Government(CountryName::USA),
             kind: BondKind::Government,
-            quality: BondQuality::InvestmentGrade,
+            quality: BondQuality::AAA,
             prices: vec![10000.],
             interest: 4.,
             term: Term::ThreeYears,
         },
         Bond {
-            name: BondName::Venezuela,
+            issuer: BondIssuer::Government(CountryName::Venezuela),
             kind: BondKind::Government,
-            quality: BondQuality::HighYield,
+            quality: BondQuality::C,
             prices: vec![10000.],
             interest: 12.0,
             term: Term::FiveYears,

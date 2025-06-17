@@ -5,6 +5,7 @@ use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use crate::core::constants::DEFAULT_SPEED;
+use crate::core::countries::{Country, start_countries};
 use crate::core::factors::economy::Economy;
 use crate::core::factors::inflation::Inflation;
 use crate::core::factors::interest::Interest;
@@ -30,6 +31,9 @@ pub struct GlobalEconomy {
 
     /// Global interest rate (1-10)
     pub interest: Interest,
+
+    /// Information about all countries
+    pub countries: Vec<Country>,
 
     /// Information about all bonds
     pub bonds: Vec<Bond>,
@@ -61,7 +65,9 @@ impl GlobalEconomy {
 
     pub fn get(&self, instrument: &InstrumentKind) -> &dyn Instrument {
         match instrument {
-            InstrumentKind::Bond(name) => self.bonds.iter().find(|b| b.name == *name).unwrap(),
+            InstrumentKind::Bond(issuer) => {
+                self.bonds.iter().find(|b| b.issuer == *issuer).unwrap()
+            },
             InstrumentKind::Commodity(name) => {
                 self.commodities.iter().find(|c| c.name == *name).unwrap()
             },
@@ -82,6 +88,7 @@ impl Default for GlobalEconomy {
             economy: Economy::default(),
             inflation: Inflation::default(),
             interest: Interest::default(),
+            countries: start_countries(),
             bonds: start_bonds(),
             commodities: start_commodities(),
             cryptos: start_cryptos(),

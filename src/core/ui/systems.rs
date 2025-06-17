@@ -199,12 +199,14 @@ pub fn top_panel(
                         Inflow: {}\n\n\
                         Storage costs: {}\n\
                         Loan installments: {}\n\
+                        Short positions: {}\n\
                         ------------------------\n\
                         Outflow: {}",
-                        player.cash.accumulated_interest as u32,
+                        player.cash.accumulated_interest.floor(),
                         player.inflow().signed(),
-                        player.storage_costs(&economy) as u32,
-                        player.loan_installments() as u32,
+                        player.storage_costs(&economy).clean(),
+                        player.loan_installments().clean(),
+                        player.short_positions().clean(),
                         (-player.outflow(&economy)).signed(),
                     ),
                     None,

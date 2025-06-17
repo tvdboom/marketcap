@@ -4,6 +4,7 @@ use crate::core::player::InstrumentKind;
 pub mod bonds;
 pub mod commodities;
 pub mod crypto;
+mod stocks;
 
 pub trait Instrument {
     fn name(&self) -> String;
@@ -38,7 +39,7 @@ pub trait Instrument {
         0.
     }
     fn quality(&self) -> BondQuality {
-        BondQuality::InvestmentGrade
+        BondQuality::AAA
     }
     fn storage_cost(&self) -> f32 {
         0.0
