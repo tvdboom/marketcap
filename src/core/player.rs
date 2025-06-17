@@ -43,7 +43,7 @@ impl InstrumentKind {
                 OrderKind::MarketOrder,
                 OrderKind::LimitOrder,
                 OrderKind::TrailingOrder,
-                OrderKind::ShortSelling,
+                OrderKind::ShortSell,
             ],
             InstrumentKind::Crypto(_) => vec![
                 OrderKind::MarketOrder,
@@ -59,7 +59,9 @@ impl InstrumentKind {
 pub struct OwnedInstrument {
     pub kind: InstrumentKind,
     pub amount: i32,
+    pub price: f32,
     pub interest: f32,
+    pub margin_frac: f32,
 }
 
 #[derive(Resource, Clone, Default, Serialize, Deserialize)]
@@ -104,12 +106,12 @@ impl Player {
     pub fn short_positions(&self) -> f32 {
         self.instruments
             .iter()
-            .filter_map(|o| (o.amount < 0). then_some(o.interest))
+            .filter_map(|o| (o.amount < 0).then_some(o.interest / 100. / 12. * o.price))
             .sum()
     }
-    
+
     pub fn outflow(&self, economy: &GlobalEconomy) -> f32 {
-        self.storage_costs(economy) + self.loan_installments()
+        self.storage_costs(economy) + self.loan_installments() + self.short_positions()
     }
 
     pub fn netflow(&self, economy: &GlobalEconomy) -> f32 {
@@ -120,6 +122,7 @@ impl Player {
         let mut has_debt = false;
         let mut has_paid = true;
 
+        // Pay storage costs for commodities
         for instrument in self.instruments.iter() {
             let storage_cost =
                 instrument.amount as f32 * economy.get(&instrument.kind).storage_cost();
@@ -136,6 +139,7 @@ impl Player {
             }
         }
 
+        // Pay loan installments
         self.loans.retain_mut(|loan| {
             has_debt = true;
 
@@ -153,6 +157,23 @@ impl Player {
             loan.outstanding >= 1. // Keep loans that are not fully repaid
         });
 
+        // Resolve interest on short positions
+        self.instruments
+            .iter()
+            .filter(|o| o.amount < 0)
+            .for_each(|o| {
+                has_debt = true;
+                // TODO: Handle interest on short positions
+                let interest = o.interest / 100. / 12. * o.amount.abs() as f32;
+    
+                if self.cash.current() >= interest {
+                    self.cash.amount -= interest;
+                } else {
+                    // TODO: Force liquidation of short position
+                    has_paid = false;
+                }
+            });
+        
         if has_debt {
             if has_paid {
                 self.credit_score.score = (self.credit_score.score + 1).min(CreditScore::MAX);

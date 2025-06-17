@@ -358,7 +358,7 @@ pub fn processed_order_table(
                             order.created.format(DATE_FORMAT).to_string(),
                             order.processed.format(DATE_FORMAT).to_string(),
                             order.instrument.name(),
-                            if order.kind != OrderKind::ShortSelling {
+                            if order.kind != OrderKind::ShortSell {
                                 Command::Sell.to_name()
                             } else {
                                 order.command.to_name()

@@ -15,7 +15,7 @@ pub enum OrderKind {
     MarketOrder,
     LimitOrder,
     TrailingOrder,
-    ShortSelling,
+    ShortSell,
     Derivatives,
 }
 
@@ -25,7 +25,7 @@ impl OrderKind {
             OrderKind::MarketOrder => "🏪",
             OrderKind::LimitOrder => "♾",
             OrderKind::TrailingOrder => "🚶‍",
-            OrderKind::ShortSelling => "📉",
+            OrderKind::ShortSell => "📉",
             OrderKind::Derivatives => "🔮",
         }
     }
@@ -49,7 +49,7 @@ impl OrderKind {
                 order is executed when the limit price is reached. If there isn't enough cash \
                 to buy or instruments to sell at the time of execution, the order is cancelled."
             },
-            OrderKind::ShortSelling => {
+            OrderKind::ShortSell => {
                 "Short selling is a trading strategy where an investor bets against an instrument, \
                 expecting its price to decline. First, the investor borrows shares from a broker \
                 and immediately sells them at the current market price. If the stock price drops, \
@@ -159,15 +159,23 @@ pub fn execute_orders(
         match order.command {
             Command::Buy => {
                 if let Some(owned) = player.get_mut(&order.instrument) {
+                    if owned.amount < 0 {
+                        // Adjust short position price if selling short
+                        owned.price -= owned.price / owned.amount as f32 * order.amount as f32;
+                    }
+                    
                     owned.amount += order.amount;
                 } else {
                     player.instruments.push(OwnedInstrument {
                         kind: order.instrument.clone(),
                         amount: order.amount,
+                        price: order.price,
+                        interest: order.interest,
+                        margin_frac: order.margin_frac,
                     });
                 }
 
-                if order.kind != OrderKind::ShortSelling {
+                if order.kind != OrderKind::ShortSell {
                     player.cash.amount -= order.price;
 
                     message.write(MessageEv {

@@ -6,7 +6,7 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondKind;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::OrderEv;
-use crate::core::player::Player;
+use crate::core::player::{InstrumentKind, Player};
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
@@ -104,5 +104,19 @@ pub fn time_pass(
                 level: MessageLevel::Warning,
             });
         }
+    }
+}
+
+#[derive(Event)]
+pub struct CloseShortEv(InstrumentKind);
+
+pub fn liquidate_short_positions(
+    mut close_short_ev: EventReader<CloseShortEv>,
+    mut player: ResMut<Player>,
+    mut order_ev: EventWriter<OrderEv>,
+    mut message: EventWriter<MessageEv>,
+) {
+    for CloseShortEv(kind) in close_short_ev.read() {
+        
     }
 }

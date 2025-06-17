@@ -119,7 +119,7 @@ pub fn trade_modal(
                 ui.horizontal(|ui| {
                     ui.label("Quantity:");
 
-                    if tab == OrderKind::ShortSelling {
+                    if tab == OrderKind::ShortSell {
                         let max_short_amount = player.enterprise_value(&economy) / 2.
                             * (0.3 + 0.7 * player.credit_score.current() / CreditScore::MAX as f32);
 
@@ -202,7 +202,7 @@ pub fn trade_modal(
                     }
                 }
 
-                if matches!(kind, InstrumentKind::Commodity(_)) && tab != OrderKind::ShortSelling {
+                if matches!(kind, InstrumentKind::Commodity(_)) && tab != OrderKind::ShortSell {
                     ui.label(format!("Storage costs: {storage_costs:.0} {CURRENCY}/month"))
                         .on_hover_text(
                             "Storage costs for the selected amount. This amount is deducted \
@@ -217,7 +217,7 @@ pub fn trade_modal(
                             "If the price surpasses this value (greater for lower bound \
                             or lesser for upper bound), the order is executed.",
                         );
-                } else if tab == OrderKind::ShortSelling {
+                } else if tab == OrderKind::ShortSell {
                     ui.label(format!("Collateral: {} {CURRENCY}", (0.5 * price).clean()))
                         .on_hover_text(
                             "Amount to be set aside as collateral for the borrowed shares. \
@@ -241,12 +241,12 @@ pub fn trade_modal(
                     ui.label(format!("Interest: {interest:.1}%"))
                         .on_hover_text(
                             "Interest to be paid to the broker for as long as the short \
-                                position is open. The interest depends on the global interest rate \
-                                and the credit score.",
+                            position is open. The interest depends on the global interest rate \
+                            and the credit score.",
                         );
                 }
 
-                if tab != OrderKind::ShortSelling {
+                if tab != OrderKind::ShortSell {
                     ui.label(format!("Total price: {} {CURRENCY}", price.clean()));
                 }
 
@@ -259,9 +259,9 @@ pub fn trade_modal(
                 Sides::new().show(
                     ui,
                     |ui| {
-                        if tab == OrderKind::ShortSelling {
+                        if tab == OrderKind::ShortSell {
                             ui.add_enabled_ui(
-                                amount > 0 && player.get_owned(&kind) <= 0 && player.cash.current() >= price * 0.5,
+                                amount > 0 && player.get_owned(&kind) == 0 && player.cash.current() >= price * 0.5,
                                 |ui| {
                                     let mut button = ui
                                         .add_sized(
@@ -274,11 +274,11 @@ pub fn trade_modal(
                                             instrument.lowername(),
                                         ));
 
-                                     if player.get_owned(&kind) > 0 {
+                                     if player.get_owned(&kind) != 0 {
                                         button = button.on_disabled_hover_text(
-                                            "Can't have a long and open position on the same \
-                                            instrument at the same time. First close the current \
-                                            position."
+                                            "Can't have a more than one short open position \
+                                            on the same instrument at the same time. First close \
+                                            the current position."
                                         );
                                     }
 
@@ -321,7 +321,7 @@ pub fn trade_modal(
                         }
                     },
                     |ui| {
-                        if tab != OrderKind::ShortSelling {
+                        if tab != OrderKind::ShortSell {
                             ui.add_enabled_ui(price > 0. && owned > 0 || tab != OrderKind::MarketOrder, |ui| {
                                 let button = ui
                                     .add_sized(
@@ -399,7 +399,7 @@ pub fn trade_modal(
                         } else {
                             state.modal_info.lower_bound
                         },
-                        amount: if tab != OrderKind::ShortSelling {
+                        amount: if tab != OrderKind::ShortSell {
                             amount as i32
                         } else {
                             -(amount as i32)
@@ -422,7 +422,7 @@ pub fn trade_modal(
                         status: OrderStatus::Executed,
                     };
 
-                    if matches!(tab, OrderKind::MarketOrder | OrderKind::ShortSelling) {
+                    if matches!(tab, OrderKind::MarketOrder | OrderKind::ShortSell) {
                         order.processed = economy.date;
                         order_ev.write(OrderEv {
                             id: order.id.clone(),
