@@ -260,7 +260,7 @@ impl CustomUi for Ui {
                         if instrument.volatility() > 0. {
                             ui.label(format!("Volatility: {:.1}%", instrument.volatility() * 0.5))
                                 .on_hover_text(
-                                    "Median daily price fluctuation as percentage of the price.",
+                                    "Median daily price fluctuation as percentage of the initial price.",
                                 );
                         }
 

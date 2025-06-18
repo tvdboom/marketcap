@@ -121,7 +121,8 @@ pub fn trade_modal(
 
                     if tab == OrderKind::ShortSell {
                         let max_short_amount = player.enterprise_value(&economy) / 2.
-                            * (0.3 + 0.7 * player.credit_score.current() / CreditScore::MAX as f32);
+                            * (0.3 + 0.7 * player.credit_score.current() / CreditScore::MAX as f32)
+                            - player.instruments.iter().map(|o| o.collateral).sum::<f32>();
 
                         ui.add(
                             Slider::new(
@@ -130,12 +131,15 @@ pub fn trade_modal(
                             )
                                 .show_value(false)
                                 .text(amount.to_string())
-                        ).on_hover_text("The maximum amount you can go short depends on the enterprise value and the credit score.");
+                        ).on_hover_text(
+                            "The maximum amount you can go short depends on the enterprise \
+                            value and the credit score."
+                        );
                     } else {
                         ui.add(
                             Slider::new(
                                 &mut state.modal_info.amount,
-                                0..=((player.cash.current() / instrument.current()) as i32).max(owned) as u32,
+                                0..=((player.cash.current() / instrument.current()) as i32).max(owned.abs()) as u32,
                             )
                                 .show_value(false)
                                 .text(format!("{amount} {}", instrument.unit())),
@@ -296,7 +300,7 @@ pub fn trade_modal(
                                 amount > 0
                                     && price > 0.
                                     && (tab != OrderKind::MarketOrder
-                                    || player.cash.current() >= price),
+                                    || (player.cash.current() >= price || player.get(&instrument.kind()).map(|o| o.collateral).unwrap_or_default() >= price)),
                                 |ui| {
                                     let button = ui
                                         .add_sized(

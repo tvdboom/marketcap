@@ -134,14 +134,13 @@ pub fn top_panel(
                         of the player. If the enterprise value drops below zero, the company \
                         goes bankrupt and the game is lost.\n\n\
                         Cash: {}\n\
-                        Collateral: {}\n\
                         Commodities: {}\n\
                         Crypto: {}\n\
-                        Debt: {}\n\
+                        Short sell collateral: {}\n\
+                        Loan debt: {}\n\
                         -------------------\n\
                         Enterprise value: {}",
                         player.cash.current().signed(),
-                        player.collateral.signed(),
                         player
                             .commodities()
                             .iter()
@@ -158,6 +157,12 @@ pub fn top_panel(
                             .loans
                             .iter()
                             .map(|l| -l.outstanding)
+                            .sum::<f32>()
+                            .signed(),
+                        player
+                            .instruments
+                            .iter()
+                            .map(|o| o.collateral)
                             .sum::<f32>()
                             .signed(),
                         player.enterprise_value(&economy) as i32,
@@ -199,14 +204,14 @@ pub fn top_panel(
                         Inflow: {}\n\n\
                         Storage costs: {}\n\
                         Loan installments: {}\n\
-                        Short positions: {}\n\
+                        Short sell interest: {}\n\
                         ------------------------\n\
                         Outflow: {}",
                         player.cash.accumulated_interest.floor(),
                         player.inflow().signed(),
                         player.storage_costs(&economy).clean(),
                         player.loan_installments().clean(),
-                        player.short_positions().clean(),
+                        player.short_sell_interest().clean(),
                         (-player.outflow(&economy)).signed(),
                     ),
                     None,

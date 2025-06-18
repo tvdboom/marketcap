@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 
-use crate::core::countries::CountryName;
-use crate::core::instruments::commodities::CommodityName;
-use crate::core::instruments::crypto::CryptoName;
-use crate::utils::NameFromEnum;
 use bevy::asset::{AssetServer, Handle};
 use bevy::prelude::*;
 use bevy_kira_audio::AudioSource;
 use strum::IntoEnumIterator;
+
+use crate::core::countries::CountryName;
+use crate::core::instruments::commodities::CommodityName;
+use crate::core::instruments::crypto::CryptoName;
+use crate::utils::NameFromEnum;
 
 pub struct WorldAssets {
     pub audio: HashMap<&'static str, Handle<AudioSource>>,

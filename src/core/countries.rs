@@ -1,5 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
 use crate::core::instruments::commodities::CommodityName;

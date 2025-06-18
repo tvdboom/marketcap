@@ -1,3 +1,7 @@
+use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
+
 use crate::core::factors::Factor;
 use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
@@ -9,9 +13,6 @@ use crate::core::loans::Loan;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
 use crate::utils::NameFromEnum;
-use bevy::prelude::*;
-use serde::{Deserialize, Serialize};
-use strum::IntoEnumIterator;
 
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum InstrumentKind {
@@ -59,15 +60,16 @@ impl InstrumentKind {
 pub struct OwnedInstrument {
     pub kind: InstrumentKind,
     pub amount: i32,
-    pub price: f32,
+    pub start_price: f32,
     pub interest: f32,
     pub margin_frac: f32,
+    pub collateral: f32,
+    pub warning: bool,
 }
 
 #[derive(Resource, Clone, Default, Serialize, Deserialize)]
 pub struct Player {
     pub cash: Cash,
-    pub collateral: f32,
     pub credit_score: CreditScore,
     pub loans: Vec<Loan>,
     pub orders: Vec<Order>,
@@ -79,11 +81,10 @@ impl Player {
 
     pub fn enterprise_value(&self, economy: &GlobalEconomy) -> f32 {
         self.cash.amount
-            + self.collateral
             + self
                 .instruments
                 .iter()
-                .map(|o| o.amount as f32 * economy.get(&o.kind).current())
+                .map(|o| o.amount as f32 * economy.get(&o.kind).current() + o.collateral)
                 .sum::<f32>()
             - self.loans.iter().map(|l| l.outstanding).sum::<f32>()
     }
@@ -103,90 +104,22 @@ impl Player {
         self.loans.iter().map(|l| l.next_installment_amount()).sum()
     }
 
-    pub fn short_positions(&self) -> f32 {
+    pub fn short_sell_interest(&self) -> f32 {
         self.instruments
             .iter()
-            .filter_map(|o| (o.amount < 0).then_some(o.interest / 100. / 12. * o.price))
+            .filter_map(|o| {
+                (o.amount < 0)
+                    .then_some(o.interest / 100. / 12. * o.start_price * o.amount.abs() as f32)
+            })
             .sum()
     }
 
     pub fn outflow(&self, economy: &GlobalEconomy) -> f32 {
-        self.storage_costs(economy) + self.loan_installments() + self.short_positions()
+        self.storage_costs(economy) + self.loan_installments() + self.short_sell_interest()
     }
 
     pub fn netflow(&self, economy: &GlobalEconomy) -> f32 {
         self.inflow() - self.outflow(economy)
-    }
-
-    pub fn resolve_debts(&mut self, economy: &GlobalEconomy) -> bool {
-        let mut has_debt = false;
-        let mut has_paid = true;
-
-        // Pay storage costs for commodities
-        for instrument in self.instruments.iter() {
-            let storage_cost =
-                instrument.amount as f32 * economy.get(&instrument.kind).storage_cost();
-
-            if storage_cost > 0. {
-                has_debt = true;
-            }
-
-            if self.cash.current() > storage_cost {
-                self.cash.amount -= storage_cost;
-            } else {
-                has_paid = false;
-                break;
-            }
-        }
-
-        // Pay loan installments
-        self.loans.retain_mut(|loan| {
-            has_debt = true;
-
-            let installment = loan.next_installment_amount();
-
-            if installment > self.cash.current() {
-                loan.defaults += 1;
-                has_paid = false;
-            } else {
-                self.cash.amount -= loan.next_installment_amount();
-                loan.outstanding -= loan.next_principal_component();
-                loan.n_installments += 1;
-            }
-
-            loan.outstanding >= 1. // Keep loans that are not fully repaid
-        });
-
-        // Resolve interest on short positions
-        self.instruments
-            .iter()
-            .filter(|o| o.amount < 0)
-            .for_each(|o| {
-                has_debt = true;
-                // TODO: Handle interest on short positions
-                let interest = o.interest / 100. / 12. * o.amount.abs() as f32;
-    
-                if self.cash.current() >= interest {
-                    self.cash.amount -= interest;
-                } else {
-                    // TODO: Force liquidation of short position
-                    has_paid = false;
-                }
-            });
-        
-        if has_debt {
-            if has_paid {
-                self.credit_score.score = (self.credit_score.score + 1).min(CreditScore::MAX);
-            } else {
-                self.credit_score.score = self
-                    .credit_score
-                    .score
-                    .saturating_sub(12)
-                    .max(CreditScore::MIN);
-            }
-        }
-
-        has_paid
     }
 
     // Instruments ================================================= >>
@@ -210,6 +143,10 @@ impl Player {
             .iter()
             .filter(|o| matches!(o.kind, InstrumentKind::Crypto(_)))
             .collect::<Vec<_>>()
+    }
+
+    pub fn get(&mut self, kind: &InstrumentKind) -> Option<&OwnedInstrument> {
+        self.instruments.iter().find(|c| c.kind == *kind)
     }
 
     pub fn get_mut(&mut self, kind: &InstrumentKind) -> Option<&mut OwnedInstrument> {
@@ -272,16 +209,16 @@ impl Player {
             let condition = match order.kind {
                 OrderKind::LimitOrder => {
                     if order.lower_bound {
-                        instrument.current() >= order.threshold as f32
+                        instrument.current() >= order.threshold
                     } else {
-                        instrument.current() <= order.threshold as f32
+                        instrument.current() <= order.threshold
                     }
                 },
                 OrderKind::TrailingOrder => {
                     if order.lower_bound {
-                        instrument.current() >= (1. + order.threshold as f32 / 100.) * order.bound
+                        instrument.current() >= (1. + order.threshold / 100.) * order.bound
                     } else {
-                        instrument.current() <= (1. - order.threshold as f32 / 100.) * order.bound
+                        instrument.current() <= (1. - order.threshold / 100.) * order.bound
                     }
                 },
                 _ => unreachable!(),

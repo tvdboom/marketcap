@@ -4,12 +4,22 @@ use crate::core::factors::Factor;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct CreditScore {
-    pub score: u8,
+    score: u8,
 }
 
 impl CreditScore {
-    pub const MIN: u8 = 0;
+    const MIN: u8 = 0;
     pub const MAX: u8 = 100;
+
+    pub fn increase(&mut self) {
+        if self.score < Self::MAX {
+            self.score += 1;
+        }
+    }
+
+    pub fn decrease(&mut self) {
+        self.score = self.score.saturating_sub(12).max(Self::MIN);
+    }
 }
 
 impl Default for CreditScore {

@@ -1,11 +1,12 @@
+use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
+
 use crate::core::countries::CountryName;
 use crate::core::instruments::Instrument;
 use crate::core::instruments::stocks::CompanyName;
 use crate::core::loans::Term;
 use crate::core::player::InstrumentKind;
 use crate::utils::NameFromEnum;
-use serde::{Deserialize, Serialize};
-use strum_macros::EnumIter;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum BondKind {

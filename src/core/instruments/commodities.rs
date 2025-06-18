@@ -56,7 +56,7 @@ pub struct Commodity {
     /// The unit the commodity is traded in
     pub unit: Unit,
 
-    /// Percentage of price that can change daily
+    /// Percentage of the base price that can change daily
     pub volatility: f32,
 
     /// Factor with which the price follows the global economy
@@ -72,11 +72,12 @@ impl Commodity {
     pub fn bump(&mut self, economy: f32, inflation: f32) -> f32 {
         self.base_price *= 1. + inflation / 100. / 365.;
 
+        let volatility = self.base_price * self.volatility / 100.;
         let mut new_price = self.current()
             * (1. + inflation / 100. / 365.)
-            * (1. + rng().random_range(-self.volatility / 100. ..self.volatility / 100.));
+            + rng().random_range(-volatility..volatility);
 
-        // If the economy is doing really good or bad, it affects prices
+        // If the economy is doing really well or poorly, it affects prices
         if economy < 30. || economy > 70. {
             new_price *= 1. + self.economy_factor * (economy - Economy::DEFAULT) / 300.;
         }
@@ -189,6 +190,9 @@ impl Instrument for Commodity {
 
     fn unit(&self) -> String {
         self.unit.abbr().to_string()
+    }
+    fn volatility(&self) -> f32 {
+        self.volatility
     }
 }
 

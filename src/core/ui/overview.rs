@@ -1,15 +1,13 @@
 use bevy::prelude::*;
 use bevy_egui::egui::{Frame, Sense, Ui};
 use egui_extras::{Column, TableBuilder};
-use itertools::Itertools;
 use strum::IntoEnumIterator;
 
 use crate::core::constants::{CURRENCY, DATE_FORMAT, NA};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::loans::Loan;
 use crate::core::messages::{MessageEv, MessageLevel};
-use crate::core::orders::Command;
-use crate::core::orders::{Order, OrderKind, OrderStatus};
+use crate::core::orders::{Command, Order, OrderKind, OrderStatus};
 use crate::core::player::{InstrumentKind, OwnedInstrument, Player};
 use crate::core::ui::state::{CreditTab, ModalInfo, OrderOptions, OverviewTab, Tab, UiState};
 use crate::core::ui::utils::CustomUi;
