@@ -1,69 +1,20 @@
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use strum::IntoEnumIterator;
 
 use crate::core::factors::Factor;
 use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::instruments::bonds::BondIssuer;
-use crate::core::instruments::commodities::CommodityName;
-use crate::core::instruments::crypto::CryptoName;
-use crate::core::loans::Loan;
+use crate::core::instruments::instrument::InstrumentKind;
+use crate::core::loans::{MarginLoan, TermLoan};
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
-use crate::utils::NameFromEnum;
-
-#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
-pub enum InstrumentKind {
-    Bond(BondIssuer),
-    Commodity(CommodityName),
-    Crypto(CryptoName),
-}
-
-impl InstrumentKind {
-    pub fn name(&self) -> String {
-        match self {
-            InstrumentKind::Bond(name) => name.to_name(),
-            InstrumentKind::Commodity(name) => name.to_name(),
-            InstrumentKind::Crypto(name) => name.to_name(),
-        }
-    }
-
-    pub fn lowername(&self) -> String {
-        match self {
-            InstrumentKind::Bond(name) => name.to_lowername(),
-            InstrumentKind::Commodity(name) => name.to_lowername(),
-            InstrumentKind::Crypto(name) => name.to_lowername(),
-        }
-    }
-
-    pub fn order_options(&self) -> Vec<OrderKind> {
-        match self {
-            InstrumentKind::Commodity(_) => vec![
-                OrderKind::MarketOrder,
-                OrderKind::LimitOrder,
-                OrderKind::TrailingOrder,
-                OrderKind::ShortSell,
-            ],
-            InstrumentKind::Crypto(_) => vec![
-                OrderKind::MarketOrder,
-                OrderKind::LimitOrder,
-                OrderKind::TrailingOrder,
-            ],
-            _ => OrderKind::iter().collect(),
-        }
-    }
-}
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct OwnedInstrument {
     pub kind: InstrumentKind,
     pub amount: i32,
-    pub start_price: f32,
-    pub interest: f32,
-    pub margin_frac: f32,
-    pub collateral: f32,
+    pub loan: Option<MarginLoan>,
     pub warning: bool,
 }
 
@@ -71,7 +22,7 @@ pub struct OwnedInstrument {
 pub struct Player {
     pub cash: Cash,
     pub credit_score: CreditScore,
-    pub loans: Vec<Loan>,
+    pub loans: Vec<TermLoan>,
     pub orders: Vec<Order>,
     pub instruments: Vec<OwnedInstrument>,
 }
@@ -79,14 +30,26 @@ pub struct Player {
 impl Player {
     // Factors ===================================================== >>
 
+    pub fn term_loan_debt(&self) -> f32 {
+        self.loans.iter().map(|l| l.outstanding).sum()
+    }
+
+    pub fn margin_loan_debt(&self) -> f32 {
+        self.instruments
+            .iter()
+            .filter_map(|o| o.loan.as_ref().map(|l| l.debt - l.collateral))
+            .sum()
+    }
+
     pub fn enterprise_value(&self, economy: &GlobalEconomy) -> f32 {
         self.cash.amount
             + self
                 .instruments
                 .iter()
-                .map(|o| o.amount as f32 * economy.get(&o.kind).current() + o.collateral)
+                .map(|o| o.amount as f32 * economy.get(&o.kind).current())
                 .sum::<f32>()
-            - self.loans.iter().map(|l| l.outstanding).sum::<f32>()
+            - self.term_loan_debt()
+            - self.margin_loan_debt()
     }
 
     pub fn inflow(&self) -> f32 {
@@ -107,10 +70,7 @@ impl Player {
     pub fn short_sell_interest(&self) -> f32 {
         self.instruments
             .iter()
-            .filter_map(|o| {
-                (o.amount < 0)
-                    .then_some(o.interest / 100. / 12. * o.start_price * o.amount.abs() as f32)
-            })
+            .filter_map(|o| o.loan.as_ref().map(|l| l.interest()))
             .sum()
     }
 
@@ -162,7 +122,7 @@ impl Player {
     }
 
     pub fn get_value(&self, instrument: &InstrumentKind, economy: &GlobalEconomy) -> f32 {
-        self.get_owned(instrument) as f32 * economy.get_current(instrument)
+        self.get_owned(instrument) as f32 * economy.get_price(instrument)
     }
 
     // Orders ====================================================== >>

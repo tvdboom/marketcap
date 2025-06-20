@@ -5,10 +5,11 @@ use strum::IntoEnumIterator;
 
 use crate::core::constants::{CURRENCY, DATE_FORMAT, NA};
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::loans::Loan;
+use crate::core::instruments::instrument::InstrumentKind;
+use crate::core::loans::TermLoan;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderKind, OrderStatus};
-use crate::core::player::{InstrumentKind, OwnedInstrument, Player};
+use crate::core::player::{OwnedInstrument, Player};
 use crate::core::ui::state::{CreditTab, ModalInfo, OrderOptions, OverviewTab, Tab, UiState};
 use crate::core::ui::utils::CustomUi;
 use crate::utils::{EnhFloat, NameFromEnum};
@@ -35,14 +36,14 @@ pub fn overview_panel(
 
     match state.overview.tab {
         OverviewTab::Portfolio => {
-            let commodities = OrderOptions::sort_owned(
+            let commodities = OrderOptions::sort_owned_instrument(
                 &mut player.commodities(),
                 &state.overview.commodities,
                 economy,
                 player,
             );
 
-            let crypto = OrderOptions::sort_owned(
+            let crypto = OrderOptions::sort_owned_instrument(
                 &mut player.crypto(),
                 &state.overview.crypto,
                 economy,
@@ -145,22 +146,68 @@ pub fn overview_panel(
             }
         },
         OverviewTab::Debts => {
-            ui.heading("Outstanding loans");
+            ui.add_combobox(
+                "Term loans",
+                [
+                    OrderOptions::StartDate,
+                    OrderOptions::Maturity,
+                    OrderOptions::Provider,
+                    OrderOptions::Principal,
+                    OrderOptions::Outstanding,
+                    OrderOptions::Installment,
+                    OrderOptions::Interest,
+                    OrderOptions::Defaults,
+                ]
+                .into(),
+                &mut state.overview.term_loan,
+                window,
+            );
 
-            ui.add_space(window.height() * 0.02);
+            let loans = OrderOptions::sort_term_loan(&player.loans, &state.overview.term_loan);
 
-            if player.loans.is_empty() {
-                ui.label("No outstanding loans.");
-
+            if loans.is_empty() {
                 ui.add_space(window.height() * 0.02);
 
-                if ui.button("Take a new loan").clicked() {
-                    state.tab = Tab::Credit;
-                    state.credit.tab = CreditTab::NewLoan;
-                }
+                ui.label("No outstanding term loans.");
             } else {
-                loan_overview(ui, state, &player.loans);
+                term_loan_overview(ui, state, &loans);
                 ui.small("Click on a row to repay the loan early.");
+            }
+
+            ui.add_space(window.height() * 0.05);
+
+            ui.add_combobox(
+                "Margin loans",
+                [
+                    OrderOptions::Name,
+                    OrderOptions::Debt,
+                    OrderOptions::Collateral,
+                    OrderOptions::Interest,
+                    OrderOptions::Price,
+                    OrderOptions::Margin,
+                ]
+                .into(),
+                &mut state.overview.margin_loan,
+                window,
+            );
+
+            let loans = OrderOptions::sort_margin_loan(
+                player
+                    .instruments
+                    .iter()
+                    .filter(|o| o.loan.is_some())
+                    .collect(),
+                &state.overview.margin_loan,
+                economy,
+            );
+
+            if loans.is_empty() {
+                ui.add_space(window.height() * 0.02);
+
+                ui.label("No outstanding margin loans.");
+            } else {
+                margin_loan_overview(ui, state, &loans, economy);
+                ui.small("Click on a row to trade that instrument.");
             }
         },
     }
@@ -216,7 +263,8 @@ pub fn instrument_table(
                         ) {
                             content.push(format!(
                                 "{} {CURRENCY}/month",
-                                (30. * owned.amount as f32 * instrument.storage_cost()) as u32
+                                (30. * owned.amount as f32 * instrument.storage_cost()).max(0.)
+                                    as u32
                             ));
                         }
 
@@ -398,6 +446,7 @@ pub fn processed_order_table(
                                     limit_stop: order.threshold,
                                     trailing_stop: order.threshold as u32,
                                     lower_bound: order.lower_bound,
+                                    loan: order.loan.is_some(),
                                 };
                             }
                         });
@@ -406,7 +455,7 @@ pub fn processed_order_table(
         });
 }
 
-pub fn loan_overview(ui: &mut Ui, state: &mut UiState, loans: &Vec<Loan>) {
+pub fn term_loan_overview(ui: &mut Ui, state: &mut UiState, loans: &Vec<TermLoan>) {
     let columns = [
         "Id",
         "Start date",
@@ -463,6 +512,69 @@ pub fn loan_overview(ui: &mut Ui, state: &mut UiState, loans: &Vec<Loan>) {
                                 state.tab = Tab::Credit;
                                 state.credit.tab = CreditTab::RepayLoan;
                                 state.credit.repay = Some(loan.id.clone());
+                            }
+                        });
+                    }
+                });
+        });
+}
+
+pub fn margin_loan_overview(
+    ui: &mut Ui,
+    state: &mut UiState,
+    loans: &Vec<OwnedInstrument>,
+    economy: &GlobalEconomy,
+) {
+    let columns = [
+        "Name",
+        "Amount",
+        "Debt",
+        "Collateral",
+        "Interest",
+        "Margin frac",
+        "Current price",
+        "Margin",
+    ];
+
+    Frame::new()
+        .inner_margin(ui.spacing().menu_margin)
+        .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
+        .show(ui, |ui| {
+            TableBuilder::new(ui)
+                .striped(false)
+                .sense(Sense::click())
+                .columns(Column::remainder(), columns.len())
+                .header(30., |mut header| {
+                    for col in columns {
+                        header.col(|ui| {
+                            ui.strong(col);
+                        });
+                    }
+                })
+                .body(|mut body| {
+                    for owned in loans {
+                        let instrument = economy.get(&owned.kind);
+                        let loan = owned.loan.as_ref().unwrap();
+                        let content = [
+                            instrument.name(),
+                            format!("{} {}", owned.amount, instrument.unit()),
+                            format!("{} {CURRENCY}", loan.debt.clean()),
+                            format!("{} {CURRENCY}", loan.collateral.clean()),
+                            format!("{:.1}%", loan.interest_rate),
+                            format!("{:.0}%", loan.margin_frac * 100.),
+                            format!("{} {CURRENCY}", economy.get_price(&owned.kind).clean()),
+                            format!("{} {CURRENCY}", loan.margin(owned.amount).clean()),
+                        ];
+
+                        body.row(30., |mut row| {
+                            for col in content {
+                                row.col(|ui| {
+                                    ui.label(col);
+                                });
+                            }
+
+                            if row.response().clicked() {
+                                state.modal = Some(owned.kind);
                             }
                         });
                     }

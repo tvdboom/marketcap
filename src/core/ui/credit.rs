@@ -6,7 +6,7 @@ use strum::IntoEnumIterator;
 use crate::core::constants::{CURRENCY, DATE_FORMAT, LOAN_STEP};
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::loans::{Loan, LoanKind, LoanProvider, Term};
+use crate::core::loans::{LoanKind, LoanProvider, Term, TermLoan};
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::player::Player;
 use crate::core::ui::state::{CreditTab, OverviewTab, Tab, UiState};
@@ -50,7 +50,7 @@ pub fn credit_panel(
 
     match state.credit.tab {
         CreditTab::NewLoan => {
-            let loan = Loan {
+            let loan = TermLoan {
                 id: create_guid(),
                 provider: state.credit.provider,
                 principal: state.credit.principal as f32,

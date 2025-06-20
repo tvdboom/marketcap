@@ -3,7 +3,10 @@ use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
 use crate::core::constants::LOAN_STEP;
+use crate::core::factors::Factor;
 use crate::core::factors::credit_score::CreditScore;
+use crate::core::global_economy::GlobalEconomy;
+use crate::core::player::Player;
 use crate::utils::EnhFloat;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -119,7 +122,7 @@ impl Term {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct Loan {
+pub struct TermLoan {
     /// Loan identifier
     pub id: String,
 
@@ -157,7 +160,7 @@ pub struct Loan {
     pub defaults: u8,
 }
 
-impl Loan {
+impl TermLoan {
     pub fn next_principal_component(&self) -> f32 {
         let principal = match self.kind {
             LoanKind::StraightLine => self.principal / self.term.n_installments() as f32,
@@ -193,5 +196,45 @@ impl Loan {
         self.start_date
             .checked_add_months(Months::new(self.installments_left()))
             .unwrap()
+    }
+}
+
+#[derive(Clone, Default, Serialize, Deserialize)]
+pub struct MarginLoan {
+    pub debt: f32,
+    pub collateral: f32,
+    pub interest_rate: f32,
+    pub margin_frac: f32,
+}
+
+impl MarginLoan {
+    const INIT_MARGIN: f32 = 0.5;
+
+    pub fn new(price: f32, economy: &GlobalEconomy, player: &Player) -> Self {
+        Self {
+            debt: price,
+            collateral: Self::INIT_MARGIN * price,
+            interest_rate: (1.5 * economy.interest.current()
+                + 0.5 * economy.interest.current() * (1. - player.credit_score.relative()))
+            .round1(),
+            margin_frac: 0.35 - (0.1 * player.credit_score.relative()),
+        }
+    }
+
+    pub fn max_loan_debt(economy: &GlobalEconomy, player: &Player) -> f32 {
+        player.enterprise_value(&economy) / 2. * (0.3 + 0.7 * player.credit_score.relative())
+            - player.margin_loan_debt()
+    }
+
+    pub fn margin(&self, amount: i32) -> f32 {
+        match amount {
+            n if n > 0 => (self.debt - self.collateral) / (1. - self.margin_frac) / amount as f32,
+            n if n < 0 => (self.debt + self.collateral) / (1. + self.margin_frac) / -amount as f32,
+            _ => 0.,
+        }
+    }
+
+    pub fn interest(&self) -> f32 {
+        self.interest_rate / 100. / 12. * self.debt
     }
 }

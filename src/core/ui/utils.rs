@@ -1,17 +1,17 @@
+use crate::core::constants::{CURRENCY, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
+use crate::core::global_economy::GlobalEconomy;
+use crate::core::instruments::bonds::BondIssuer;
+use crate::core::instruments::instrument::Instrument;
+use crate::core::instruments::instrument::InstrumentKind;
+use crate::core::resources::ImageIds;
+use crate::core::ui::state::{OrderByState, OrderOptions};
+use crate::utils::{EnhFloat, NameFromEnum, get_ratio};
 use bevy::prelude::Window;
 use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::*;
 use chrono::{Datelike, Duration};
 use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
 use itertools::Itertools;
-
-use crate::core::constants::{CURRENCY, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
-use crate::core::global_economy::GlobalEconomy;
-use crate::core::instruments::Instrument;
-use crate::core::player::InstrumentKind;
-use crate::core::resources::ImageIds;
-use crate::core::ui::state::{OrderByState, OrderOptions};
-use crate::utils::{EnhFloat, NameFromEnum, get_ratio};
 
 /// Custom IOS style toggle for UI
 pub fn toggle(on: &mut bool) -> impl Widget + '_ {
@@ -50,6 +50,7 @@ pub fn toggle(on: &mut bool) -> impl Widget + '_ {
 
 pub trait CustomUi {
     fn add_button(&mut self, text: impl Into<WidgetText>, window: &Window) -> Response;
+    fn add_modal_button(&mut self, text: impl Into<WidgetText>, window: &Window) -> Response;
     fn add_indicator(&mut self, diff: f32) -> Response;
     fn add_combobox(
         &mut self,
@@ -85,6 +86,13 @@ impl CustomUi for Ui {
                 (window.width() * 0.2).min(300.),
                 (window.height() * 0.075).min(70.),
             ],
+            Button::new(text),
+        )
+    }
+
+    fn add_modal_button(&mut self, text: impl Into<WidgetText>, window: &Window) -> Response {
+        self.add_sized(
+            [window.width() * 0.08, window.height() * 0.05],
             Button::new(text),
         )
     }
@@ -265,10 +273,16 @@ impl CustomUi for Ui {
                         }
 
                         match instrument.kind() {
-                            InstrumentKind::Bond(_) => {
+                            InstrumentKind::Bond(issuer) => {
                                 ui.label(format!("Quality: {}", instrument.quality().to_name()))
                                     .on_hover_text(instrument.quality().description());
 
+                                if let BondIssuer::Government(country) = issuer {
+                                    let country = economy.countries.iter().find(|c| c.name == country).unwrap();
+                                    ui.label(format!("Country classification: {}", country.market.to_name()))
+                                        .on_hover_text(country.market.description());
+                                }
+                                
                                 ui.label(format!("Interest: {:.1}%", instrument.interest()))
                                     .on_hover_text(
                                         "Also known as the coupon payment. Fixed interest \

@@ -20,6 +20,39 @@ pub struct Currency {
     pub value: f32,
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum MarketKind {
+    DevelopedMarket,
+    EmergingMarket,
+    RestrictedMarket,
+}
+
+impl MarketKind {
+    pub fn description(&self) -> &str {
+        match self {
+            MarketKind::DevelopedMarket => {
+                "Developed markets are advanced economies with stable political systems, \
+                mature financial markets, high income levels, and well-established infrastructure. \
+                They offer lower growth potential but are generally considered safer and more \
+                stable for investment compared to emerging markets."
+            },
+            MarketKind::EmergingMarket => {
+                "Emerging markets are economies in the process of rapid growth and \
+                industrialization, typically characterized by improving infrastructure, \
+                increasing foreign investment, and expanding middle-class populations. \
+                They offer high growth potential but also come with greater economic and \
+                political risks compared to developed markets."
+            },
+            MarketKind::RestrictedMarket => {
+                "Restricted markets are economies with limited access to foreign investment due \
+                to government controls, sanctions, or political instability. They often lack \
+                transparency, have underdeveloped financial systems, and pose high risks, making \
+                them less accessible or off-limits to many global investors."
+            },
+        }
+    }
+}
+
 #[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum CountryName {
     Australia,
@@ -44,6 +77,9 @@ pub struct Country {
     /// The local currency
     pub currency: Currency,
 
+    /// Type of market in terms of development
+    pub market: MarketKind,
+
     /// Commodities produced, with a dependency factor on the local currency
     pub production: HashMap<CommodityName, f32>,
 }
@@ -58,6 +94,7 @@ pub fn start_countries() -> Vec<Country> {
                 symbol: "A$".to_string(),
                 value: 0.6,
             },
+            market: MarketKind::DevelopedMarket,
             production: HashMap::from([
                 (CommodityName::Gold, 0.5),
                 (CommodityName::Oil, 0.4),
@@ -73,6 +110,7 @@ pub fn start_countries() -> Vec<Country> {
                 symbol: "R$".to_string(),
                 value: 0.2,
             },
+            market: MarketKind::EmergingMarket,
             production: HashMap::from([
                 (CommodityName::Coffee, 0.4),
                 (CommodityName::Cocoa, 0.4),
@@ -89,6 +127,7 @@ pub fn start_countries() -> Vec<Country> {
                 symbol: "C$".to_string(),
                 value: 0.7,
             },
+            market: MarketKind::DevelopedMarket,
             production: HashMap::from([
                 (CommodityName::Oil, 0.5),
                 (CommodityName::LNG, 0.4),
@@ -105,6 +144,7 @@ pub fn start_countries() -> Vec<Country> {
                 symbol: "€".to_string(),
                 value: 1.0,
             },
+            market: MarketKind::DevelopedMarket,
             production: HashMap::from([
                 (CommodityName::LNG, 0.2),
                 (CommodityName::Silicon, 0.2),
@@ -120,6 +160,7 @@ pub fn start_countries() -> Vec<Country> {
                 symbol: "¥".to_string(),
                 value: 0.006,
             },
+            market: MarketKind::DevelopedMarket,
             production: HashMap::from([(CommodityName::Wheat, 0.2)]),
         },
         Country {
@@ -130,6 +171,7 @@ pub fn start_countries() -> Vec<Country> {
                 symbol: "CN¥".to_string(),
                 value: 0.15,
             },
+            market: MarketKind::EmergingMarket,
             production: HashMap::from([
                 (CommodityName::Iron, 0.5),
                 (CommodityName::Gold, 0.4),
@@ -145,6 +187,7 @@ pub fn start_countries() -> Vec<Country> {
                 symbol: "₽".to_string(),
                 value: 0.01,
             },
+            market: MarketKind::RestrictedMarket,
             production: HashMap::from([
                 (CommodityName::Oil, 0.5),
                 (CommodityName::LNG, 0.4),
@@ -161,6 +204,7 @@ pub fn start_countries() -> Vec<Country> {
                 symbol: "SAR".to_string(),
                 value: 0.27,
             },
+            market: MarketKind::EmergingMarket,
             production: HashMap::from([(CommodityName::Oil, 0.8), (CommodityName::LNG, 0.5)]),
         },
         Country {
@@ -171,6 +215,7 @@ pub fn start_countries() -> Vec<Country> {
                 symbol: "R".to_string(),
                 value: 0.05,
             },
+            market: MarketKind::EmergingMarket,
             production: HashMap::from([
                 (CommodityName::Gold, 0.4),
                 (CommodityName::Iron, 0.3),
@@ -186,6 +231,7 @@ pub fn start_countries() -> Vec<Country> {
                 symbol: "₴".to_string(),
                 value: 0.03,
             },
+            market: MarketKind::EmergingMarket,
             production: HashMap::from([(CommodityName::Wheat, 0.5), (CommodityName::Corn, 0.4)]),
         },
         Country {
@@ -196,6 +242,7 @@ pub fn start_countries() -> Vec<Country> {
                 symbol: "$".to_string(),
                 value: 1.0,
             },
+            market: MarketKind::DevelopedMarket,
             production: HashMap::from([
                 (CommodityName::Oil, 0.5),
                 (CommodityName::LNG, 0.4),
@@ -211,6 +258,7 @@ pub fn start_countries() -> Vec<Country> {
                 symbol: "Bs".to_string(),
                 value: 0.0002,
             },
+            market: MarketKind::RestrictedMarket,
             production: HashMap::from([
                 (CommodityName::Oil, 0.6),
                 (CommodityName::Gold, 0.4),

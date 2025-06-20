@@ -5,8 +5,10 @@ use strum_macros::EnumIter;
 
 use crate::core::constants::NA;
 use crate::core::global_economy::GlobalEconomy;
+use crate::core::instruments::instrument::InstrumentKind;
+use crate::core::loans::MarginLoan;
 use crate::core::messages::{MessageEv, MessageLevel};
-use crate::core::player::{InstrumentKind, OwnedInstrument, Player};
+use crate::core::player::{OwnedInstrument, Player};
 use crate::utils::NameFromEnum;
 
 #[derive(EnumIter, Clone, Copy, Default, Debug, PartialEq, Serialize, Deserialize)]
@@ -122,11 +124,8 @@ pub struct Order {
     /// Whether the threshold is an upper or lower limit
     pub lower_bound: bool,
 
-    /// Interest rate for short selling
-    pub interest: f32,
-
-    /// Fraction of margin for short selling
-    pub margin_frac: f32,
+    /// Margin loan taken for the order
+    pub loan: Option<MarginLoan>,
 
     /// Date of the order execution
     pub processed: NaiveDate,
@@ -156,67 +155,86 @@ pub fn execute_orders(
 
         let instrument = economy.get(&order.instrument);
 
+        let mut cash = player.cash.amount;
         match order.command {
             Command::Buy => {
                 if let Some(owned) = player.get_mut(&order.instrument) {
                     owned.amount += order.amount;
 
-                    if owned.collateral > 0. {
-                        // Buy instrument in a short position from the collateral
-                        owned.collateral -= price;
-                        if owned.amount == 0 {
-                            // When short position is closed, return collateral
-                            player.cash.amount += owned.collateral;
-
-                            message.write(MessageEv {
-                                message: format!(
-                                    "Closed short position for {}. Collateral returned.",
-                                    instrument.lowername()
-                                ),
-                                level: MessageLevel::Info,
-                            });
+                    if let Some(order_loan) = &order.loan {
+                        cash -= order_loan.collateral;
+                        
+                        if let Some(existing_loan) = &mut owned.loan {
+                            // If the order has a loan, add the stats
+                            existing_loan.debt += order_loan.debt;
+                            existing_loan.collateral += order_loan.collateral;
+                            existing_loan.interest_rate = order_loan.interest_rate;
+                            existing_loan.margin_frac = order_loan.margin_frac;
+                        } else {
+                            owned.loan = Some(order_loan.clone());
                         }
                     } else {
-                        player.cash.amount -= price;
+                        if let Some(existing_loan) = &mut owned.loan {
+                            // If the order has no loan, but the instrument already has a loan...
+                            match owned.amount {
+                                n if n > 0 => {
+                                    // In a long position, pay from the cash
+                                    cash -= price;
+                                },
+                                n if n < 0 => {
+                                    // In a short position, buy back from the proceeds
+                                    existing_loan.debt -= price;
+                                },
+                                _ => {
+                                    // The short position was closed
+                                    cash += existing_loan.collateral + existing_loan.debt - price;
+
+                                    message.write(MessageEv {
+                                        message: format!(
+                                            "Closed short position for {}. Collateral returned.",
+                                            instrument.lowername()
+                                        ),
+                                        level: MessageLevel::Info,
+                                    });
+                                },
+                            }
+                        }
                     }
                 } else {
+                    if let Some(loan) = &order.loan {
+                        cash -= loan.collateral;
+                    } else {
+                        cash -= price;
+                    }
+
                     player.instruments.push(OwnedInstrument {
                         kind: order.instrument.clone(),
                         amount: order.amount,
-                        start_price: price / order.amount as f32,
-                        interest: order.interest,
-                        margin_frac: order.margin_frac,
-                        collateral: 1.5 * price,
+                        loan: order.loan,
                         warning: false,
                     });
 
-                    if order.kind == OrderKind::ShortSell {
-                        player.cash.amount -= order.price * 0.5; // Collateral payment
-                    } else {
-                        player.cash.amount -= price;
-                    }
+                    message.write(MessageEv {
+                        message: format!(
+                            "{} {} {}.",
+                            if order.kind != OrderKind::ShortSell {
+                                "Bought"
+                            } else {
+                                "Opened short position for"
+                            },
+                            order.amount.abs(),
+                            instrument.lowername()
+                        ),
+                        level: MessageLevel::Info,
+                    });
                 }
-
-                message.write(MessageEv {
-                    message: format!(
-                        "{} {} {}.",
-                        if order.kind != OrderKind::ShortSell {
-                            "Bought"
-                        } else {
-                            "Opened short position for"
-                        },
-                        order.amount.abs(),
-                        instrument.lowername()
-                    ),
-                    level: MessageLevel::Info,
-                });
             },
             Command::Sell => {
                 if let Some(owned) = player.get_mut(&order.instrument) {
                     owned.amount -= order.amount;
                 }
 
-                player.cash.amount += price;
+                cash += price;
 
                 message.write(MessageEv {
                     message: format!("Sold {} {}.", order.amount, instrument.lowername()),
@@ -228,7 +246,7 @@ pub fn execute_orders(
                     .instruments
                     .retain_mut(|o| o.kind != order.instrument);
 
-                player.cash.amount += price;
+                cash += price;
 
                 message.write(MessageEv {
                     message: format!("Closed {} position.", instrument.lowername()),
@@ -237,6 +255,7 @@ pub fn execute_orders(
             },
         }
 
+        player.cash.amount = cash;
         player.instruments.retain_mut(|o| o.amount != 0);
     }
 }

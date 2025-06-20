@@ -15,7 +15,7 @@ use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::messages::MessageEv;
 use crate::core::player::Player;
-use crate::core::resources::{ImageIds, KeyMap};
+use crate::core::resources::{Favourites, ImageIds};
 use crate::core::states::GameState;
 use crate::core::ui::bonds::bonds_panel;
 use crate::core::ui::commodities::commodities_panel;
@@ -136,35 +136,25 @@ pub fn top_panel(
                         Cash: {}\n\
                         Commodities: {}\n\
                         Crypto: {}\n\
-                        Short sell collateral: {}\n\
-                        Loan debt: {}\n\
+                        Term loan debt: {}\n\
+                        Margin loan debt: {}\n\
                         -------------------\n\
                         Enterprise value: {}",
                         player.cash.current().signed(),
                         player
                             .commodities()
                             .iter()
-                            .map(|o| o.amount as f32 * economy.get_current(&o.kind))
+                            .map(|o| o.amount as f32 * economy.get_price(&o.kind))
                             .sum::<f32>()
                             .signed(),
                         player
                             .crypto()
                             .iter()
-                            .map(|o| o.amount as f32 * economy.get_current(&o.kind))
+                            .map(|o| o.amount as f32 * economy.get_price(&o.kind))
                             .sum::<f32>()
                             .signed(),
-                        player
-                            .loans
-                            .iter()
-                            .map(|l| -l.outstanding)
-                            .sum::<f32>()
-                            .signed(),
-                        player
-                            .instruments
-                            .iter()
-                            .map(|o| o.collateral)
-                            .sum::<f32>()
-                            .signed(),
+                        player.term_loan_debt(),
+                        player.margin_loan_debt(),
                         player.enterprise_value(&economy) as i32,
                     ),
                     None,
@@ -358,7 +348,7 @@ pub fn central_panel(
 pub fn check_keys(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut state: ResMut<UiState>,
-    mut key_map: ResMut<KeyMap>,
+    mut key_map: ResMut<Favourites>,
 ) {
     if keyboard.just_pressed(KeyCode::KeyO) {
         state.tab = Tab::Overview;

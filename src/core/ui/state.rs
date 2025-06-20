@@ -5,11 +5,12 @@ use itertools::Itertools;
 use strum_macros::EnumIter;
 
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::instruments::Instrument;
 use crate::core::instruments::bonds::BondKind;
-use crate::core::loans::{LoanKind, LoanProvider, Term};
+use crate::core::instruments::instrument::{Instrument, InstrumentKind};
+use crate::core::loans::{LoanKind, LoanProvider, Term, TermLoan};
 use crate::core::orders::{Order, OrderKind};
-use crate::core::player::{InstrumentKind, OwnedInstrument, Player};
+use crate::core::player::{OwnedInstrument, Player};
+use crate::utils::NameFromEnum;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum Tab {
@@ -57,11 +58,16 @@ impl OverviewTab {
     }
 }
 
-#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
+#[derive(EnumIter, Clone, Copy, Debug, PartialEq)]
 pub enum OrderOptions {
-    #[default]
     Name,
     Created,
+    StartDate,
+    Maturity,
+    Provider,
+    Principal,
+    Outstanding,
+    Installment,
     Processed,
     OwnedAmount,
     OwnedValue,
@@ -69,11 +75,15 @@ pub enum OrderOptions {
     Status,
     Volatility,
     Quality,
+    Debt,
+    Collateral,
     Interest,
+    Margin,
+    Defaults,
 }
 
 impl OrderOptions {
-    fn order(
+    fn reorder(
         a: &dyn Instrument,
         b: &dyn Instrument,
         state: &OrderByState,
@@ -81,24 +91,24 @@ impl OrderOptions {
         player: &Player,
     ) -> Ordering {
         match state.order {
-            OrderOptions::Name => a.lowername().cmp(&b.lowername()),
-            OrderOptions::OwnedAmount => player
+            Self::Name => a.lowername().cmp(&b.lowername()),
+            Self::OwnedAmount => player
                 .get_owned(&a.kind())
                 .cmp(&player.get_owned(&b.kind())),
-            OrderOptions::OwnedValue => player
+            Self::OwnedValue => player
                 .get_value(&a.kind(), economy)
                 .partial_cmp(&player.get_value(&b.kind(), economy))
                 .unwrap_or(Ordering::Equal),
-            OrderOptions::Price => a
+            Self::Price => a
                 .current()
                 .partial_cmp(&b.current())
                 .unwrap_or(Ordering::Equal),
-            OrderOptions::Volatility => a
+            Self::Volatility => a
                 .volatility()
                 .partial_cmp(&b.volatility())
                 .unwrap_or(Ordering::Equal),
-            OrderOptions::Quality => a.quality().cmp(&b.quality()),
-            OrderOptions::Interest => a
+            Self::Quality => a.quality().cmp(&b.quality()),
+            Self::Interest => a
                 .interest()
                 .partial_cmp(&b.interest())
                 .unwrap_or(Ordering::Equal),
@@ -106,7 +116,7 @@ impl OrderOptions {
         }
     }
 
-    pub fn sort<'a>(
+    pub fn sort_instrument<'a>(
         data: &mut Vec<&'a dyn Instrument>,
         state: &OrderByState,
         economy: &GlobalEconomy,
@@ -115,7 +125,7 @@ impl OrderOptions {
         let mut data = data
             .iter()
             .copied()
-            .sorted_by(|&a, &b| Self::order(a, b, state, economy, player))
+            .sorted_by(|&a, &b| Self::reorder(a, b, state, economy, player))
             .collect::<Vec<_>>();
 
         if state.descending {
@@ -125,7 +135,7 @@ impl OrderOptions {
         data
     }
 
-    pub fn sort_owned<'a>(
+    pub fn sort_owned_instrument<'a>(
         data: &mut Vec<&'a OwnedInstrument>,
         state: &OrderByState,
         economy: &GlobalEconomy,
@@ -137,7 +147,7 @@ impl OrderOptions {
             .sorted_by(|a, b| {
                 let a = economy.get(&a.kind);
                 let b = economy.get(&b.kind);
-                Self::order(a, b, state, economy, &player)
+                Self::reorder(a, b, state, economy, &player)
             })
             .collect::<Vec<_>>();
 
@@ -153,12 +163,72 @@ impl OrderOptions {
             .into_iter()
             .cloned()
             .sorted_by(|a, b| match state.order {
-                OrderOptions::Name => a.instrument.lowername().cmp(&b.instrument.lowername()),
-                OrderOptions::Created => a.created.cmp(&b.created),
-                OrderOptions::Processed => a.created.cmp(&b.created),
-                OrderOptions::Price => a.threshold.partial_cmp(&b.threshold).unwrap(),
-                OrderOptions::Status => a.status.cmp(&b.status),
+                Self::Name => a.instrument.lowername().cmp(&b.instrument.lowername()),
+                Self::Created => a.created.cmp(&b.created),
+                Self::Processed => a.created.cmp(&b.created),
+                Self::Price => a.threshold.partial_cmp(&b.threshold).unwrap(),
+                Self::Status => a.status.cmp(&b.status),
                 _ => unreachable!(),
+            })
+            .collect::<Vec<_>>();
+
+        if state.descending {
+            data.reverse();
+        }
+
+        data
+    }
+
+    pub fn sort_term_loan(data: &Vec<TermLoan>, state: &OrderByState) -> Vec<TermLoan> {
+        let mut data = data
+            .into_iter()
+            .cloned()
+            .sorted_by(|a, b| match state.order {
+                Self::StartDate => a.start_date.cmp(&b.start_date),
+                Self::Maturity => a.maturity_date().cmp(&b.maturity_date()),
+                Self::Provider => a.provider.to_name().cmp(&b.provider.to_name()),
+                Self::Principal => a.principal.partial_cmp(&b.principal).unwrap(),
+                Self::Outstanding => a.outstanding.partial_cmp(&b.outstanding).unwrap(),
+                Self::Installment => a
+                    .next_installment_amount()
+                    .partial_cmp(&b.next_installment_amount())
+                    .unwrap(),
+                Self::Interest => a.interest_rate.partial_cmp(&b.interest_rate).unwrap(),
+                Self::Defaults => a.defaults.cmp(&b.defaults),
+                _ => unreachable!(),
+            })
+            .collect::<Vec<_>>();
+
+        if state.descending {
+            data.reverse();
+        }
+
+        data
+    }
+
+    pub fn sort_margin_loan(
+        data: Vec<&OwnedInstrument>,
+        state: &OrderByState,
+        economy: &GlobalEconomy,
+    ) -> Vec<OwnedInstrument> {
+        let mut data = data
+            .into_iter()
+            .cloned()
+            .sorted_by(|a, b| {
+                let l1 = a.loan.as_ref().unwrap();
+                let l2 = b.loan.as_ref().unwrap();
+                match state.order {
+                    Self::Name => a.kind.lowername().cmp(&b.kind.lowername()),
+                    Self::Debt => l1.debt.partial_cmp(&l2.debt).unwrap(),
+                    Self::Collateral => l1.collateral.partial_cmp(&l2.collateral).unwrap(),
+                    Self::Interest => l1.interest().partial_cmp(&l2.interest()).unwrap(),
+                    Self::Price => l1.interest().partial_cmp(&l2.interest()).unwrap(),
+                    Self::Margin => economy
+                        .get_price(&a.kind)
+                        .partial_cmp(&economy.get_price(&b.kind))
+                        .unwrap(),
+                    _ => unreachable!(),
+                }
             })
             .collect::<Vec<_>>();
 
@@ -170,25 +240,68 @@ impl OrderOptions {
     }
 }
 
-#[derive(Default)]
 pub struct OrderByState {
     pub order: OrderOptions,
     pub descending: bool,
 }
 
-#[derive(Default)]
 pub struct OverviewState {
     pub tab: OverviewTab,
     pub commodities: OrderByState,
     pub crypto: OrderByState,
     pub pending: OrderByState,
     pub processed: OrderByState,
+    pub term_loan: OrderByState,
+    pub margin_loan: OrderByState,
 }
 
-#[derive(Default)]
+impl Default for OverviewState {
+    fn default() -> Self {
+        Self {
+            tab: OverviewTab::default(),
+            commodities: OrderByState {
+                order: OrderOptions::OwnedValue,
+                descending: true,
+            },
+            crypto: OrderByState {
+                order: OrderOptions::OwnedValue,
+                descending: true,
+            },
+            pending: OrderByState {
+                order: OrderOptions::Created,
+                descending: true,
+            },
+            processed: OrderByState {
+                order: OrderOptions::Processed,
+                descending: true,
+            },
+            term_loan: OrderByState {
+                order: OrderOptions::Principal,
+                descending: true,
+            },
+            margin_loan: OrderByState {
+                order: OrderOptions::Debt,
+                descending: true,
+            },
+        }
+    }
+}
+
 pub struct BondState {
     pub tab: BondKind,
     pub order: OrderByState,
+}
+
+impl Default for BondState {
+    fn default() -> Self {
+        Self {
+            tab: BondKind::Government,
+            order: OrderByState {
+                order: OrderOptions::Name,
+                descending: false,
+            },
+        }
+    }
 }
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
@@ -243,9 +356,10 @@ pub struct ModalInfo {
     pub limit_stop: f32,
     pub trailing_stop: u32,
     pub lower_bound: bool,
+    pub loan: bool,
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource)]
 pub struct UiState {
     pub tab: Tab,
     pub overview: OverviewState,
@@ -255,4 +369,25 @@ pub struct UiState {
     pub credit: CreditState,
     pub modal: Option<InstrumentKind>,
     pub modal_info: ModalInfo,
+}
+
+impl Default for UiState {
+    fn default() -> Self {
+        Self {
+            tab: Tab::default(),
+            overview: OverviewState::default(),
+            bonds: BondState::default(),
+            commodities: OrderByState {
+                order: OrderOptions::Name,
+                descending: false,
+            },
+            cryptos: OrderByState {
+                order: OrderOptions::Name,
+                descending: false,
+            },
+            credit: CreditState::default(),
+            modal: None,
+            modal_info: ModalInfo::default(),
+        }
+    }
 }

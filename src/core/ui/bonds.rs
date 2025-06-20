@@ -3,8 +3,8 @@ use bevy_egui::egui::{ScrollArea, Ui};
 use strum::IntoEnumIterator;
 
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::instruments::Instrument;
 use crate::core::instruments::bonds::BondKind;
+use crate::core::instruments::instrument::Instrument;
 use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderOptions, UiState};
@@ -72,7 +72,9 @@ pub fn bonds_panel(
             .map(|c| c as &dyn Instrument)
             .collect::<Vec<_>>();
 
-        for inst in OrderOptions::sort(&mut instruments, &state.bonds.order, economy, player) {
+        for inst in
+            OrderOptions::sort_instrument(&mut instruments, &state.bonds.order, economy, player)
+        {
             let response = ui.add_instrument(inst, economy, images, window);
 
             if response.clicked() {

@@ -6,13 +6,12 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondKind;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::OrderEv;
-use crate::core::player::{OwnedInstrument, Player};
+use crate::core::player::Player;
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
     mut player: ResMut<Player>,
     mut order_ev: EventWriter<OrderEv>,
-    mut close_short_ev: EventWriter<CloseShortEv>,
     mut message: EventWriter<MessageEv>,
     time: Res<Time>,
 ) {
@@ -36,42 +35,63 @@ pub fn time_pass(
         // Update bounds for trailing orders
         for order in player.pending_orders_mut() {
             if order.lower_bound {
-                order.bound = order.bound.min(economy.get_current(&order.instrument));
+                order.bound = order.bound.min(economy.get_price(&order.instrument));
             } else {
-                order.bound = order.bound.max(economy.get_current(&order.instrument));
+                order.bound = order.bound.max(economy.get_price(&order.instrument));
             }
         }
 
-        let mut has_debt = false;
-        let mut has_paid = true;
-        
-        // Check margin call for short positions
-        player.instruments.iter_mut().filter(|o| o.amount < 0).for_each(|o| {
-            has_debt = true;
+        // Check margin call for margin loans
+        let mut cash = player.cash.current();
+        player.instruments.retain_mut(|owned| {
+            if let Some(loan) = &mut owned.loan {
+                let price = economy.get_price(&owned.kind);
+                let margin = loan.margin(owned.amount);
 
-            let instrument = economy.get(&o.kind);
-            let price = instrument.current() * o.amount.abs() as f32;
+                if owned.amount > 0 && price < margin {
+                    // Liquidate long position
+                    cash += price * owned.amount.abs() as f32 + loan.collateral - loan.debt;
 
-            let margin = 1.5 * o.start_price * o.amount as f32 / (1. + o.margin_frac - 0.1);
-            if price > margin {
-                has_paid = false;
-                close_short_ev.write(CloseShortEv {
-                    owned: o.clone(),
-                    reason: "Margin reached".to_string(),
-                });
-            } else if price > margin * 0.9 && !o.warning {
-                o.warning = true;
-                message.write(MessageEv {
-                    message: format!(
-                        "Margin call for short position on {}! Increase the collateral to avoid liquidation.",
-                        o.kind.lowername(),
-                    ),
-                    level: MessageLevel::Warning,
-                });
-            } else if price < margin * 0.8 && o.warning {
-                o.warning = false; // Reset warning if price is below 80% of margin
+                    message.write(MessageEv {
+                        message: format!(
+                            "Margin reached for long position on {}. Forced liquidation.",
+                            owned.kind.lowername()
+                        ),
+                        level: MessageLevel::Error,
+                    });
+
+                    return false
+                } else if owned.amount < 0 && price > margin {
+                    // Liquidate short position
+                    cash += loan.collateral + loan.debt - price * owned.amount.abs() as f32;
+
+                    message.write(MessageEv {
+                        message: format!(
+                            "Margin reached for short position on {}. Forced liquidation.",
+                            owned.kind.lowername()
+                        ),
+                        level: MessageLevel::Error,
+                    });
+
+                    return false
+                } else if (owned.amount > 0 && price < margin * 0.9) || (owned.amount < 0 && price > margin * 0.9) {
+                    owned.warning = true;
+                    message.write(MessageEv {
+                        message: format!(
+                            "Margin call for position on {}! Increase the collateral to avoid liquidation.",
+                            owned.kind.lowername(),
+                        ),
+                        level: MessageLevel::Warning,
+                    });
+                } else if owned.warning && ((owned.amount > 0 && price > margin * 0.8) || (owned.amount < 0 && price < margin * 0.8)) {
+                    owned.warning = false; // Reset warning if price is below 80% of the margin
+                }
             }
+
+            true
         });
+
+        player.cash.amount = cash;
 
         player.resolve_orders(&economy, &mut order_ev, &mut message);
 
@@ -119,30 +139,27 @@ pub fn time_pass(
 
             // Resolve debts ======================================= >>
 
-            // Pay storage costs for commodities
-            let storage_costs = player
-                .instruments
-                .iter()
-                .map(|instrument| {
-                    let cost =
-                        instrument.amount as f32 * economy.get(&instrument.kind).storage_cost();
-                    (instrument.kind.clone(), cost)
-                })
-                .collect::<Vec<_>>();
+            let mut has_debt = false;
+            let mut has_paid = true;
 
-            for (instrument, cost) in storage_costs {
-                if cost > 0. {
+            let mut cash = player.cash.amount;
+
+            // Pay storage costs for commodities
+            for owned in &mut player.instruments {
+                let storage_cost = owned.amount as f32 * economy.get(&owned.kind).storage_cost();
+
+                if storage_cost > 0. {
                     has_debt = true;
                 }
 
-                if player.cash.current() > cost {
-                    player.cash.amount -= cost;
+                if cash >= storage_cost {
+                    cash -= storage_cost;
                 } else {
                     has_paid = false;
                     message.write(MessageEv {
                         message: format!(
                             "Not enough cash to pay the storage costs for {}!",
-                            instrument.lowername()
+                            owned.kind.lowername()
                         ),
                         level: MessageLevel::Error,
                     });
@@ -150,8 +167,7 @@ pub fn time_pass(
                 }
             }
 
-            // Pay loan installments
-            let mut cash = player.cash.amount;
+            // Pay term loan installments
             player.loans.retain_mut(|loan| {
                 has_debt = true;
 
@@ -176,27 +192,17 @@ pub fn time_pass(
                 loan.outstanding >= 1. // Keep loans that are not fully repaid
             });
 
-            player.cash.amount = cash;
+            // Pay interest on margin loans
+            for owned in &mut player.instruments {
+                if let Some(loan) = &mut owned.loan {
+                    let interest = loan.interest();
 
-            // Pay interest on short positions
-            let short_positions = player
-                .instruments
-                .iter()
-                .filter(|o| o.amount < 0)
-                .cloned()
-                .collect::<Vec<_>>();
-
-            for o in short_positions {
-                let interest = o.interest / 100. / 12. * o.start_price * o.amount.abs() as f32;
-
-                if player.cash.current() >= interest {
-                    player.cash.amount -= interest;
-                } else {
-                    has_paid = false;
-                    close_short_ev.write(CloseShortEv {
-                        owned: o.clone(),
-                        reason: "Not enough cash to pay the interest".to_string(),
-                    });
+                    // Pay from cash if possible, else add to debt
+                    if cash >= interest {
+                        cash -= interest;
+                    } else {
+                        loan.collateral -= interest;
+                    }
                 }
             }
 
@@ -207,6 +213,8 @@ pub fn time_pass(
                     player.credit_score.decrease();
                 }
             }
+
+            player.cash.amount = cash;
         }
 
         // Warning messages =================================== >>
@@ -219,32 +227,5 @@ pub fn time_pass(
                 level: MessageLevel::Warning,
             });
         }
-    }
-}
-
-#[derive(Event)]
-pub struct CloseShortEv {
-    pub owned: OwnedInstrument,
-    pub reason: String,
-}
-
-pub fn liquidate_short_positions(
-    mut close_short_ev: EventReader<CloseShortEv>,
-    economy: Res<GlobalEconomy>,
-    mut player: ResMut<Player>,
-    mut message: EventWriter<MessageEv>,
-) {
-    for CloseShortEv { owned, reason } in close_short_ev.read() {
-        player.cash.amount +=
-            owned.collateral - economy.get_current(&owned.kind) * -owned.amount as f32;
-        player.instruments.retain(|o| o.kind != owned.kind);
-
-        message.write(MessageEv {
-            message: format!(
-                "Forced liquidation on short position for {}. Reason: {reason}.",
-                owned.kind.lowername()
-            ),
-            level: MessageLevel::Error,
-        });
     }
 }

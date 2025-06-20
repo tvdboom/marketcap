@@ -2,7 +2,7 @@ use bevy::prelude::Window;
 use bevy_egui::egui::{ScrollArea, Ui};
 
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::instruments::Instrument;
+use crate::core::instruments::instrument::Instrument;
 use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderOptions, UiState};
@@ -50,7 +50,8 @@ pub fn crypto_panel(
             .map(|c| c as &dyn Instrument)
             .collect::<Vec<_>>();
 
-        for inst in OrderOptions::sort(&mut instruments, &state.cryptos, economy, player) {
+        for inst in OrderOptions::sort_instrument(&mut instruments, &state.cryptos, economy, player)
+        {
             let response = ui.add_instrument(inst, economy, images, window);
 
             if response.clicked() {

@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
+use crate::core::instruments::instrument::InstrumentKind;
 use bevy::prelude::Resource;
 use bevy_egui::egui::TextureId;
-
-use crate::core::player::InstrumentKind;
+use itertools::Itertools;
 
 #[derive(Resource, Default)]
 pub struct ImageIds(pub HashMap<&'static str, TextureId>);
@@ -18,4 +18,10 @@ impl ImageIds {
 }
 
 #[derive(Resource, Default)]
-pub struct KeyMap(pub HashMap<u8, InstrumentKind>);
+pub struct Favourites(pub HashMap<u8, InstrumentKind>);
+
+impl Favourites {
+    pub fn contains(&self, instrument: &InstrumentKind) -> bool {
+        self.0.values().contains(&instrument)
+    }
+}

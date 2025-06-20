@@ -2,8 +2,8 @@ use rand::{Rng, rng};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
-use crate::core::instruments::Instrument;
-use crate::core::player::InstrumentKind;
+use crate::core::instruments::instrument::Instrument;
+use crate::core::instruments::instrument::InstrumentKind;
 use crate::utils::NameFromEnum;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -28,7 +28,7 @@ pub struct Crypto {
 
     /// Default price of the commodity
     pub base_price: f32,
-    
+
     /// The prices over time
     pub prices: Vec<f32>,
 
@@ -47,8 +47,7 @@ impl Crypto {
             self.base_price *= 1. + inflation / 100. / 365.;
 
             let volatility = self.base_price * self.volatility / 100.;
-            (self.current()
-                * (1. + inflation / 100. / 365.)
+            (self.current() * (1. + inflation / 100. / 365.)
                 + rng().random_range(-volatility..volatility))
             .max(0.)
         };

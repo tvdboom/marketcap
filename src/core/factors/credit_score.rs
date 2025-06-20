@@ -20,6 +20,10 @@ impl CreditScore {
     pub fn decrease(&mut self) {
         self.score = self.score.saturating_sub(12).max(Self::MIN);
     }
+
+    pub fn relative(&self) -> f32 {
+        self.score as f32 / Self::MAX as f32
+    }
 }
 
 impl Default for CreditScore {

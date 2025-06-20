@@ -9,11 +9,11 @@ use crate::core::countries::{Country, start_countries};
 use crate::core::factors::economy::Economy;
 use crate::core::factors::inflation::Inflation;
 use crate::core::factors::interest::Interest;
-use crate::core::instruments::Instrument;
 use crate::core::instruments::bonds::{Bond, start_bonds};
 use crate::core::instruments::commodities::{Commodity, start_commodities};
 use crate::core::instruments::crypto::{Crypto, start_cryptos};
-use crate::core::player::InstrumentKind;
+use crate::core::instruments::instrument::Instrument;
+use crate::core::instruments::instrument::InstrumentKind;
 
 #[derive(Resource, Clone, Serialize, Deserialize)]
 pub struct GlobalEconomy {
@@ -75,7 +75,7 @@ impl GlobalEconomy {
         }
     }
 
-    pub fn get_current(&self, instrument: &InstrumentKind) -> f32 {
+    pub fn get_price(&self, instrument: &InstrumentKind) -> f32 {
         self.get(instrument).current()
     }
 }

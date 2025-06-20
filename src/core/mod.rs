@@ -27,9 +27,9 @@ use crate::core::orders::{OrderEv, execute_orders};
 use crate::core::pause::toggle_pause_keyboard;
 use crate::core::persistence::{LoadGameEv, SaveGameEv, load_game, save_game};
 use crate::core::player::Player;
-use crate::core::resources::{ImageIds, KeyMap};
+use crate::core::resources::{Favourites, ImageIds};
 use crate::core::states::{AppState, GameState};
-use crate::core::systems::{CloseShortEv, liquidate_short_positions, time_pass};
+use crate::core::systems::time_pass;
 use crate::core::ui::menu::{in_game_menu, toggle_menu_keyboard};
 use crate::core::ui::modal::trade_modal;
 use crate::core::ui::state::UiState;
@@ -61,14 +61,13 @@ impl Plugin for GamePlugin {
             .init_resource::<GameSettings>()
             .init_resource::<GlobalEconomy>()
             .init_resource::<Player>()
-            .init_resource::<KeyMap>()
+            .init_resource::<Favourites>()
             // Events
             .add_event::<LoadGameEv>()
             .add_event::<SaveGameEv>()
             .add_event::<PlayAudioEv>()
             .add_event::<MessageEv>()
             .add_event::<OrderEv>()
-            .add_event::<CloseShortEv>()
             // Sets
             .configure_sets(Update, InGameSet.run_if(in_state(AppState::Game)))
             .configure_sets(
@@ -111,10 +110,6 @@ impl Plugin for GamePlugin {
                     toggle_menu_keyboard.in_set(InGameSet),
                     check_keys.in_set(InRunningGameSet),
                 ),
-            )
-            .add_systems(
-                PostUpdate,
-                liquidate_short_positions.in_set(InRunningGameSet),
             );
     }
 }

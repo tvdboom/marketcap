@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
 use crate::core::factors::economy::Economy;
-use crate::core::instruments::Instrument;
-use crate::core::player::InstrumentKind;
+use crate::core::instruments::instrument::Instrument;
+use crate::core::instruments::instrument::InstrumentKind;
 use crate::utils::NameFromEnum;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -73,8 +73,7 @@ impl Commodity {
         self.base_price *= 1. + inflation / 100. / 365.;
 
         let volatility = self.base_price * self.volatility / 100.;
-        let mut new_price = self.current()
-            * (1. + inflation / 100. / 365.)
+        let mut new_price = self.current() * (1. + inflation / 100. / 365.)
             + rng().random_range(-volatility..volatility);
 
         // If the economy is doing really well or poorly, it affects prices
