@@ -1,4 +1,3 @@
-use bevy::log::tracing::Instrument;
 use bevy::prelude::{EventWriter, Res, ResMut, Single, Window};
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::load::SizedTexture;
@@ -54,7 +53,7 @@ pub fn trade_modal(
     let mut price = instrument.current() * amount as f32;
     let loan = if state.modal_info.loan {
         let mut loan = MarginLoan::new(price, &economy, &player);
-        
+
         // If the player already has a loan, use the largest interest rate and margin_frac
         if let Some(owned) = &player.get(&kind) {
             if let Some(l) = &owned.loan {
@@ -62,7 +61,7 @@ pub fn trade_modal(
                 loan.margin_frac = loan.margin_frac.max(l.margin_frac);
             }
         }
-        
+
         loan
     } else {
         MarginLoan::default()
@@ -336,8 +335,8 @@ pub fn trade_modal(
                                 amount > 0
                                     && price > 0. // Price can be zero for dead cryptos
                                     && player.cash.current() >= loan.collateral
-                                    && (tab != OrderKind::MarketOrder
-                                    || player.cash.current() >= price),
+                                    && (tab != OrderKind::LimitOrder || limit_stop < instrument.current())
+                                    && (tab != OrderKind::MarketOrder || player.cash.current() >= price),
                                 |ui| {
                                     let button = ui
                                         .add_modal_button(
@@ -362,7 +361,11 @@ pub fn trade_modal(
                     },
                     |ui| {
                         if tab != OrderKind::ShortSell {
-                            ui.add_enabled_ui(price > 0. && owned > 0 || tab != OrderKind::MarketOrder, |ui| {
+                            ui.add_enabled_ui(
+                                price > 0.
+                                    && owned > 0
+                                    && (tab != OrderKind::LimitOrder || limit_stop > instrument.current()),
+                                |ui| {
                                 let button = ui
                                     .add_modal_button(
                                         if tab == OrderKind::MarketOrder {

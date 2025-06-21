@@ -163,7 +163,7 @@ pub fn execute_orders(
 
                     if let Some(order_loan) = &order.loan {
                         cash -= order_loan.collateral;
-                        
+
                         if let Some(existing_loan) = &mut owned.loan {
                             // If the order has a loan, add the stats
                             existing_loan.debt += order_loan.debt;
@@ -232,9 +232,29 @@ pub fn execute_orders(
             Command::Sell => {
                 if let Some(owned) = player.get_mut(&order.instrument) {
                     owned.amount -= order.amount;
-                }
+                    
+                    if let Some(loan) = &mut owned.loan {
+                        // If the instrument has a loan, pay back the debt first
+                        if *price >= loan.debt {
+                            let remainder = *price - loan.debt;
+                            
+                            cash += remainder + loan.collateral;
 
-                cash += price;
+                            message.write(MessageEv {
+                                message: format!(
+                                    "Repaid margin loan for {}. Collateral returned.",
+                                    instrument.lowername()
+                                ),
+                                level: MessageLevel::Info,
+                            });
+                        } else {
+                            loan.debt -= price;
+                        }
+                    } else {
+                        // If no loan, just add the cash from the sale
+                        cash += price;
+                    }
+                }
 
                 message.write(MessageEv {
                     message: format!("Sold {} {}.", order.amount, instrument.lowername()),
@@ -244,9 +264,19 @@ pub fn execute_orders(
             Command::Close => {
                 player
                     .instruments
-                    .retain_mut(|o| o.kind != order.instrument);
-
-                cash += price;
+                    .retain_mut(|o| {
+                        if o.kind == order.instrument {
+                            if let Some(loan) = &mut o.loan {
+                                cash += *price - loan.debt + loan.collateral;
+                            } else {
+                                cash += price;
+                            }
+                            
+                            false
+                        } else {
+                            true
+                        }
+                    });
 
                 message.write(MessageEv {
                     message: format!("Closed {} position.", instrument.lowername()),
