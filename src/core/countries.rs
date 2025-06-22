@@ -69,6 +69,59 @@ pub enum CountryName {
     Venezuela,
 }
 
+impl CountryName {
+    pub fn description(&self) -> &str {
+        match self {
+            CountryName::Australia => {
+                "Australia is a developed market with a strong economy, rich in natural \
+                resources like gold and iron."
+            },
+            CountryName::Brazil => {
+                "Brazil is an emerging market known for its agricultural exports like coffee \
+                and cocoa."
+            },
+            CountryName::Canada => {
+                "Canada is a developed market with significant oil and gas reserves, as well \
+                as a strong mining sector."
+            },
+            CountryName::EU => {
+                "The European Union is a developed market with diverse economies, strong \
+                regulations, and a common currency (Euro)."
+            },
+            CountryName::Japan => {
+                "Japan is a developed market known for its advanced technology and manufacturing \
+                sectors."
+            },
+            CountryName::China => {
+                "China is an emerging market with rapid industrialization, significant production \
+                of metals and commodities."
+            },
+            CountryName::Russia => {
+                "Russia is a restricted market with vast natural resources, particularly in oil and gas."
+            },
+            CountryName::SaudiArabia => {
+                "Saudi Arabia is an emerging market heavily reliant on oil exports."
+            },
+            CountryName::SouthAfrica => {
+                "South Africa is an emerging market with rich mineral resources, including \
+                gold and platinum."
+            },
+            CountryName::Ukraine => {
+                "Ukraine is an emerging market known for its agricultural production, especially \
+                wheat and corn."
+            },
+            CountryName::USA => {
+                "The United States is a developed market with the largest economy \
+                in the world, diverse industries, and significant global influence."
+            },
+            CountryName::Venezuela => {
+                "Venezuela is a restricted market with large oil reserves, but faces economic \
+                challenges and political instability."
+            },
+        }
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Country {
     /// The name of the country

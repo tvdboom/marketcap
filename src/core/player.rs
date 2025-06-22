@@ -84,6 +84,13 @@ impl Player {
 
     // Instruments ================================================= >>
 
+    pub fn stocks(&self) -> Vec<&OwnedInstrument> {
+        self.instruments
+            .iter()
+            .filter(|o| matches!(o.kind, InstrumentKind::Stock(_)))
+            .collect::<Vec<_>>()
+    }
+
     pub fn bonds(&self) -> Vec<&OwnedInstrument> {
         self.instruments
             .iter()

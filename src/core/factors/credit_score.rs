@@ -44,8 +44,8 @@ impl Factor for CreditScore {
         by banks and brokers to determine the maximum principal and interest rate for loans. A \
         higher score means better loan conditions.\n\n\
         If the company has active loans and pays the installments, the credit score increases \
-        gradually. On the other hand, if the company defaults on a loan, the credit score drops \
-        significantly."
+        gradually. On the other hand, if the company has negative cash deposits, the credit score \
+        drops significantly."
             .to_string()
     }
 

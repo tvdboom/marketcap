@@ -118,7 +118,7 @@ pub fn time_pass(
                 for bond in &mut economy
                     .bonds
                     .iter_mut()
-                    .filter(|b| b.kind == BondKind::Government)
+                    .filter(|b| b.kind() == BondKind::Government)
                 {
                     bond.issue();
                 }
@@ -131,7 +131,7 @@ pub fn time_pass(
                 for bond in &mut economy
                     .bonds
                     .iter_mut()
-                    .filter(|b| b.kind == BondKind::Corporate)
+                    .filter(|b| b.kind() == BondKind::Corporate)
                 {
                     bond.issue();
                 }
@@ -153,7 +153,7 @@ pub fn time_pass(
                 has_debt = true;
                 cash -= storage_costs;
             }
-            
+
             // Pay term loan installments
             player.loans.retain_mut(|loan| {
                 has_debt = true;
@@ -170,7 +170,7 @@ pub fn time_pass(
                     player.credit_score.decrease();
                 }
             }
-            
+
             // Pay interest on margin loans
             for owned in &mut player.instruments {
                 if let Some(loan) = &mut owned.loan {

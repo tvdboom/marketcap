@@ -248,8 +248,11 @@ impl CustomUi for Ui {
                         ui.label(instrument.name());
                         ui.add_space(window.height() * 0.01);
                         ui.label(instrument.description());
-                        ui.add_space(window.height() * 0.01);
-                        ui.add_plot(instrument.all());
+                        
+                        if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
+                            ui.add_space(window.height() * 0.01);
+                            ui.add_plot(instrument.all());
+                        }
                     });
 
                     ui.vertical(|ui| {

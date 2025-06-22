@@ -134,13 +134,20 @@ pub fn top_panel(
                         of the player. If the enterprise value drops to zero, the company goes \
                         bankrupt and the game is lost.\n\n\
                         Cash: {}\n\
+                        Stocks: {}\n\
                         Commodities: {}\n\
                         Crypto: {}\n\
                         Term loan debt: {}\n\
                         Margin loan debt: {}\n\
-                        -------------------\n\
+                        ------------------------\n\
                         Enterprise value: {}",
                         player.cash.current().signed(),
+                        player
+                            .stocks()
+                            .iter()
+                            .map(|o| o.amount as f32 * economy.get_price(&o.kind))
+                            .sum::<f32>()
+                            .signed(),
                         player
                             .commodities()
                             .iter()
@@ -153,8 +160,8 @@ pub fn top_panel(
                             .map(|o| o.amount as f32 * economy.get_price(&o.kind))
                             .sum::<f32>()
                             .signed(),
-                        player.term_loan_debt(),
-                        player.margin_loan_debt(),
+                        (-player.term_loan_debt()).signed(),
+                        (-player.margin_loan_debt()).signed(),
                         player.enterprise_value(&economy) as i32,
                     ),
                     None,
@@ -195,15 +202,15 @@ pub fn top_panel(
                         It shows whether the player will gain or lose money this month.\n\n\
                         Cash interest: {}\n\
                         Storage costs: {}\n\
-                        Loan installments: {}\n\
-                        Short sell interest: {}\n\
-                        ------------------------\n\
+                        Term loan installments: {}\n\
+                        Margin loan interest: {}\n\
+                        -----------------------------\n\
                         Net flow: {}",
-                        player.cash.accumulated_interest.clean().signed(),
-                        (-player.storage_costs(&economy)).clean().signed(),
-                        (-player.loan_installments()).clean().signed(),
-                        (-player.short_sell_interest()).clean().signed(),
-                        player.netflow(&economy).clean().signed(),
+                        player.cash.accumulated_interest.signed(),
+                        (-player.storage_costs(&economy)).signed(),
+                        (-player.loan_installments()).signed(),
+                        (-player.short_sell_interest()).signed(),
+                        player.netflow(&economy).signed(),
                     ),
                     None,
                     &window,

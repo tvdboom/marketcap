@@ -13,7 +13,7 @@ use crate::core::instruments::bonds::{Bond, start_bonds};
 use crate::core::instruments::commodities::{Commodity, start_commodities};
 use crate::core::instruments::crypto::{Crypto, start_cryptos};
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
-use crate::core::instruments::stocks::{start_stocks, Stock};
+use crate::core::instruments::stocks::{Stock, start_stocks};
 
 #[derive(Resource, Clone, Serialize, Deserialize)]
 pub struct GlobalEconomy {
@@ -37,7 +37,7 @@ pub struct GlobalEconomy {
 
     /// Information about all stocks
     pub stocks: Vec<Stock>,
-    
+
     /// Information about all bonds
     pub bonds: Vec<Bond>,
 

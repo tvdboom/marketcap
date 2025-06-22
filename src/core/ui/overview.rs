@@ -156,7 +156,6 @@ pub fn overview_panel(
                     OrderOptions::Outstanding,
                     OrderOptions::Installment,
                     OrderOptions::Interest,
-                    OrderOptions::Defaults,
                 ]
                 .into(),
                 &mut state.overview.term_loan,

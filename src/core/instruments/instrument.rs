@@ -4,13 +4,13 @@ use strum::IntoEnumIterator;
 use crate::core::instruments::bonds::{BondIssuer, BondQuality};
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::crypto::CryptoName;
-use crate::core::instruments::stocks::CompanyName;
+use crate::core::instruments::stocks::Company;
 use crate::core::orders::OrderKind;
 use crate::utils::NameFromEnum;
 
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum InstrumentKind {
-    Stock(CompanyName),
+    Stock(Company),
     Bond(BondIssuer),
     Commodity(CommodityName),
     Crypto(CryptoName),

@@ -90,21 +90,23 @@ impl EnhFloat for f32 {
             return 0.;
         }
 
-        match self.abs() {
+        let result = match self.abs() {
             n if n < 1. => {
                 // Round to first two non-zero decimals
-                let mut scaled = self.abs();
-                let mut factor = 1.0;
-                while scaled < 1.0 {
-                    scaled *= 10.0;
-                    factor *= 10.0;
+                let mut scaled = n;
+                let mut factor = 1.;
+                while scaled < 1. {
+                    scaled *= 10.;
+                    factor *= 10.;
                 }
 
-                (self * factor * 10.0).round() / (factor * 10.0)
+                (n * factor * 10.).round() / (factor * 10.)
             },
             n if n < 10. => n.round1(),
-            _ => self.floor(),
-        }
+            n => n.floor(),
+        };
+
+        result * self.signum()
     }
 
     fn format(self) -> String {
@@ -112,6 +114,7 @@ impl EnhFloat for f32 {
             n if n > 1_000_000_000. => format!("{}B", (self / 1_000_000_000.).clean()),
             n if n > 1_000_000. => format!("{}M", (self / 1_000_000.).clean()),
             n if n >= 1_000. => format!("{}k", (self / 1_000.).clean()),
+            n if n >= 1. && n < 10. => format!("{:.1}", self.clean()),
             _ => format!("{}", self.clean()),
         }
     }

@@ -3,7 +3,7 @@ use strum_macros::EnumIter;
 
 use crate::core::countries::CountryName;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
-use crate::core::instruments::stocks::CompanyName;
+use crate::core::instruments::stocks::Company;
 use crate::core::loans::Term;
 use crate::utils::NameFromEnum;
 
@@ -49,7 +49,7 @@ impl BondQuality {
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum BondIssuer {
     Government(CountryName),
-    Corporate(CompanyName),
+    Corporate(Company),
 }
 
 impl BondIssuer {
@@ -66,15 +66,19 @@ impl BondIssuer {
             BondIssuer::Corporate(company) => company.to_lowername(),
         }
     }
+
+    pub fn description(&self) -> &str {
+        match self {
+            BondIssuer::Government(country) => country.description(),
+            BondIssuer::Corporate(company) => company.description(),
+        }
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Bond {
     /// The issuer of the bond
     pub issuer: BondIssuer,
-
-    /// The kind of bond (government or corporate)
-    pub kind: BondKind,
 
     /// The face value of the bond
     pub prices: Vec<f32>,
@@ -90,6 +94,13 @@ pub struct Bond {
 }
 
 impl Bond {
+    pub fn kind(&self) -> BondKind {
+        match self.issuer {
+            BondIssuer::Government(_) => BondKind::Government,
+            BondIssuer::Corporate(_) => BondKind::Corporate,
+        }
+    }
+
     /// Issue a new bond, recalculating interest and face value
     pub fn issue(&mut self) {
         self.prices
@@ -112,9 +123,9 @@ impl Instrument for Bond {
             BondIssuer::Corporate(company) => format!("{}-bond", company.to_lowername()),
         }
     }
-    
+
     fn description(&self) -> &str {
-        ""
+        self.issuer.description()
     }
 
     fn kind(&self) -> InstrumentKind {
@@ -142,7 +153,6 @@ pub fn start_bonds() -> Vec<Bond> {
     vec![
         Bond {
             issuer: BondIssuer::Government(CountryName::Australia),
-            kind: BondKind::Government,
             quality: BondQuality::AA,
             prices: vec![10000.],
             interest: 4.8,
@@ -150,7 +160,6 @@ pub fn start_bonds() -> Vec<Bond> {
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Brazil),
-            kind: BondKind::Government,
             quality: BondQuality::BBB,
             prices: vec![10000.],
             interest: 6.5,
@@ -158,7 +167,6 @@ pub fn start_bonds() -> Vec<Bond> {
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Canada),
-            kind: BondKind::Government,
             quality: BondQuality::AAA,
             prices: vec![10000.],
             interest: 4.2,
@@ -166,7 +174,6 @@ pub fn start_bonds() -> Vec<Bond> {
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::China),
-            kind: BondKind::Government,
             quality: BondQuality::A,
             prices: vec![10000.],
             interest: 3.5,
@@ -174,7 +181,6 @@ pub fn start_bonds() -> Vec<Bond> {
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::EU),
-            kind: BondKind::Government,
             quality: BondQuality::AAA,
             prices: vec![10000.],
             interest: 3.0,
@@ -182,7 +188,6 @@ pub fn start_bonds() -> Vec<Bond> {
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Japan),
-            kind: BondKind::Government,
             quality: BondQuality::AAA,
             prices: vec![10000.],
             interest: 0.5,
@@ -190,7 +195,6 @@ pub fn start_bonds() -> Vec<Bond> {
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Russia),
-            kind: BondKind::Government,
             quality: BondQuality::CCC,
             prices: vec![10000.],
             interest: 7.5,
@@ -198,7 +202,6 @@ pub fn start_bonds() -> Vec<Bond> {
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::SaudiArabia),
-            kind: BondKind::Government,
             quality: BondQuality::BBB,
             prices: vec![10000.],
             interest: 3.8,
@@ -206,7 +209,6 @@ pub fn start_bonds() -> Vec<Bond> {
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::SouthAfrica),
-            kind: BondKind::Government,
             quality: BondQuality::CC,
             prices: vec![10000.],
             interest: 8.0,
@@ -214,7 +216,6 @@ pub fn start_bonds() -> Vec<Bond> {
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Ukraine),
-            kind: BondKind::Government,
             quality: BondQuality::CC,
             prices: vec![10000.],
             interest: 10.0,
@@ -222,7 +223,6 @@ pub fn start_bonds() -> Vec<Bond> {
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::USA),
-            kind: BondKind::Government,
             quality: BondQuality::AAA,
             prices: vec![10000.],
             interest: 4.,
@@ -230,7 +230,6 @@ pub fn start_bonds() -> Vec<Bond> {
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Venezuela),
-            kind: BondKind::Government,
             quality: BondQuality::C,
             prices: vec![10000.],
             interest: 12.0,
