@@ -155,9 +155,6 @@ pub struct TermLoan {
 
     /// Date of the first installment
     pub start_date: NaiveDate,
-
-    /// Number of defaults on the loan
-    pub defaults: u8,
 }
 
 impl TermLoan {

@@ -79,7 +79,6 @@ pub enum OrderOptions {
     Collateral,
     Interest,
     Margin,
-    Defaults,
 }
 
 impl OrderOptions {
@@ -194,7 +193,6 @@ impl OrderOptions {
                     .partial_cmp(&b.next_installment_amount())
                     .unwrap(),
                 Self::Interest => a.interest_rate.partial_cmp(&b.interest_rate).unwrap(),
-                Self::Defaults => a.defaults.cmp(&b.defaults),
                 _ => unreachable!(),
             })
             .collect::<Vec<_>>();

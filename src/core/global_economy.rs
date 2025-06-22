@@ -12,8 +12,8 @@ use crate::core::factors::interest::Interest;
 use crate::core::instruments::bonds::{Bond, start_bonds};
 use crate::core::instruments::commodities::{Commodity, start_commodities};
 use crate::core::instruments::crypto::{Crypto, start_cryptos};
-use crate::core::instruments::instrument::Instrument;
-use crate::core::instruments::instrument::InstrumentKind;
+use crate::core::instruments::instrument::{Instrument, InstrumentKind};
+use crate::core::instruments::stocks::{start_stocks, Stock};
 
 #[derive(Resource, Clone, Serialize, Deserialize)]
 pub struct GlobalEconomy {
@@ -35,6 +35,9 @@ pub struct GlobalEconomy {
     /// Information about all countries
     pub countries: Vec<Country>,
 
+    /// Information about all stocks
+    pub stocks: Vec<Stock>,
+    
     /// Information about all bonds
     pub bonds: Vec<Bond>,
 
@@ -65,6 +68,9 @@ impl GlobalEconomy {
 
     pub fn get(&self, instrument: &InstrumentKind) -> &dyn Instrument {
         match instrument {
+            InstrumentKind::Stock(issuer) => {
+                self.stocks.iter().find(|c| c.issuer == *issuer).unwrap()
+            },
             InstrumentKind::Bond(issuer) => {
                 self.bonds.iter().find(|b| b.issuer == *issuer).unwrap()
             },
@@ -89,6 +95,7 @@ impl Default for GlobalEconomy {
             inflation: Inflation::default(),
             interest: Interest::default(),
             countries: start_countries(),
+            stocks: start_stocks(),
             bonds: start_bonds(),
             commodities: start_commodities(),
             cryptos: start_cryptos(),

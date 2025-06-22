@@ -131,8 +131,8 @@ pub fn top_panel(
                         worth. This includes any kind of assets, investments and cash deposits, \
                         minus debts.\n\n\
                         In the game, the enterprise value represents a measure of the success \
-                        of the player. If the enterprise value drops below zero, the company \
-                        goes bankrupt and the game is lost.\n\n\
+                        of the player. If the enterprise value drops to zero, the company goes \
+                        bankrupt and the game is lost.\n\n\
                         Cash: {}\n\
                         Commodities: {}\n\
                         Crypto: {}\n\
@@ -165,8 +165,12 @@ pub fn top_panel(
 
                 ui.add_factor(
                     "Cash",
-                    (player.cash.current() as u32).to_string(),
-                    CUSTOM_GREEN,
+                    (player.cash.current() as i32).to_string(),
+                    match player.cash.current() {
+                        n if n <= -1. => Color32::RED,
+                        n if n >= 1. => CUSTOM_GREEN,
+                        _ => text_color,
+                    },
                     images.get(player.cash.image()),
                     player.cash.description(),
                     None,
@@ -190,19 +194,16 @@ pub fn top_panel(
                         each month, calculated as income minus debt repayments and expenses. \
                         It shows whether the player will gain or lose money this month.\n\n\
                         Cash interest: {}\n\
-                        ------------------------\n\
-                        Inflow: {}\n\n\
                         Storage costs: {}\n\
                         Loan installments: {}\n\
                         Short sell interest: {}\n\
                         ------------------------\n\
-                        Outflow: {}",
-                        player.cash.accumulated_interest.floor(),
-                        player.inflow().signed(),
-                        player.storage_costs(&economy).clean(),
-                        player.loan_installments().clean(),
-                        player.short_sell_interest().clean(),
-                        (-player.outflow(&economy)).signed(),
+                        Net flow: {}",
+                        player.cash.accumulated_interest.clean().signed(),
+                        (-player.storage_costs(&economy)).clean().signed(),
+                        (-player.loan_installments()).clean().signed(),
+                        (-player.short_sell_interest()).clean().signed(),
+                        player.netflow(&economy).clean().signed(),
                     ),
                     None,
                     &window,

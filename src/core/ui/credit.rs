@@ -37,11 +37,9 @@ pub fn credit_panel(
         "Credit refers to the ability of borrowing money, with the promise of repayment \
         in the future. It's a fundamental part of the financial system, allowing companies to \
         make purchases, invest, and manage expenses beyond their immediate cash availability.\n\n\
-        If a company defaults on a loan (fails to pay an installment) four consecutive months, \
-        its assets will be forcibly sold (usually for unfavorable terms) until there is enough \
-        cash to pay back the complete loan. Six months after the start date of a loan, a company \
-        can choose to repay the debt early, paying an additional fee to the provider to cover \
-        missed earnings.",
+        Six months after the start date of a loan, a company can choose to repay the debt early, \
+        paying an additional fee to the provider to cover missed earnings. A new loan can be \
+        taken by the same provider only when the remaining debt is less than 50% of the principal.",
     );
 
     ui.separator();
@@ -67,7 +65,6 @@ pub fn credit_panel(
                 term: state.credit.term.clone(),
                 no_fee: state.credit.no_fee,
                 start_date: first_day_in_two_months(economy.date),
-                defaults: 0,
             };
 
             ui.horizontal(|ui| {
@@ -340,7 +337,6 @@ pub fn credit_panel(
                                 ui.label(format!("Outstanding: {:.0} {CURRENCY}", loan.outstanding));
                                 ui.label(format!("Installment: {:.0} {CURRENCY}", loan.next_installment_amount()));
                                 ui.label(format!("Interest rate: {:.1}%", loan.interest_rate));
-                                ui.label(format!("Defaults: {}", loan.defaults));
                             });
                         });
                     } else {

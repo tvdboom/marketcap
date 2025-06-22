@@ -1,17 +1,17 @@
-use crate::core::constants::{CURRENCY, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
-use crate::core::global_economy::GlobalEconomy;
-use crate::core::instruments::bonds::BondIssuer;
-use crate::core::instruments::instrument::Instrument;
-use crate::core::instruments::instrument::InstrumentKind;
-use crate::core::resources::ImageIds;
-use crate::core::ui::state::{OrderByState, OrderOptions};
-use crate::utils::{EnhFloat, NameFromEnum, get_ratio};
 use bevy::prelude::Window;
 use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::*;
 use chrono::{Datelike, Duration};
 use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
 use itertools::Itertools;
+
+use crate::core::constants::{CURRENCY, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
+use crate::core::global_economy::GlobalEconomy;
+use crate::core::instruments::bonds::BondIssuer;
+use crate::core::instruments::instrument::{Instrument, InstrumentKind};
+use crate::core::resources::ImageIds;
+use crate::core::ui::state::{OrderByState, OrderOptions};
+use crate::utils::{EnhFloat, NameFromEnum, get_ratio};
 
 /// Custom IOS style toggle for UI
 pub fn toggle(on: &mut bool) -> impl Widget + '_ {
@@ -239,7 +239,7 @@ impl CustomUi for Ui {
 
                 ui.horizontal(|ui| {
                     ui.add(Image::new(SizedTexture::new(
-                        images.get(instrument.lowername().as_str()),
+                        images.get(instrument.image().as_str()),
                         [window.height() * 0.2; 2],
                     )))
                     .on_hover_ui(|ui| {
@@ -273,6 +273,7 @@ impl CustomUi for Ui {
                         }
 
                         match instrument.kind() {
+                            InstrumentKind::Stock(issuer) => {},
                             InstrumentKind::Bond(issuer) => {
                                 ui.label(format!("Quality: {}", instrument.quality().to_name()))
                                     .on_hover_text(instrument.quality().description());

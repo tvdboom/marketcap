@@ -1,13 +1,16 @@
-use crate::core::instruments::bonds::{BondIssuer, BondQuality};
-use crate::core::instruments::commodities::CommodityName;
-use crate::core::instruments::crypto::CryptoName;
-use crate::core::orders::OrderKind;
-use crate::utils::NameFromEnum;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
+use crate::core::instruments::bonds::{BondIssuer, BondQuality};
+use crate::core::instruments::commodities::CommodityName;
+use crate::core::instruments::crypto::CryptoName;
+use crate::core::instruments::stocks::CompanyName;
+use crate::core::orders::OrderKind;
+use crate::utils::NameFromEnum;
+
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum InstrumentKind {
+    Stock(CompanyName),
     Bond(BondIssuer),
     Commodity(CommodityName),
     Crypto(CryptoName),
@@ -16,6 +19,7 @@ pub enum InstrumentKind {
 impl InstrumentKind {
     pub fn name(&self) -> String {
         match self {
+            InstrumentKind::Stock(name) => name.to_name(),
             InstrumentKind::Bond(name) => name.to_name(),
             InstrumentKind::Commodity(name) => name.to_name(),
             InstrumentKind::Crypto(name) => name.to_name(),
@@ -24,6 +28,7 @@ impl InstrumentKind {
 
     pub fn lowername(&self) -> String {
         match self {
+            InstrumentKind::Stock(name) => name.to_lowername(),
             InstrumentKind::Bond(name) => name.to_lowername(),
             InstrumentKind::Commodity(name) => name.to_lowername(),
             InstrumentKind::Crypto(name) => name.to_lowername(),
@@ -51,6 +56,9 @@ impl InstrumentKind {
 pub trait Instrument {
     fn name(&self) -> String;
     fn lowername(&self) -> String;
+    fn image(&self) -> String {
+        self.lowername()
+    }
     fn description(&self) -> &str;
     fn kind(&self) -> InstrumentKind;
     fn all(&self) -> &Vec<f32>;

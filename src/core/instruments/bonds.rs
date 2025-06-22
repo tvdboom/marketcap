@@ -2,8 +2,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
 use crate::core::countries::CountryName;
-use crate::core::instruments::instrument::Instrument;
-use crate::core::instruments::instrument::InstrumentKind;
+use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::instruments::stocks::CompanyName;
 use crate::core::loans::Term;
 use crate::utils::NameFromEnum;
@@ -107,6 +106,13 @@ impl Instrument for Bond {
         self.issuer.to_lowername()
     }
 
+    fn image(&self) -> String {
+        match self.issuer {
+            BondIssuer::Government(country) => country.to_lowername(),
+            BondIssuer::Corporate(company) => format!("{}-bond", company.to_lowername()),
+        }
+    }
+    
     fn description(&self) -> &str {
         ""
     }

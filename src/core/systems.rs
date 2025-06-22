@@ -140,58 +140,37 @@ pub fn time_pass(
             // Resolve debts ======================================= >>
 
             let mut has_debt = false;
-            let mut has_paid = true;
-
             let mut cash = player.cash.amount;
 
             // Pay storage costs for commodities
-            for owned in &mut player.instruments {
-                let storage_cost = owned.amount as f32 * economy.get(&owned.kind).storage_cost();
+            let storage_costs = player
+                .instruments
+                .iter()
+                .map(|o| o.amount as f32 * economy.get(&o.kind).storage_cost())
+                .sum::<f32>();
 
-                if storage_cost > 0. {
-                    has_debt = true;
-                }
-
-                if cash >= storage_cost {
-                    cash -= storage_cost;
-                } else {
-                    has_paid = false;
-                    message.write(MessageEv {
-                        message: format!(
-                            "Not enough cash to pay the storage costs for {}!",
-                            owned.kind.lowername()
-                        ),
-                        level: MessageLevel::Error,
-                    });
-                    break;
-                }
+            if storage_costs > 0. {
+                has_debt = true;
+                cash -= storage_costs;
             }
-
+            
             // Pay term loan installments
             player.loans.retain_mut(|loan| {
                 has_debt = true;
-
-                let installment = loan.next_installment_amount();
-
-                if installment > cash {
-                    loan.defaults += 1;
-                    has_paid = false;
-                    message.write(MessageEv {
-                        message: format!(
-                            "Not enough cash to pay the installment on loan {}!",
-                            loan.id
-                        ),
-                        level: MessageLevel::Error,
-                    });
-                } else {
-                    cash -= loan.next_installment_amount();
-                    loan.outstanding -= loan.next_principal_component();
-                    loan.n_installments += 1;
-                }
-
+                cash -= loan.next_installment_amount();
+                loan.outstanding -= loan.next_principal_component();
+                loan.n_installments += 1;
                 loan.outstanding >= 1. // Keep loans that are not fully repaid
             });
 
+            if has_debt {
+                if cash >= 0. {
+                    player.credit_score.increase();
+                } else {
+                    player.credit_score.decrease();
+                }
+            }
+            
             // Pay interest on margin loans
             for owned in &mut player.instruments {
                 if let Some(loan) = &mut owned.loan {
@@ -203,14 +182,6 @@ pub fn time_pass(
                     } else {
                         loan.collateral -= interest;
                     }
-                }
-            }
-
-            if has_debt {
-                if has_paid {
-                    player.credit_score.increase();
-                } else {
-                    player.credit_score.decrease();
                 }
             }
 

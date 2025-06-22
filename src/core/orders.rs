@@ -232,12 +232,12 @@ pub fn execute_orders(
             Command::Sell => {
                 if let Some(owned) = player.get_mut(&order.instrument) {
                     owned.amount -= order.amount;
-                    
+
                     if let Some(loan) = &mut owned.loan {
                         // If the instrument has a loan, pay back the debt first
                         if *price >= loan.debt {
                             let remainder = *price - loan.debt;
-                            
+
                             cash += remainder + loan.collateral;
 
                             message.write(MessageEv {
@@ -262,21 +262,19 @@ pub fn execute_orders(
                 });
             },
             Command::Close => {
-                player
-                    .instruments
-                    .retain_mut(|o| {
-                        if o.kind == order.instrument {
-                            if let Some(loan) = &mut o.loan {
-                                cash += *price - loan.debt + loan.collateral;
-                            } else {
-                                cash += price;
-                            }
-                            
-                            false
+                player.instruments.retain_mut(|o| {
+                    if o.kind == order.instrument {
+                        if let Some(loan) = &mut o.loan {
+                            cash += *price - loan.debt + loan.collateral;
                         } else {
-                            true
+                            cash += price;
                         }
-                    });
+
+                        false
+                    } else {
+                        true
+                    }
+                });
 
                 message.write(MessageEv {
                     message: format!("Closed {} position.", instrument.lowername()),

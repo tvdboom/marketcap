@@ -2,8 +2,7 @@ use rand::{Rng, rng};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
-use crate::core::instruments::instrument::Instrument;
-use crate::core::instruments::instrument::InstrumentKind;
+use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::utils::NameFromEnum;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]

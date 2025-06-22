@@ -467,7 +467,6 @@ pub fn term_loan_overview(ui: &mut Ui, state: &mut UiState, loans: &Vec<TermLoan
         "Interest",
         "Kind",
         "No fee",
-        "Defaults",
     ];
 
     Frame::new()
@@ -498,7 +497,6 @@ pub fn term_loan_overview(ui: &mut Ui, state: &mut UiState, loans: &Vec<TermLoan
                             format!("{:.1}%", loan.interest_rate),
                             loan.kind.to_name(),
                             loan.no_fee.to_string(),
-                            loan.defaults.to_string(),
                         ];
 
                         body.row(30., |mut row| {
