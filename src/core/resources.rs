@@ -17,12 +17,3 @@ impl ImageIds {
             .expect(format!("No image found with name: {}", key).as_str())
     }
 }
-
-#[derive(Resource, Default)]
-pub struct Favourites(pub HashMap<u8, InstrumentKind>);
-
-impl Favourites {
-    pub fn contains(&self, instrument: &InstrumentKind) -> bool {
-        self.0.values().contains(&instrument)
-    }
-}

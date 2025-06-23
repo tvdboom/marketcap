@@ -15,7 +15,7 @@ use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::messages::MessageEv;
 use crate::core::player::Player;
-use crate::core::resources::{Favourites, ImageIds};
+use crate::core::resources::ImageIds;
 use crate::core::states::GameState;
 use crate::core::ui::bonds::bonds_panel;
 use crate::core::ui::commodities::commodities_panel;
@@ -356,7 +356,7 @@ pub fn central_panel(
 pub fn check_keys(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut state: ResMut<UiState>,
-    mut key_map: ResMut<Favourites>,
+    mut player: ResMut<Player>,
 ) {
     if keyboard.just_pressed(KeyCode::KeyO) {
         state.tab = Tab::Overview;
@@ -381,9 +381,9 @@ pub fn check_keys(
         if let Some(index) = digit {
             if keyboard.any_pressed([KeyCode::ControlLeft, KeyCode::ControlRight]) {
                 if let Some(instrument) = state.modal {
-                    key_map.0.insert(index, instrument);
+                    player.favourites.insert(index, instrument);
                 }
-            } else if let Some(map) = key_map.0.get(&index) {
+            } else if let Some(map) = player.favourites.get(&index) {
                 state.modal = Some(*map);
             }
         }

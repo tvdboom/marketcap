@@ -11,11 +11,12 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::crypto::CryptoName;
 use crate::core::instruments::instrument::InstrumentKind;
+use crate::core::instruments::stocks::Company;
 use crate::core::loans::MarginLoan;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
 use crate::core::player::Player;
-use crate::core::resources::{Favourites, ImageIds};
+use crate::core::resources::ImageIds;
 use crate::core::ui::state::UiState;
 use crate::core::ui::utils::{CustomUi, toggle};
 use crate::utils::{EnhFloat, NameFromEnum, create_guid};
@@ -25,7 +26,6 @@ pub fn trade_modal(
     mut state: ResMut<UiState>,
     economy: Res<GlobalEconomy>,
     mut player: ResMut<Player>,
-    favourites: Res<Favourites>,
     mut order_ev: EventWriter<OrderEv>,
     mut message: EventWriter<MessageEv>,
     images: Res<ImageIds>,
@@ -73,28 +73,25 @@ pub fn trade_modal(
         ui.horizontal(|ui| {
             ui.vertical(|ui| {
                 ComboBox::from_id_salt("instrument")
-                    .selected_text(format!("{}{}", if favourites.contains(&kind) {"❤ "} else {""}, instrument.name()))
+                    .selected_text(format!("{}{}", if player.has_favourite(&kind) {"❤ "} else {""}, instrument.name()))
                     .show_ui(ui, |ui| {
-                        match kind {
-                            InstrumentKind::Commodity(_) => {
-                                for item in CommodityName::iter() {
-                                    ui.selectable_value(
-                                        &mut state.modal,
-                                        Some(InstrumentKind::Commodity(item)),
-                                        format!("{}{}", if favourites.contains(&InstrumentKind::Commodity(item)) {"❤ "} else {""}, item.to_name()),
-                                    );
-                                }
-                            },
-                            InstrumentKind::Crypto(_) => {
-                                for item in CryptoName::iter() {
-                                    ui.selectable_value(
-                                        &mut state.modal,
-                                        Some(InstrumentKind::Crypto(item)),
-                                        format!("{}{}", if favourites.contains(&InstrumentKind::Crypto(item)) {"❤ "} else {""}, item.to_name()),
-                                    );
-                                }
-                            },
-                            _ => {}
+                        let items = match kind {
+                            InstrumentKind::Stock(_) => Company::iter().map(|c| (InstrumentKind::Stock(c), c.to_name())).collect(),
+                            InstrumentKind::Commodity(_) => CommodityName::iter().map(|c| (InstrumentKind::Commodity(c), c.to_name())).collect(),
+                            InstrumentKind::Crypto(_) => CryptoName::iter().map(|c| (InstrumentKind::Crypto(c), c.to_name())).collect(),
+                            _ => vec![],
+                        };
+        
+                        for (instr, name) in items {
+                            ui.selectable_value(
+                                &mut state.modal,
+                                Some(instr),
+                                format!(
+                                    "{}{}",
+                                    if player.has_favourite(&instr) { "❤ " } else { "" },
+                                    name
+                                ),
+                            );
                         }
                     });
 

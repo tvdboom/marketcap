@@ -176,7 +176,7 @@ pub fn time_pass(
                 if let Some(loan) = &mut owned.loan {
                     let interest = loan.interest();
 
-                    // Pay from cash if possible, else add to debt
+                    // Pay from cash if possible, else subtract from collateral
                     if cash >= interest {
                         cash -= interest;
                     } else {
@@ -189,6 +189,15 @@ pub fn time_pass(
         }
 
         // Warning messages =================================== >>
+
+        // Warn every month when cash is negative
+        if economy.date.day() == 1 && player.cash.current() < 0. {
+            message.write(MessageEv {
+                message: "Your cash reserve is negative! Consider taking a loan or selling assets."
+                    .to_string(),
+                level: MessageLevel::Error,
+            });
+        }
 
         // Check if player has enough cash to cover outflow next month
         if economy.date.day() == 20 && player.outflow(&economy) > player.cash.current() {

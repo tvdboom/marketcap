@@ -1,4 +1,7 @@
+use std::collections::HashMap;
+
 use bevy::prelude::*;
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
 use crate::core::factors::Factor;
@@ -25,6 +28,7 @@ pub struct Player {
     pub loans: Vec<TermLoan>,
     pub orders: Vec<Order>,
     pub instruments: Vec<OwnedInstrument>,
+    pub favourites: HashMap<u8, InstrumentKind>,
 }
 
 impl Player {
@@ -83,6 +87,10 @@ impl Player {
     }
 
     // Instruments ================================================= >>
+
+    pub fn has_favourite(&self, instrument: &InstrumentKind) -> bool {
+        self.favourites.values().contains(&instrument)
+    }
 
     pub fn stocks(&self) -> Vec<&OwnedInstrument> {
         self.instruments

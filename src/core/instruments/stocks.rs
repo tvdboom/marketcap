@@ -18,6 +18,21 @@ pub enum Sector {
     Transport,
 }
 
+impl Sector {
+    pub fn emoji(&self) -> &str {
+        match self {
+            Sector::Finance => "💰",
+            Sector::Food => "🍔",
+            Sector::Healthcare => "💊",
+            Sector::Materials => "🏗️",
+            Sector::Military => "🪖",
+            Sector::Retail => "🛍️",
+            Sector::Technology => "💻",
+            Sector::Transport => "🚚",
+        }
+    }
+}
+
 #[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Company {
     Apple,
@@ -119,6 +134,9 @@ pub struct Stock {
     /// Percentage of the base price that can change daily
     pub volatility: f32,
 
+    /// Average dividend given out per share
+    pub dividend: f32,
+
     /// Influence per sector
     pub sector: HashMap<Sector, f32>,
 }
@@ -155,10 +173,11 @@ impl Instrument for Stock {
 
 pub fn start_stocks() -> Vec<Stock> {
     vec![Stock {
-        issuer: Company::Boeing,
+        issuer: Company::Apple,
         base_price: 100.,
         prices: vec![100.],
         volatility: 3.0,
+        dividend: 0.02,
         sector: HashMap::from([(Sector::Transport, 0.5), (Sector::Military, 0.5)]),
     }]
 }
