@@ -13,6 +13,7 @@ mod pause;
 mod persistence;
 mod player;
 mod resources;
+mod sectors;
 mod states;
 mod systems;
 mod ui;

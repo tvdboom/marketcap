@@ -198,6 +198,9 @@ pub fn execute_orders(
                                     });
                                 },
                             }
+                        } else {
+                            // No existing loan, pay the price
+                            cash -= price;
                         }
                     }
                 } else {
@@ -213,21 +216,21 @@ pub fn execute_orders(
                         loan: order.loan,
                         warning: false,
                     });
-
-                    message.write(MessageEv {
-                        message: format!(
-                            "{} {} {}.",
-                            if order.kind != OrderKind::ShortSell {
-                                "Bought"
-                            } else {
-                                "Opened short position for"
-                            },
-                            order.amount.abs(),
-                            instrument.lowername()
-                        ),
-                        level: MessageLevel::Info,
-                    });
                 }
+
+                message.write(MessageEv {
+                    message: format!(
+                        "{} {} {}.",
+                        if order.kind != OrderKind::ShortSell {
+                            "Bought"
+                        } else {
+                            "Shorted"
+                        },
+                        order.amount.abs(),
+                        instrument.lowername()
+                    ),
+                    level: MessageLevel::Info,
+                });
             },
             Command::Sell => {
                 if let Some(owned) = player.get_mut(&order.instrument) {

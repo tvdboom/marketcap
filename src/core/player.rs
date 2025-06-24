@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use crate::core::factors::Factor;
 use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
+use crate::core::factors::influence::Influence;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::instrument::InstrumentKind;
 use crate::core::loans::{MarginLoan, TermLoan};
@@ -25,6 +26,7 @@ pub struct OwnedInstrument {
 pub struct Player {
     pub cash: Cash,
     pub credit_score: CreditScore,
+    pub influence: Influence,
     pub loans: Vec<TermLoan>,
     pub orders: Vec<Order>,
     pub instruments: Vec<OwnedInstrument>,

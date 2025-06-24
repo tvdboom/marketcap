@@ -7,7 +7,7 @@ use crate::core::factors::Factor;
 use crate::core::factors::credit_score::CreditScore;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::player::Player;
-use crate::utils::EnhFloat;
+use crate::utils::{EnhFloat, create_guid};
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum LoanProvider {
@@ -198,9 +198,19 @@ impl TermLoan {
 
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct MarginLoan {
+    /// Loan identifier
+    pub id: String,
+
+    /// The amount of money borrowed
     pub debt: f32,
+
+    /// The amount of collateral provided
     pub collateral: f32,
+
+    /// The interest rate over the loan
     pub interest_rate: f32,
+
+    /// The fraction of the collateral that is used to calculate the margin
     pub margin_frac: f32,
 }
 
@@ -209,6 +219,7 @@ impl MarginLoan {
 
     pub fn new(price: f32, economy: &GlobalEconomy, player: &Player) -> Self {
         Self {
+            id: create_guid(),
             debt: price,
             collateral: Self::INIT_MARGIN * price,
             interest_rate: (1.5 * economy.interest.current()

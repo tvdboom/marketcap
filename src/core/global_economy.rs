@@ -14,6 +14,7 @@ use crate::core::instruments::commodities::{Commodity, start_commodities};
 use crate::core::instruments::crypto::{Crypto, start_cryptos};
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::instruments::stocks::{Stock, start_stocks};
+use crate::core::sectors::{Sector, start_sectors};
 
 #[derive(Resource, Clone, Serialize, Deserialize)]
 pub struct GlobalEconomy {
@@ -34,6 +35,9 @@ pub struct GlobalEconomy {
 
     /// Information about all countries
     pub countries: Vec<Country>,
+
+    /// Sectors of the economy
+    pub sectors: Vec<Sector>,
 
     /// Information about all stocks
     pub stocks: Vec<Stock>,
@@ -59,8 +63,16 @@ impl GlobalEconomy {
             commodity.bump(economy, inflation);
         }
 
+        for sector in &mut self.sectors {
+            sector.bump(inflation, &self.commodities);
+        }
+
         for crypto in &mut self.cryptos {
             crypto.bump(inflation);
+        }
+
+        for stock in &mut self.stocks {
+            stock.bump(inflation, &self.sectors);
         }
 
         (economy, inflation, interest)
@@ -95,6 +107,7 @@ impl Default for GlobalEconomy {
             inflation: Inflation::default(),
             interest: Interest::default(),
             countries: start_countries(),
+            sectors: start_sectors(),
             stocks: start_stocks(),
             bonds: start_bonds(),
             commodities: start_commodities(),

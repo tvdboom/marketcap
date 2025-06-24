@@ -7,6 +7,7 @@ pub mod menu;
 pub mod modal;
 mod overview;
 pub mod state;
+mod stocks;
 pub mod systems;
 pub mod themes;
 pub mod utils;

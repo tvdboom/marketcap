@@ -23,14 +23,12 @@ pub fn time_pass(
 
         // Daily operations =================================== >>
 
-        let (_, inflation, _) = economy.bump();
+        economy.bump();
 
         player.cash.bump(economy.interest.current());
 
-        // Increase storage costs for commodities, following inflation
-        for commodity in economy.commodities.iter_mut() {
-            commodity.storage_cost *= 1. + inflation / 100. / 365.;
-        }
+        let ev = player.enterprise_value(&economy);
+        player.influence.bump(ev);
 
         // Update bounds for trailing orders
         for order in player.pending_orders_mut() {
@@ -74,7 +72,7 @@ pub fn time_pass(
                     });
 
                     return false
-                } else if (owned.amount > 0 && price < margin * 0.9) || (owned.amount < 0 && price > margin * 0.9) {
+                } else if !owned.warning && (owned.amount > 0 && price < margin * 0.9) || (owned.amount < 0 && price > margin * 0.9) {
                     owned.warning = true;
                     message.write(MessageEv {
                         message: format!(
@@ -83,7 +81,7 @@ pub fn time_pass(
                         ),
                         level: MessageLevel::Warning,
                     });
-                } else if owned.warning && ((owned.amount > 0 && price > margin * 0.8) || (owned.amount < 0 && price < margin * 0.8)) {
+                } else if (owned.amount > 0 && price > margin * 0.8) || (owned.amount < 0 && price < margin * 0.8) {
                     owned.warning = false; // Reset warning if price is below 80% of the margin
                 }
             }

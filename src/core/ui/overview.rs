@@ -36,6 +36,13 @@ pub fn overview_panel(
 
     match state.overview.tab {
         OverviewTab::Portfolio => {
+            let stocks = OrderOptions::sort_owned_instrument(
+                &mut player.stocks(),
+                &state.overview.stocks,
+                economy,
+                player,
+            );
+
             let commodities = OrderOptions::sort_owned_instrument(
                 &mut player.commodities(),
                 &state.overview.commodities,
@@ -50,10 +57,28 @@ pub fn overview_panel(
                 player,
             );
 
-            if commodities.is_empty() && crypto.is_empty() {
+            if stocks.is_empty() && commodities.is_empty() && crypto.is_empty() {
                 ui.add_space(window.height() * 0.02);
 
                 ui.label("No assets owned.");
+            }
+
+            if !stocks.is_empty() {
+                ui.add_combobox(
+                    "Stocks",
+                    [
+                        OrderOptions::Name,
+                        OrderOptions::Price,
+                        OrderOptions::OwnedAmount,
+                        OrderOptions::OwnedValue,
+                    ]
+                    .into(),
+                    &mut state.overview.stocks,
+                    window,
+                );
+
+                instrument_table(ui, state, &economy, stocks);
+                ui.small("Click on a row to trade that stock.");
             }
 
             if !commodities.is_empty() {
@@ -206,7 +231,7 @@ pub fn overview_panel(
                 ui.label("No outstanding margin loans.");
             } else {
                 margin_loan_overview(ui, state, &loans, economy);
-                ui.small("Click on a row to trade that instrument.");
+                ui.small("Click on a row to increase the loan's collateral.");
             }
         },
     }
@@ -403,7 +428,7 @@ pub fn processed_order_table(
                             order.created.format(DATE_FORMAT).to_string(),
                             order.processed.format(DATE_FORMAT).to_string(),
                             order.instrument.name(),
-                            if order.kind != OrderKind::ShortSell {
+                            if order.kind == OrderKind::ShortSell {
                                 Command::Sell.to_name()
                             } else {
                                 order.command.to_name()
@@ -473,6 +498,7 @@ pub fn term_loan_overview(ui: &mut Ui, state: &mut UiState, loans: &Vec<TermLoan
         .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
         .show(ui, |ui| {
             TableBuilder::new(ui)
+                .id_salt("term_loan_table")
                 .striped(false)
                 .sense(Sense::click())
                 .columns(Column::remainder(), columns.len())
@@ -523,6 +549,7 @@ pub fn margin_loan_overview(
     economy: &GlobalEconomy,
 ) {
     let columns = [
+        "Id",
         "Name",
         "Amount",
         "Debt",
@@ -538,6 +565,7 @@ pub fn margin_loan_overview(
         .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
         .show(ui, |ui| {
             TableBuilder::new(ui)
+                .id_salt("margin_loan_table")
                 .striped(false)
                 .sense(Sense::click())
                 .columns(Column::remainder(), columns.len())
@@ -553,6 +581,7 @@ pub fn margin_loan_overview(
                         let instrument = economy.get(&owned.kind);
                         let loan = owned.loan.as_ref().unwrap();
                         let content = [
+                            loan.id.clone(),
                             instrument.name(),
                             format!("{} {}", owned.amount, instrument.unit()),
                             format!("{} {CURRENCY}", loan.debt.clean()),
@@ -571,7 +600,9 @@ pub fn margin_loan_overview(
                             }
 
                             if row.response().clicked() {
-                                state.modal = Some(owned.kind);
+                                state.tab = Tab::Credit;
+                                state.credit.tab = CreditTab::IncreaseCollateral;
+                                state.credit.increase = Some(loan.id.clone());
                             }
                         });
                     }

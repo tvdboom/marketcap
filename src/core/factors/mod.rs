@@ -2,6 +2,7 @@ pub mod cash;
 pub mod credit_score;
 pub mod economy;
 pub mod inflation;
+pub mod influence;
 pub mod interest;
 
 pub trait Factor {

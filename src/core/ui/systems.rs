@@ -24,6 +24,7 @@ use crate::core::ui::crypto::crypto_panel;
 use crate::core::ui::forex::forex_panel;
 use crate::core::ui::overview::overview_panel;
 use crate::core::ui::state::{Tab, UiState};
+use crate::core::ui::stocks::stock_panel;
 use crate::core::ui::utils::CustomUi;
 use crate::utils::{EnhFloat, NameFromEnum};
 
@@ -119,7 +120,7 @@ pub fn top_panel(
         .show_separator_line(false)
         .show(contexts.ctx_mut(), |ui| {
             ui.horizontal_centered(|ui| {
-                ui.add_space(window.width() * 0.095);
+                ui.add_space(window.width() * 0.06);
 
                 ui.add_factor(
                     "Enterprise value",
@@ -232,6 +233,21 @@ pub fn top_panel(
                     &window,
                 );
 
+                ui.add_space(window.width() * 0.01);
+
+                ui.add_factor(
+                    "Influence",
+                    player.influence.current().floor().to_string(),
+                    match player.influence.current() {
+                        n if n > 0. => CUSTOM_GREEN,
+                        _ => text_color,
+                    },
+                    images.get(player.influence.image()),
+                    player.influence.description(),
+                    None,
+                    &window,
+                );
+
                 ui.add_space(window.width() * 0.04);
 
                 ui.add_factor(
@@ -335,9 +351,7 @@ pub fn central_panel(
             Tab::Overview => {
                 overview_panel(ui, &mut state, &economy, &mut player, &mut message, &window)
             },
-            Tab::Stocks => {
-                ui.heading("Stocks");
-            },
+            Tab::Stocks => stock_panel(ui, &mut state, &economy, &player, &images, &window),
             Tab::Bonds => bonds_panel(ui, &mut state, &economy, &player, &images, &window),
             Tab::Forex => forex_panel(ui, &mut state, &window),
             Tab::Crypto => crypto_panel(ui, &mut state, &economy, &player, &images, &window),

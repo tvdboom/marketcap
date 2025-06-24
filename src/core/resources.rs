@@ -2,9 +2,6 @@ use std::collections::HashMap;
 
 use bevy::prelude::Resource;
 use bevy_egui::egui::TextureId;
-use itertools::Itertools;
-
-use crate::core::instruments::instrument::InstrumentKind;
 
 #[derive(Resource, Default)]
 pub struct ImageIds(pub HashMap<&'static str, TextureId>);

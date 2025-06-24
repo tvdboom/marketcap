@@ -1,37 +1,10 @@
-use std::collections::HashMap;
-
-use serde::{Deserialize, Serialize};
-use strum_macros::EnumIter;
-
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
+use crate::core::sectors::{Sector, SectorName};
 use crate::utils::NameFromEnum;
-
-#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub enum Sector {
-    Finance,
-    Food,
-    Healthcare,
-    Materials,
-    Military,
-    Retail,
-    Technology,
-    Transport,
-}
-
-impl Sector {
-    pub fn emoji(&self) -> &str {
-        match self {
-            Sector::Finance => "💰",
-            Sector::Food => "🍔",
-            Sector::Healthcare => "💊",
-            Sector::Materials => "🏗️",
-            Sector::Military => "🪖",
-            Sector::Retail => "🛍️",
-            Sector::Technology => "💻",
-            Sector::Transport => "🚚",
-        }
-    }
-}
+use rand::{Rng, rng};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use strum_macros::EnumIter;
 
 #[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Company {
@@ -120,9 +93,36 @@ impl Company {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Serialize, Deserialize)]
+pub enum ESGRating {
+    AAA,
+    AA,
+    A,
+    BBB,
+    BB,
+    B,
+    CCC,
+}
+
+impl ESGRating {
+    pub fn description(&self) -> &str {
+        match self {
+            ESGRating::AAA => "Industry leader in managing ESG risks and opportunities.",
+            ESGRating::AA => "Strong ESG practices and risk management above peers.",
+            ESGRating::A => "Adequate ESG performance. Manages key risks reasonably well.",
+            ESGRating::BBB => "	Moderate ESG risk exposure and average risk management practices.",
+            ESGRating::BB => "Below-average ESG performance. Some unmanaged or unaddressed risks.",
+            ESGRating::B => "Poor ESG practices, with significant risk exposure.",
+            ESGRating::CCC => {
+                "Worst performers. Very high ESG risks with little or no mitigation strategies."
+            },
+        }
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Stock {
-    /// The issuer of th stock
+    /// The issuer of the stock
     pub issuer: Company,
 
     /// Default price of the stock
@@ -137,8 +137,46 @@ pub struct Stock {
     /// Average dividend given out per share
     pub dividend: f32,
 
+    /// People's sentiment towards the stock (0-100)
+    pub sentiment: u8,
+
+    /// ESG score of the company
+    pub esg: ESGRating,
+
     /// Influence per sector
-    pub sector: HashMap<Sector, f32>,
+    pub sector: HashMap<SectorName, f32>,
+}
+
+impl Stock {
+    pub fn bump(&mut self, inflation: f32, sectors: &Vec<Sector>) -> f32 {
+        self.base_price *= 1. + inflation / 100. / 365.;
+
+        let volatility = self.base_price * self.volatility / 100.;
+        let mut new_price = self.current() * (1. + inflation / 100. / 365.)
+            + (1.
+                * self
+                    .sector
+                    .iter()
+                    .map(|(s, w)| {
+                        sectors.iter().find(|sec| sec.name == *s).map_or(0., |sec| {
+                            w * (sec.value as f32 - Sector::MIN as f32)
+                                / (Sector::MAX - Sector::MIN) as f32
+                        })
+                    })
+                    .sum::<f32>())
+            + rng().random_range(-volatility..volatility);
+
+        // Adjust price to tend towards the base price
+        // At 100% deviation, there's a 20% adjustment towards the base price
+        // At 50% deviation, there's a 5% adjustment towards the base price
+        let deviation = (new_price - self.base_price) / self.base_price;
+        new_price *= 1. + -deviation * deviation.abs() / 5.;
+
+        new_price = new_price.max(1.);
+
+        self.prices.push(new_price);
+        new_price
+    }
 }
 
 impl Instrument for Stock {
@@ -166,18 +204,174 @@ impl Instrument for Stock {
         *self.prices.last().unwrap()
     }
 
+    fn dividend(&self) -> f32 {
+        self.dividend
+    }
+
+    fn esg(&self) -> ESGRating {
+        self.esg.clone()
+    }
+
+    fn sentiment(&self) -> u8 {
+        self.sentiment
+    }
+
     fn volatility(&self) -> f32 {
         self.volatility
     }
 }
 
 pub fn start_stocks() -> Vec<Stock> {
-    vec![Stock {
-        issuer: Company::Apple,
-        base_price: 100.,
-        prices: vec![100.],
-        volatility: 3.0,
-        dividend: 0.02,
-        sector: HashMap::from([(Sector::Transport, 0.5), (Sector::Military, 0.5)]),
-    }]
+    vec![
+        Stock {
+            issuer: Company::Apple,
+            base_price: 175.,
+            prices: vec![175.],
+            volatility: 2.5,
+            dividend: 0.22,
+            sector: HashMap::from([(SectorName::Technology, 1.0)]),
+            sentiment: 85,
+            esg: ESGRating::AA,
+        },
+        Stock {
+            issuer: Company::Boeing,
+            base_price: 210.,
+            prices: vec![210.],
+            volatility: 3.2,
+            dividend: 1.5,
+            sector: HashMap::from([(SectorName::Transport, 0.7), (SectorName::Military, 0.3)]),
+            sentiment: 60,
+            esg: ESGRating::CCC,
+        },
+        Stock {
+            issuer: Company::GoldmanSachs,
+            base_price: 350.,
+            prices: vec![350.],
+            volatility: 2.0,
+            dividend: 3.0,
+            sector: HashMap::from([(SectorName::Finance, 1.0)]),
+            sentiment: 55,
+            esg: ESGRating::BB,
+        },
+        Stock {
+            issuer: Company::Inditex,
+            base_price: 32.,
+            prices: vec![32.],
+            volatility: 1.8,
+            dividend: 0.25,
+            sector: HashMap::from([(SectorName::Retail, 1.0)]),
+            sentiment: 78,
+            esg: ESGRating::A,
+        },
+        Stock {
+            issuer: Company::LockheedMartin,
+            base_price: 470.,
+            prices: vec![470.],
+            volatility: 2.0,
+            dividend: 3.25,
+            sector: HashMap::from([(SectorName::Military, 0.8), (SectorName::Transport, 0.2)]),
+            sentiment: 58,
+            esg: ESGRating::CCC,
+        },
+        Stock {
+            issuer: Company::LVMH,
+            base_price: 830.,
+            prices: vec![830.],
+            volatility: 1.5,
+            dividend: 4.25,
+            sector: HashMap::from([(SectorName::Retail, 1.0)]),
+            sentiment: 90,
+            esg: ESGRating::AA,
+        },
+        Stock {
+            issuer: Company::Maersk,
+            base_price: 1450.,
+            prices: vec![1450.],
+            volatility: 2.8,
+            dividend: 9.5,
+            sector: HashMap::from([(SectorName::Transport, 0.7), (SectorName::Energy, 0.3)]),
+            sentiment: 65,
+            esg: ESGRating::A,
+        },
+        Stock {
+            issuer: Company::Moderna,
+            base_price: 110.,
+            prices: vec![110.],
+            volatility: 4.5,
+            dividend: 0.0,
+            sector: HashMap::from([(SectorName::Healthcare, 1.0)]),
+            sentiment: 73,
+            esg: ESGRating::AA,
+        },
+        Stock {
+            issuer: Company::Nestle,
+            base_price: 120.,
+            prices: vec![120.],
+            volatility: 1.2,
+            dividend: 0.875,
+            sector: HashMap::from([(SectorName::Food, 1.0)]),
+            sentiment: 88,
+            esg: ESGRating::AAA,
+        },
+        Stock {
+            issuer: Company::Nvidia,
+            base_price: 1250.,
+            prices: vec![1250.],
+            volatility: 4.2,
+            dividend: 0.3,
+            sector: HashMap::from([(SectorName::Technology, 1.0)]),
+            sentiment: 95,
+            esg: ESGRating::A,
+        },
+        Stock {
+            issuer: Company::Pfizer,
+            base_price: 30.,
+            prices: vec![30.],
+            volatility: 2.5,
+            dividend: 0.275,
+            sector: HashMap::from([(SectorName::Healthcare, 1.0)]),
+            sentiment: 66,
+            esg: ESGRating::AA,
+        },
+        Stock {
+            issuer: Company::RioTinto,
+            base_price: 65.,
+            prices: vec![65.],
+            volatility: 1.9,
+            dividend: 0.65,
+            sector: HashMap::from([(SectorName::Materials, 1.0)]),
+            sentiment: 50,
+            esg: ESGRating::BBB,
+        },
+        Stock {
+            issuer: Company::Shell,
+            base_price: 65.,
+            prices: vec![65.],
+            volatility: 2.0,
+            dividend: 0.625,
+            sector: HashMap::from([(SectorName::Energy, 1.0)]),
+            sentiment: 45,
+            esg: ESGRating::BB,
+        },
+        Stock {
+            issuer: Company::Toyota,
+            base_price: 190.,
+            prices: vec![190.],
+            volatility: 2.1,
+            dividend: 0.45,
+            sector: HashMap::from([(SectorName::Transport, 1.0)]),
+            sentiment: 82,
+            esg: ESGRating::A,
+        },
+        Stock {
+            issuer: Company::Unilever,
+            base_price: 50.,
+            prices: vec![50.],
+            volatility: 1.3,
+            dividend: 0.475,
+            sector: HashMap::from([(SectorName::Retail, 0.5), (SectorName::Food, 0.5)]),
+            sentiment: 87,
+            esg: ESGRating::AAA,
+        },
+    ]
 }

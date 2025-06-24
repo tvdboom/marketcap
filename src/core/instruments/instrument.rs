@@ -4,7 +4,7 @@ use strum::IntoEnumIterator;
 use crate::core::instruments::bonds::{BondIssuer, BondQuality};
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::crypto::CryptoName;
-use crate::core::instruments::stocks::Company;
+use crate::core::instruments::stocks::{Company, ESGRating};
 use crate::core::orders::OrderKind;
 use crate::utils::NameFromEnum;
 
@@ -82,6 +82,12 @@ pub trait Instrument {
         }
     }
 
+    fn dividend(&self) -> f32 {
+        0.0
+    }
+    fn esg(&self) -> ESGRating {
+        ESGRating::AAA
+    }
     fn interest(&self) -> f32 {
         0.0
     }
@@ -91,11 +97,14 @@ pub trait Instrument {
     fn quality(&self) -> BondQuality {
         BondQuality::AAA
     }
+    fn sentiment(&self) -> u8 {
+        0
+    }
     fn storage_cost(&self) -> f32 {
-        0.0
+        0.
     }
     fn volatility(&self) -> f32 {
-        0.0
+        0.
     }
     fn unit(&self) -> String {
         "".to_string()

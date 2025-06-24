@@ -11,7 +11,7 @@ use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::player::Player;
 use crate::core::ui::state::{CreditTab, OverviewTab, Tab, UiState};
 use crate::core::ui::utils::toggle;
-use crate::utils::{NameFromEnum, create_guid, first_day_in_two_months};
+use crate::utils::{EnhFloat, NameFromEnum, create_guid, first_day_in_two_months};
 
 pub fn credit_panel(
     ui: &mut Ui,
@@ -36,10 +36,13 @@ pub fn credit_panel(
     ui.label(
         "Credit refers to the ability of borrowing money, with the promise of repayment \
         in the future. It's a fundamental part of the financial system, allowing companies to \
-        make purchases, invest, and manage expenses beyond their immediate cash availability.\n\n\
-        Six months after the start date of a loan, a company can choose to repay the debt early, \
-        paying an additional fee to the provider to cover missed earnings. A new loan can be \
-        taken by the same provider only when the remaining debt is less than 50% of the principal.",
+        make purchases, invest, and manage expenses beyond their immediate cash availability. \
+        There are two types of loans: term loans and margin loans. Term loans provide cash to \
+        use at the discretion of the borrower, while margin loans are taken to leverage a specific \
+        instrument. Six months after the start date of a term loan, a company can choose to repay \
+        the debt early, paying an additional fee to the provider to cover missed earnings. A new \
+        loan can be taken by the same provider only when the remaining debt is less than 50% of \
+        the principal.",
     );
 
     ui.separator();
@@ -202,12 +205,18 @@ pub fn credit_panel(
             });
         },
         CreditTab::RepayLoan => {
-            if player.loans.is_empty() {
-                ui.heading("Repay loan early");
+            let loans = player
+                .loans
+                .iter()
+                .map(|l| l.id.clone())
+                .collect::<Vec<_>>();
+
+            if loans.is_empty() {
+                ui.heading("Repay term loan early");
 
                 ui.add_space(window.height() * 0.02);
 
-                ui.label("No outstanding loans.");
+                ui.label("No outstanding term loans.");
 
                 ui.add_space(window.height() * 0.02);
 
@@ -215,13 +224,7 @@ pub fn credit_panel(
                     state.credit.tab = CreditTab::NewLoan;
                 }
             } else {
-                let loans = player
-                    .loans
-                    .iter()
-                    .map(|l| l.id.clone())
-                    .collect::<Vec<_>>();
-
-                // Assign the first loan to the repay field if it's not set
+                // Assign the first loan to the 'repay' field if it's not set
                 if state.credit.repay.is_none() {
                     state.credit.repay = Some(loans[0].clone());
                 }
@@ -317,7 +320,7 @@ pub fn credit_panel(
                                     loan.outstanding -= state.credit.repay_amount as f32;
 
                                     message.write(MessageEv {
-                                        message: format!("You repaid {} of loan {}.", state.credit.repay_amount, loan.id),
+                                        message: format!("You repaid {} {CURRENCY} of loan {}.", state.credit.repay_amount, loan.id),
                                         level: MessageLevel::Info,
                                     });
                                     
@@ -339,6 +342,109 @@ pub fn credit_panel(
                                 ui.label(format!("Interest rate: {:.1}%", loan.interest_rate));
                             });
                         });
+                    } else {
+                        state.credit.repay = None;
+                    }
+
+                    // Remove loans that are fully repaid
+                    player.loans.retain(|l| l.outstanding >= 1.);
+                }
+            }
+        },
+        CreditTab::IncreaseCollateral => {
+            let loans = player
+                .instruments
+                .iter()
+                .filter_map(|o| o.loan.as_ref().map(|l| l.id.clone()))
+                .collect::<Vec<_>>();
+
+            if loans.is_empty() {
+                ui.heading("Increase collateral on a margin loan");
+
+                ui.add_space(window.height() * 0.02);
+
+                ui.label("No outstanding margin loans.");
+            } else {
+                // Assign the first loan to the 'repay' field if it's not set
+                if state.credit.increase.is_none() {
+                    state.credit.increase = Some(loans[0].clone());
+                }
+
+                if let Some(id) = &state.credit.increase {
+                    if let Some(owned) = player
+                        .instruments
+                        .iter_mut()
+                        .find(|o| o.loan.as_ref().map(|l| l.id == *id).unwrap())
+                    {
+                        if let Some(loan) = &mut owned.loan.as_mut() {
+                            ui.horizontal(|ui| {
+                                ui.vertical(|ui| {
+                                    ui.set_width(ui.available_width() * 0.3);
+
+                                    ui.label("Loan id");
+
+                                    ComboBox::from_id_salt("loan")
+                                        .selected_text(&loan.id)
+                                        .show_ui(ui, |ui| {
+                                            for id in loans.iter() {
+                                                ui.selectable_value(
+                                                    &mut state.credit.increase,
+                                                    Some(id.clone()),
+                                                    id,
+                                                );
+                                            }
+                                        });
+
+                                    ui.add_space(window.height() * 0.02);
+
+                                    ui.label("Amount");
+
+                                    let collateral_amount = state.credit.collateral_amount;
+
+                                    ui.spacing_mut().slider_width = window.width() * 0.12;
+                                    ui.add(
+                                        Slider::new(
+                                            &mut state.credit.collateral_amount,
+                                            0..=loan.collateral.min(player.cash.current()) as u32,
+                                        )
+                                        .show_value(false)
+                                        .text(format!("{collateral_amount} {CURRENCY}")),
+                                    );
+
+                                    ui.add_space(window.height() * 0.02);
+
+                                    if ui.button("Repay loan").clicked() {
+                                        player.cash.amount -= collateral_amount as f32;
+                                        loan.collateral += collateral_amount as f32;
+
+                                        message.write(MessageEv {
+                                            message: format!(
+                                                "Collateral increased with {} {CURRENCY} for loan {}.",
+                                                collateral_amount, loan.id
+                                            ),
+                                            level: MessageLevel::Info,
+                                        });
+
+                                        state.tab = Tab::Overview;
+                                        state.overview.tab = OverviewTab::Debts;
+                                    }
+                                });
+
+                                ui.add(Separator::default().vertical());
+
+                                ui.vertical(|ui| {
+                                    ui.heading("Details");
+                                    ui.label(format!("Instrument: {}", owned.kind.name()));
+                                    ui.label(format!("Debt: {} {CURRENCY}", loan.debt.clean()));
+                                    ui.label(format!(
+                                        "Collateral: {} {CURRENCY}",
+                                        loan.collateral.clean()
+                                    ));
+                                    ui.label(format!("Interest: {:.1}%", loan.interest_rate));
+                                    ui.label(format!("Margin: {:.0}%", loan.margin_frac * 100.));
+                                });
+                            });
+                        }
                     } else {
                         state.credit.repay = None;
                     }

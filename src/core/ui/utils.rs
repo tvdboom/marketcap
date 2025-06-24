@@ -131,7 +131,7 @@ impl CustomUi for Ui {
                 ui.add_space(window.width() * 0.02);
 
                 ComboBox::from_id_salt(title)
-                    .selected_text("Order by")
+                    .selected_text(state.order.to_name())
                     .show_ui(ui, |ui| {
                         for order in options {
                             ui.selectable_value(&mut state.order, order, order.to_name());
@@ -269,14 +269,35 @@ impl CustomUi for Ui {
                         });
 
                         if instrument.volatility() > 0. {
-                            ui.label(format!("Volatility: {:.1}%", instrument.volatility() * 0.5))
+                            ui.label(format!("Volatility: {:.2}%", instrument.volatility() * 0.5))
                                 .on_hover_text(
                                     "Median daily price fluctuation as percentage of the initial price.",
                                 );
                         }
 
                         match instrument.kind() {
-                            InstrumentKind::Stock(issuer) => {},
+                            InstrumentKind::Stock(_) => {
+                                ui.label(format!("Dividend: {}", instrument.dividend().clean()))
+                                    .on_hover_text(
+                                        "The dividend is a portion of the company's earnings \
+                                        distributed to shareholders. It is paid quarterly and the \
+                                        amount is at the discretion of the company.",
+                                    );
+
+                                ui.label(format!("Sentiment: {}", instrument.sentiment()))
+                                    .on_hover_text(
+                                        "People's feelings towards the company (0-100). Higher \
+                                        scores means favorable sentiment, thus usually higher stock \
+                                        prices.",
+                                    );
+
+                                ui.label(format!("ESG: {}", instrument.esg().to_name()))
+                                    .on_hover_text(format!(
+                                        "ESG ratings evaluate a company's performance in three key \
+                                        areas: Environmental, Social, and Governance. These scores \
+                                        help investors assess how responsibly a company operates \
+                                        beyond financial metrics. Score {}: {}", instrument.esg().to_name(), instrument.esg().description()));
+                            },
                             InstrumentKind::Bond(issuer) => {
                                 ui.label(format!("Quality: {}", instrument.quality().to_name()))
                                     .on_hover_text(instrument.quality().description());

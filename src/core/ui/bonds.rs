@@ -34,8 +34,7 @@ pub fn bonds_panel(
     ui.separator();
 
     ui.label(
-        "\
-        Bonds are fixed-income securities that represent a loan made by an investor to a \
+        "Bonds are fixed-income securities that represent a loan made by an investor to a \
         corporate or governmental borrower. When you purchase a bond, you are essentially \
         lending money to the issuer in exchange for periodic interest payments and the \
         return of the bond's face value when it matures.\n\n\
@@ -51,30 +50,34 @@ pub fn bonds_panel(
     ScrollArea::vertical().show(ui, |ui| {
         ui.set_width(ui.available_width());
 
+        let order = if state.bonds.tab == BondKind::Government {
+            &mut state.bonds.order_government
+        } else {
+            &mut state.bonds.order_corporate
+        };
+
         ui.add_combobox(
             "",
             [
                 OrderOptions::Name,
                 OrderOptions::OwnedAmount,
                 OrderOptions::OwnedValue,
-                OrderOptions::Price,
                 OrderOptions::Quality,
                 OrderOptions::Interest,
             ]
             .into(),
-            &mut state.bonds.order,
+            order,
             window,
         );
 
         let mut instruments = economy
             .bonds
             .iter()
+            .filter(|c| c.kind() == state.bonds.tab)
             .map(|c| c as &dyn Instrument)
             .collect::<Vec<_>>();
 
-        for inst in
-            OrderOptions::sort_instrument(&mut instruments, &state.bonds.order, economy, player)
-        {
+        for inst in OrderOptions::sort_instrument(&mut instruments, order, economy, player) {
             let response = ui.add_instrument(inst, economy, images, window);
 
             if response.clicked() {

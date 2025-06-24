@@ -57,7 +57,7 @@ impl Factor for Cash {
             available for spending, investing, or covering financial obligations. The bank pays \
             a low interest on positive cash deposits and charges a high interest for negative \
             cash deposits.\n\n\
-            Cash: {}\n
+            Cash: {}\n\
             Current interest: {:.1}%\n\
             Accumulated interest: {} {CURRENCY}",
             self.amount.signed(),

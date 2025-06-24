@@ -58,8 +58,9 @@ impl OverviewTab {
     }
 }
 
-#[derive(EnumIter, Clone, Copy, Debug, PartialEq)]
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
 pub enum OrderOptions {
+    #[default]
     Name,
     Created,
     StartDate,
@@ -238,6 +239,7 @@ impl OrderOptions {
     }
 }
 
+#[derive(Default)]
 pub struct OrderByState {
     pub order: OrderOptions,
     pub descending: bool,
@@ -245,6 +247,7 @@ pub struct OrderByState {
 
 pub struct OverviewState {
     pub tab: OverviewTab,
+    pub stocks: OrderByState,
     pub commodities: OrderByState,
     pub crypto: OrderByState,
     pub pending: OrderByState,
@@ -257,6 +260,10 @@ impl Default for OverviewState {
     fn default() -> Self {
         Self {
             tab: OverviewTab::default(),
+            stocks: OrderByState {
+                order: OrderOptions::OwnedValue,
+                descending: true,
+            },
             commodities: OrderByState {
                 order: OrderOptions::OwnedValue,
                 descending: true,
@@ -285,21 +292,11 @@ impl Default for OverviewState {
     }
 }
 
+#[derive(Default)]
 pub struct BondState {
     pub tab: BondKind,
-    pub order: OrderByState,
-}
-
-impl Default for BondState {
-    fn default() -> Self {
-        Self {
-            tab: BondKind::Government,
-            order: OrderByState {
-                order: OrderOptions::Name,
-                descending: false,
-            },
-        }
-    }
+    pub order_government: OrderByState,
+    pub order_corporate: OrderByState,
 }
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
@@ -307,6 +304,7 @@ pub enum CreditTab {
     #[default]
     NewLoan,
     RepayLoan,
+    IncreaseCollateral,
     P2P,
 }
 
@@ -315,12 +313,13 @@ impl CreditTab {
         match self {
             CreditTab::NewLoan => "✏",
             CreditTab::RepayLoan => "💰",
+            CreditTab::IncreaseCollateral => "💲",
             CreditTab::P2P => "👤",
         }
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct CreditState {
     pub tab: CreditTab,
     pub provider: LoanProvider,
@@ -330,21 +329,8 @@ pub struct CreditState {
     pub no_fee: bool,
     pub repay: Option<String>,
     pub repay_amount: u32,
-}
-
-impl Default for CreditState {
-    fn default() -> Self {
-        Self {
-            tab: CreditTab::default(),
-            provider: LoanProvider::default(),
-            principal: 0,
-            kind: LoanKind::default(),
-            term: Term::default(),
-            no_fee: false,
-            repay: None,
-            repay_amount: 0,
-        }
-    }
+    pub increase: Option<String>,
+    pub collateral_amount: u32,
 }
 
 #[derive(Default)]
@@ -357,35 +343,15 @@ pub struct ModalInfo {
     pub loan: bool,
 }
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct UiState {
     pub tab: Tab,
     pub overview: OverviewState,
+    pub stocks: OrderByState,
     pub bonds: BondState,
     pub commodities: OrderByState,
     pub cryptos: OrderByState,
     pub credit: CreditState,
     pub modal: Option<InstrumentKind>,
     pub modal_info: ModalInfo,
-}
-
-impl Default for UiState {
-    fn default() -> Self {
-        Self {
-            tab: Tab::default(),
-            overview: OverviewState::default(),
-            bonds: BondState::default(),
-            commodities: OrderByState {
-                order: OrderOptions::Name,
-                descending: false,
-            },
-            cryptos: OrderByState {
-                order: OrderOptions::Name,
-                descending: false,
-            },
-            credit: CreditState::default(),
-            modal: None,
-            modal_info: ModalInfo::default(),
-        }
-    }
 }
