@@ -212,6 +212,10 @@ impl Instrument for Stock {
         self.esg.clone()
     }
 
+    fn sector(&self) -> HashMap<SectorName, f32> {
+        self.sector.clone()
+    }
+
     fn sentiment(&self) -> u8 {
         self.sentiment
     }

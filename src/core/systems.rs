@@ -81,7 +81,7 @@ pub fn time_pass(
                         ),
                         level: MessageLevel::Warning,
                     });
-                } else if (owned.amount > 0 && price > margin * 0.8) || (owned.amount < 0 && price < margin * 0.8) {
+                } else if owned.warning && (owned.amount > 0 && price < margin * 0.8) || (owned.amount < 0 && price > margin * 0.8) {
                     owned.warning = false; // Reset warning if price is below 80% of the margin
                 }
             }

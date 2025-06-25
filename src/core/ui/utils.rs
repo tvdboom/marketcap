@@ -102,8 +102,9 @@ impl CustomUi for Ui {
             RichText::new(format!(
                 "  {}{diff:.1}%",
                 match diff {
-                    d if d >= 0. => "▲",
-                    _ => "▼",
+                    d if d > 0. => "▲",
+                    d if d < 0. => "▼",
+                    _ => "→",
                 }
             ))
                 .color(match diff {
@@ -265,7 +266,9 @@ impl CustomUi for Ui {
                                 instrument.per_unit()
                             ));
 
-                            ui.add_indicator(instrument.diff());
+                            if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
+                                ui.add_indicator(instrument.diff());
+                            }
                         });
 
                         if instrument.volatility() > 0. {
@@ -297,6 +300,16 @@ impl CustomUi for Ui {
                                         areas: Environmental, Social, and Governance. These scores \
                                         help investors assess how responsibly a company operates \
                                         beyond financial metrics. Score {}: {}", instrument.esg().to_name(), instrument.esg().description()));
+
+                                ui.label("Sectors");
+                                for (name, weight) in instrument.sector().iter().sorted_by(|a, b| b.1.partial_cmp(&a.1).unwrap()) {
+                                    ui.add(
+                                        ProgressBar::new(*weight)
+                                            .text(RichText::new(format!("{} {}", name.emoji(), name.to_name())).small())
+                                            .corner_radius(5.)
+                                            .desired_width(ui.available_width() * 0.3)
+                                    ).on_hover_text(name.description());
+                                }
                             },
                             InstrumentKind::Bond(issuer) => {
                                 ui.label(format!("Quality: {}", instrument.quality().to_name()))
@@ -304,7 +317,7 @@ impl CustomUi for Ui {
 
                                 if let BondIssuer::Government(country) = issuer {
                                     let country = economy.countries.iter().find(|c| c.name == country).unwrap();
-                                    ui.label(format!("Country classification: {}", country.market.to_name()))
+                                    ui.label(format!("Classification: {}", country.market.to_name()))
                                         .on_hover_text(country.market.description());
                                 }
                                 
@@ -313,11 +326,6 @@ impl CustomUi for Ui {
                                         "Also known as the coupon payment. Fixed interest \
                                         paid to the holder as percentage of the face value.",
                                     );
-
-                                ui.label("Term").on_hover_text(
-                                    "Period before the bond matures. At maturity, the face \
-                                    value is returned to the holder.",
-                                );
                             },
                             InstrumentKind::Commodity(name) => {
                                 ui.label(format!(

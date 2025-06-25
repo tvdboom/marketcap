@@ -6,8 +6,10 @@ use chrono::NaiveDate;
 use strum::IntoEnumIterator;
 
 use crate::core::constants::CURRENCY;
+use crate::core::countries::CountryName;
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
+use crate::core::instruments::bonds::BondIssuer;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::crypto::CryptoName;
 use crate::core::instruments::instrument::InstrumentKind;
@@ -67,6 +69,8 @@ pub fn trade_modal(
         MarginLoan::default()
     };
 
+    let max_loan = MarginLoan::max_loan_debt(&economy, &player);
+
     let modal = Modal::new(Id::new("modal")).show(contexts.ctx_mut(), |ui| {
         ui.set_min_width(window.width() * 0.5);
 
@@ -75,11 +79,20 @@ pub fn trade_modal(
                 ComboBox::from_id_salt("instrument")
                     .selected_text(format!("{}{}", if player.has_favourite(&kind) {"❤ "} else {""}, instrument.name()))
                     .show_ui(ui, |ui| {
-                        let items = match kind {
+                        let items: Vec<(InstrumentKind, String)> = match kind {
                             InstrumentKind::Stock(_) => Company::iter().map(|c| (InstrumentKind::Stock(c), c.to_name())).collect(),
+                            InstrumentKind::Bond(issuer) => {
+                                match issuer {
+                                    BondIssuer::Government(_) => {
+                                        CountryName::iter().map(|c| (InstrumentKind::Bond(BondIssuer::Government(c)), c.to_name())).collect()
+                                    },
+                                    BondIssuer::Corporate(_) => {
+                                        Company::iter().map(|c| (InstrumentKind::Bond(BondIssuer::Corporate(c)), c.to_name())).collect()
+                                    },
+                                }
+                            },
                             InstrumentKind::Commodity(_) => CommodityName::iter().map(|c| (InstrumentKind::Commodity(c), c.to_name())).collect(),
                             InstrumentKind::Crypto(_) => CryptoName::iter().map(|c| (InstrumentKind::Crypto(c), c.to_name())).collect(),
-                            _ => vec![],
                         };
         
                         for (instr, name) in items {
@@ -124,7 +137,9 @@ pub fn trade_modal(
                                 instrument.per_unit()
                             ));
 
-                            ui.add_indicator(instrument.diff());
+                            if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
+                                ui.add_indicator(instrument.diff());
+                            }
                         });
 
                         ui.label(format!("Owned: {owned} {}", instrument.unit()));
@@ -137,29 +152,32 @@ pub fn trade_modal(
 
                         ui.horizontal(|ui| {
                             ui.label("Quantity:");
-
+                            
                             if tab == OrderKind::ShortSell {
                                 ui.add(
                                     Slider::new(
                                         &mut state.modal_info.amount,
-                                        0..=(MarginLoan::max_loan_debt(&economy, &player) / instrument.current()) as u32,
+                                        0..=(max_loan / instrument.current()) as u32,
                                     )
                                         .show_value(false)
                                         .text(amount.to_string())
                                 ).on_hover_text(
                                     "The maximum amount you can go short depends on the enterprise \
                                     value and the credit score."
-                                );
+                                )
                             } else {
+                                let max = if state.modal_info.loan {
+                                    (max_loan / instrument.current()) as u32
+                                } else {
+                                    ((player.cash.current() / instrument.current()) as i32).max(owned.abs()) as u32
+                                };
+                                
                                 ui.add(
-                                    Slider::new(
-                                        &mut state.modal_info.amount,
-                                        0..=((player.cash.current() / instrument.current()) as i32).max(owned.abs()) as u32,
-                                    )
+                                    Slider::new(&mut state.modal_info.amount,0..=max)
                                         .show_value(false)
                                         .text(format!("{amount} {}", instrument.unit())),
-                                );
-                            }
+                                )
+                            };
                         });
 
                         if tab == OrderKind::LimitOrder {
@@ -243,59 +261,88 @@ pub fn trade_modal(
                         }
                     });
 
-                    ui.add(Separator::default().vertical());
-                    
-                    ui.vertical(|ui| {
-                        ui.horizontal(|ui| {
-                            ui.label("Margin loan: ").on_hover_text(
-                                "A margin loan is a type of loan that allows leverage on the \
-                                position. The investor borrows money from the broker to buy financial \
-                                instruments using their existing investments as collateral."
-                            );
+                    if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
+                        ui.add(Separator::default().vertical());
 
-                            if tab == OrderKind::ShortSell {
-                                state.modal_info.loan = true;
+                        ui.vertical(|ui| {
+                            ui.horizontal(|ui| {
+                                ui.label("Margin loan: ").on_hover_text(
+                                    "A margin loan is a type of loan that allows leverage on the \
+                                    position. The investor borrows money from the broker to buy financial \
+                                    instruments using their existing investments as collateral."
+                                );
+
+                                if tab != OrderKind::ShortSell {
+                                    if owned >= 0 {
+                                        state.modal_info.loan = state.modal_info.memory_loan;
+                                    } else {
+                                        state.modal_info.loan = false;
+                                    }
+                                } else {
+                                    state.modal_info.loan = true;
+                                }
+
+                                let toggle = ui.add_enabled(
+                                    tab != OrderKind::ShortSell && owned >= 0,
+                                    toggle(&mut state.modal_info.loan),
+                                );
+
+                                if tab == OrderKind::ShortSell {
+                                    toggle.on_disabled_hover_text("Short selling always requires a margin loan.");
+                                } else {
+                                    state.modal_info.memory_loan = state.modal_info.loan;
+
+                                    if owned < 0 {
+                                        toggle.on_disabled_hover_text(
+                                            "Can't take a margin loan on a long position with a short position open.");
+                                    }
+                                }
+                            });
+
+                            if state.modal_info.loan {
+                                ui.label(format!("Max. loan: {} {CURRENCY} ({} {})", max_loan.clean(), (max_loan / instrument.current()).floor(), instrument.lowername()))
+                                    .on_hover_text(
+                                        "Maximum amount that can be borrowed. This number depends \
+                                        on the enterprise value and the credit score. Any other open \
+                                        margin loans debts are subtracted from this amount.",
+                                    );
+
+                                ui.label(format!("Debt: {} {CURRENCY}", loan.debt.clean()))
+                                    .on_hover_text("The size of the selected loan.");
+
+                                ui.label(format!("Collateral: {} {CURRENCY}", loan.collateral.clean()))
+                                    .on_hover_text(
+                                        "Amount to be set aside as collateral for the borrowed shares. \
+                                        If the short position is closed with losses, the remaining debt is \
+                                        paid from this deposit.",
+                                    );
+
+                                //  Collateral at 50% + margin at 30%
+                                let margin = loan.margin(if tab != OrderKind::ShortSell { amount as i32 } else { -(amount as i32) }).clean();
+                                ui.label(format!("Margin: {margin} {CURRENCY} ({:.0}%)", loan.margin_frac * 100.))
+                                    .on_hover_text(
+                                        "The maintenance margin is the price at which the short \
+                                        position is automatically closed (forced liquidation). If this \
+                                        happens, the losses are paid from the collateral.",
+                                    );
+
+                                ui.label(format!("Interest: {:.1}%", loan.interest_rate))
+                                    .on_hover_text(
+                                        "Interest to be paid to the broker for as long as the \
+                                        position is open. The interest depends on the global interest \
+                                        rate and the credit score. It is paid monthly from the cash \
+                                        balance. If there is not enough cash available, it's deducted \
+                                        from the collateral, reducing the margin limit. If a margin \
+                                        loan already exists for this instrument, the largest interest \
+                                        rate is used.",
+                                    );
                             }
-
-                            ui.add_enabled(
-                                tab != OrderKind::ShortSell,
-                                toggle(&mut state.modal_info.loan),
-                            ).on_disabled_hover_text("Short selling always requires a margin loan.");
                         });
-
-                        if state.modal_info.loan {
-                            ui.label(format!("Collateral: {} {CURRENCY}", loan.collateral.clean()))
-                                .on_hover_text(
-                                    "Amount to be set aside as collateral for the borrowed shares. \
-                                    If the short position is closed with losses, the remaining debt is \
-                                    paid from this deposit.",
-                                );
-
-                            //  Collateral at 50% + margin at 30%
-                            let margin = loan.margin(if tab != OrderKind::ShortSell { amount as i32 } else {-(amount as i32)}).clean();
-                            ui.label(format!("Margin: {margin} {CURRENCY} ({:.0}%)", loan.margin_frac * 100.))
-                                .on_hover_text(
-                                    "The maintenance margin is the price at which the short \
-                                    position is automatically closed (forced liquidation). If this \
-                                    happens, the losses are paid from the collateral.",
-                                );
-
-                            ui.label(format!("Interest: {:.1}%", loan.interest_rate))
-                                .on_hover_text(
-                                    "Interest to be paid to the broker for as long as the \
-                                    position is open. The interest depends on the global interest \
-                                    rate and the credit score. It is paid monthly from the cash \
-                                    balance. If there is not enough cash available, it's deducted \
-                                    from the collateral, reducing the margin limit. If a margin \
-                                    loan already exists for this instrument, the largest interest \
-                                    rate is used.",
-                                );
-                        }
-                    });
+                    }
                 });
 
                 ui.add_space(window.height() * 0.05);
-                
+
                 Sides::new().show(
                     ui,
                     |ui| {
@@ -361,9 +408,10 @@ pub fn trade_modal(
                             ui.add_enabled_ui(
                                 price > 0.
                                     && owned > 0
+                                    && !state.modal_info.loan
                                     && (tab != OrderKind::LimitOrder || limit_stop > instrument.current()),
                                 |ui| {
-                                let button = ui
+                                let mut button = ui
                                     .add_modal_button(
                                         if tab == OrderKind::MarketOrder {
                                             "Close position"
@@ -374,12 +422,17 @@ pub fn trade_modal(
                                     .on_hover_text(format!(
                                         "Sell all owned {}.",
                                         instrument.lowername()
-                                    ))
-                                    .on_disabled_hover_text(format!(
-                                        "No {} to sell",
-                                        instrument.lowername()
                                     ));
 
+                                if state.modal_info.loan  {  
+                                    button = button.on_disabled_hover_text("Can't sell with a margin loan.");
+                                } else if owned < amount as i32 {
+                                    button = button.on_disabled_hover_text(format!(
+                                        "No {} to sell.",
+                                        instrument.lowername()
+                                    ));
+                                }
+                                    
                                 if button.clicked() {
                                     close_clicked = true;
                                 }
@@ -387,7 +440,7 @@ pub fn trade_modal(
                                 ui.add_enabled_ui(
                                     amount > 0 && (tab != OrderKind::MarketOrder || owned >= amount as i32),
                                     |ui| {
-                                        let button = ui
+                                        let mut button = ui
                                             .add_modal_button(
                                                 if tab == OrderKind::MarketOrder {
                                                     "Sell"
@@ -399,11 +452,16 @@ pub fn trade_modal(
                                                 "Sell {} {}.",
                                                 amount,
                                                 instrument.lowername()
-                                            ))
-                                            .on_disabled_hover_text(format!(
-                                                "Not enough {} to sell.",
-                                                instrument.lowername(),
                                             ));
+
+                                        if state.modal_info.loan  {
+                                            button = button.on_disabled_hover_text("Can't sell with a margin loan.");
+                                        } else if owned < amount as i32 {
+                                            button = button.on_disabled_hover_text(format!(
+                                                "Not enough {} to sell.",
+                                                instrument.lowername()
+                                            ));
+                                        }
 
                                         if button.clicked() {
                                             sell_clicked = true;

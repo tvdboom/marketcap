@@ -4,7 +4,7 @@ use crate::core::instruments::instrument::Instrument;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-#[derive(Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum SectorName {
     Energy,
     Finance,
@@ -24,9 +24,9 @@ impl SectorName {
             SectorName::Finance => "💰",
             SectorName::Food => "🍔",
             SectorName::Healthcare => "💊",
-            SectorName::Materials => "🏗️",
-            SectorName::Military => "🪖",
-            SectorName::Retail => "🛍️",
+            SectorName::Materials => "🔨",
+            SectorName::Military => "🔫",
+            SectorName::Retail => "👗",
             SectorName::Technology => "💻",
             SectorName::Transport => "🚚",
         }

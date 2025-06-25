@@ -341,6 +341,7 @@ pub struct ModalInfo {
     pub trailing_stop: u32,
     pub lower_bound: bool,
     pub loan: bool,
+    pub memory_loan: bool,
 }
 
 #[derive(Resource, Default)]

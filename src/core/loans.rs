@@ -231,7 +231,11 @@ impl MarginLoan {
 
     pub fn max_loan_debt(economy: &GlobalEconomy, player: &Player) -> f32 {
         player.enterprise_value(&economy) / 2. * (0.3 + 0.7 * player.credit_score.relative())
-            - player.margin_loan_debt()
+            - player
+                .instruments
+                .iter()
+                .filter_map(|o| o.loan.as_ref().map(|l| l.debt))
+                .sum::<f32>()
     }
 
     pub fn margin(&self, amount: i32) -> f32 {

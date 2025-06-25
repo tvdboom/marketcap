@@ -158,7 +158,22 @@ pub fn execute_orders(
         let mut cash = player.cash.amount;
         match order.command {
             Command::Buy => {
+                message.write(MessageEv {
+                    message: format!(
+                        "{} {} {}.",
+                        if order.kind != OrderKind::ShortSell {
+                            "Bought"
+                        } else {
+                            "Shorted"
+                        },
+                        order.amount.abs(),
+                        instrument.lowername()
+                    ),
+                    level: MessageLevel::Info,
+                });
+
                 if let Some(owned) = player.get_mut(&order.instrument) {
+                    let is_short = owned.amount < 0;
                     owned.amount += order.amount;
 
                     if let Some(order_loan) = &order.loan {
@@ -176,16 +191,9 @@ pub fn execute_orders(
                     } else {
                         if let Some(existing_loan) = &mut owned.loan {
                             // If the order has no loan, but the instrument already has a loan...
-                            match owned.amount {
-                                n if n > 0 => {
-                                    // In a long position, pay from the cash
-                                    cash -= price;
-                                },
-                                n if n < 0 => {
-                                    // In a short position, buy back from the proceeds
-                                    existing_loan.debt -= price;
-                                },
-                                _ => {
+                            if is_short {
+                                // In a short position, buy back from the proceeds until it's closed
+                                if owned.amount >= 0 {
                                     // The short position was closed
                                     cash += existing_loan.collateral + existing_loan.debt - price;
 
@@ -196,10 +204,18 @@ pub fn execute_orders(
                                         ),
                                         level: MessageLevel::Info,
                                     });
-                                },
+
+                                    owned.loan = None; // Remove the loan as it's closed
+                                } else {
+                                    // The short position remains open
+                                    existing_loan.debt -= price;
+                                }
+                            } else {
+                                // In a long position, nothing changes with the existing loan
+                                cash -= price;
                             }
                         } else {
-                            // No existing loan, pay the price
+                            // No existing loan, pay from the cash
                             cash -= price;
                         }
                     }
@@ -217,20 +233,6 @@ pub fn execute_orders(
                         warning: false,
                     });
                 }
-
-                message.write(MessageEv {
-                    message: format!(
-                        "{} {} {}.",
-                        if order.kind != OrderKind::ShortSell {
-                            "Bought"
-                        } else {
-                            "Shorted"
-                        },
-                        order.amount.abs(),
-                        instrument.lowername()
-                    ),
-                    level: MessageLevel::Info,
-                });
             },
             Command::Sell => {
                 if let Some(owned) = player.get_mut(&order.instrument) {

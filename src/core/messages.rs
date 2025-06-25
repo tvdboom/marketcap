@@ -55,22 +55,27 @@ fn check_messages(
 
     for MessageEv { message, level } in message_ev.read() {
         match level {
-            MessageLevel::Info if info => {
-                play_audio_ev.write(PlayAudioEv::new("message"));
+            MessageLevel::Info => {
+                if info {
+                    play_audio_ev.write(PlayAudioEv::new("message"));
+                    info = false;
+                }
                 messages.info(message);
-                info = false;
             },
-            MessageLevel::Warning if warning => {
-                play_audio_ev.write(PlayAudioEv::new("warning"));
+            MessageLevel::Warning => {
+                if warning {
+                    play_audio_ev.write(PlayAudioEv::new("warning"));
+                    warning = false;
+                }
                 messages.warning(message);
-                warning = false;
             },
-            MessageLevel::Error if error => {
-                play_audio_ev.write(PlayAudioEv::new("error"));
+            MessageLevel::Error => {
+                if error {
+                    play_audio_ev.write(PlayAudioEv::new("error"));
+                    error = false;
+                }
                 messages.error(message);
-                error = false;
             },
-            _ => (),
         };
     }
 

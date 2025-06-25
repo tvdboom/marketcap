@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use strum::IntoEnumIterator;
 
 use crate::core::instruments::bonds::{BondIssuer, BondQuality};
@@ -6,6 +7,7 @@ use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::crypto::CryptoName;
 use crate::core::instruments::stocks::{Company, ESGRating};
 use crate::core::orders::OrderKind;
+use crate::core::sectors::SectorName;
 use crate::utils::NameFromEnum;
 
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -37,6 +39,7 @@ impl InstrumentKind {
 
     pub fn order_options(&self) -> Vec<OrderKind> {
         match self {
+            InstrumentKind::Bond(_) => vec![OrderKind::MarketOrder],
             InstrumentKind::Commodity(_) => vec![
                 OrderKind::MarketOrder,
                 OrderKind::LimitOrder,
@@ -96,6 +99,9 @@ pub trait Instrument {
     }
     fn quality(&self) -> BondQuality {
         BondQuality::AAA
+    }
+    fn sector(&self) -> HashMap<SectorName, f32> {
+        HashMap::new()
     }
     fn sentiment(&self) -> u8 {
         0

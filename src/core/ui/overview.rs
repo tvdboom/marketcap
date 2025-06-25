@@ -471,6 +471,7 @@ pub fn processed_order_table(
                                     trailing_stop: order.threshold as u32,
                                     lower_bound: order.lower_bound,
                                     loan: order.loan.is_some(),
+                                    memory_loan: state.modal_info.memory_loan,
                                 };
                             }
                         });

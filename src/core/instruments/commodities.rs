@@ -224,7 +224,7 @@ pub fn start_commodities() -> Vec<Commodity> {
             unit: Unit::MetricTon,
             volatility: 0.6,
             economy_factor: 0.05,
-            storage_cost: 0.3,
+            storage_cost: 0.1,
         },
         Commodity {
             name: CommodityName::Cocoa,
@@ -233,7 +233,7 @@ pub fn start_commodities() -> Vec<Commodity> {
             unit: Unit::MetricTon,
             volatility: 6.2,
             economy_factor: -0.05,
-            storage_cost: 1.,
+            storage_cost: 0.3,
         },
         Commodity {
             name: CommodityName::Coffee,
@@ -242,7 +242,7 @@ pub fn start_commodities() -> Vec<Commodity> {
             unit: Unit::MetricTon,
             volatility: 4.5,
             economy_factor: 0.04,
-            storage_cost: 0.5,
+            storage_cost: 0.2,
         },
         Commodity {
             name: CommodityName::Copper,
@@ -251,7 +251,7 @@ pub fn start_commodities() -> Vec<Commodity> {
             unit: Unit::MetricTon,
             volatility: 4.4,
             economy_factor: 0.05,
-            storage_cost: 0.6,
+            storage_cost: 0.15,
         },
         Commodity {
             name: CommodityName::Corn,
@@ -260,7 +260,7 @@ pub fn start_commodities() -> Vec<Commodity> {
             unit: Unit::MetricTon,
             volatility: 2.5,
             economy_factor: -0.02,
-            storage_cost: 1.2,
+            storage_cost: 0.4,
         },
         Commodity {
             name: CommodityName::Cotton,
@@ -269,7 +269,7 @@ pub fn start_commodities() -> Vec<Commodity> {
             unit: Unit::MetricTon,
             volatility: 3.5,
             economy_factor: 0.03,
-            storage_cost: 2.1,
+            storage_cost: 0.8,
         },
         Commodity {
             name: CommodityName::Ethanol,
@@ -278,7 +278,7 @@ pub fn start_commodities() -> Vec<Commodity> {
             unit: Unit::CubicMeter,
             volatility: 5.7,
             economy_factor: 0.06,
-            storage_cost: 1.4,
+            storage_cost: 0.6,
         },
         Commodity {
             name: CommodityName::Gold,
@@ -287,7 +287,7 @@ pub fn start_commodities() -> Vec<Commodity> {
             unit: Unit::Gram,
             volatility: 0.3,
             economy_factor: -0.01,
-            storage_cost: 0.05,
+            storage_cost: 0.02,
         },
         Commodity {
             name: CommodityName::Iron,
@@ -296,7 +296,7 @@ pub fn start_commodities() -> Vec<Commodity> {
             unit: Unit::MetricTon,
             volatility: 0.5,
             economy_factor: 0.08,
-            storage_cost: 0.2,
+            storage_cost: 0.07,
         },
         Commodity {
             name: CommodityName::LNG,
@@ -305,7 +305,7 @@ pub fn start_commodities() -> Vec<Commodity> {
             unit: Unit::MillionBritishThermalUnits,
             volatility: 7.2,
             economy_factor: 0.12,
-            storage_cost: 5.,
+            storage_cost: 1.,
         },
         Commodity {
             name: CommodityName::Oil,
@@ -314,7 +314,7 @@ pub fn start_commodities() -> Vec<Commodity> {
             unit: Unit::Barrel,
             volatility: 5.,
             economy_factor: 0.09,
-            storage_cost: 3.1,
+            storage_cost: 0.8,
         },
         Commodity {
             name: CommodityName::Silicon,
@@ -323,7 +323,7 @@ pub fn start_commodities() -> Vec<Commodity> {
             unit: Unit::MetricTon,
             volatility: 6.5,
             economy_factor: 0.07,
-            storage_cost: 0.8,
+            storage_cost: 0.25,
         },
         Commodity {
             name: CommodityName::Silver,
@@ -332,7 +332,7 @@ pub fn start_commodities() -> Vec<Commodity> {
             unit: Unit::Kilogram,
             volatility: 0.5,
             economy_factor: -0.02,
-            storage_cost: 0.07,
+            storage_cost: 0.03,
         },
         Commodity {
             name: CommodityName::Wheat,
@@ -341,7 +341,7 @@ pub fn start_commodities() -> Vec<Commodity> {
             unit: Unit::MetricTon,
             volatility: 2.3,
             economy_factor: -0.05,
-            storage_cost: 0.9,
+            storage_cost: 0.3,
         },
     ]
 }
