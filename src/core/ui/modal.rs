@@ -109,7 +109,7 @@ pub fn trade_modal(
                     });
 
                 ui.add(Image::new(SizedTexture::new(
-                    images.get(instrument.lowername().as_str()),
+                    images.get(instrument.image().as_str()),
                     [window.height() * 0.2; 2],
                 )));
             });

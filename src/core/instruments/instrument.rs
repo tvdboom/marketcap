@@ -60,7 +60,7 @@ pub trait Instrument {
     fn name(&self) -> String;
     fn lowername(&self) -> String;
     fn image(&self) -> String {
-        self.lowername()
+        self.name().to_lowercase()
     }
     fn description(&self) -> &str;
     fn kind(&self) -> InstrumentKind;

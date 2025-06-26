@@ -62,10 +62,13 @@ impl BondIssuer {
     }
 
     pub fn to_lowername(&self) -> String {
-        match self {
-            BondIssuer::Government(country) => country.to_lowername(),
-            BondIssuer::Corporate(company) => company.to_lowername(),
-        }
+        format!(
+            "{} bond",
+            match self {
+                BondIssuer::Government(country) => country.to_lowername(),
+                BondIssuer::Corporate(company) => company.to_lowername(),
+            }
+        )
     }
 
     pub fn description(&self) -> &str {
