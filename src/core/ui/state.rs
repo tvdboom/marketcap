@@ -350,6 +350,7 @@ pub struct UiState {
     pub overview: OverviewState,
     pub stocks: OrderByState,
     pub bonds: BondState,
+    pub forex: OrderByState,
     pub commodities: OrderByState,
     pub cryptos: OrderByState,
     pub credit: CreditState,

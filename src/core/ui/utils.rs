@@ -327,6 +327,7 @@ impl CustomUi for Ui {
                                         paid to the holder as percentage of the face value.",
                                     );
                             },
+                            InstrumentKind::Forex(_) => {},
                             InstrumentKind::Commodity(name) => {
                                 ui.label(format!(
                                     "Storage costs: {:.0} {CURRENCY}{}/month",

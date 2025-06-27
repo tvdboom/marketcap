@@ -4,21 +4,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
 use crate::core::instruments::commodities::CommodityName;
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct Currency {
-    /// The currency's name
-    pub name: String,
-
-    /// The currency's acronym, e.g. "USD" for US Dollar
-    pub acronym: String,
-
-    /// The currency's symbol, e.g. "€" for euros
-    pub symbol: String,
-
-    /// Value of the local currency in euros
-    pub value: f32,
-}
+use crate::core::instruments::forex::CurrencyName;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum MarketKind {
@@ -128,7 +114,7 @@ pub struct Country {
     pub name: CountryName,
 
     /// The local currency
-    pub currency: Currency,
+    pub currency: CurrencyName,
 
     /// Type of market in terms of development
     pub market: MarketKind,

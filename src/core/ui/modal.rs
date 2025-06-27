@@ -12,6 +12,7 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondIssuer;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::crypto::CryptoName;
+use crate::core::instruments::forex::CurrencyName;
 use crate::core::instruments::instrument::InstrumentKind;
 use crate::core::instruments::stocks::Company;
 use crate::core::loans::MarginLoan;
@@ -91,6 +92,7 @@ pub fn trade_modal(
                                     },
                                 }
                             },
+                            InstrumentKind::Forex(_) => CurrencyName::iter().map(|c| (InstrumentKind::Forex(c), c.to_name())).collect(),
                             InstrumentKind::Commodity(_) => CommodityName::iter().map(|c| (InstrumentKind::Commodity(c), c.to_name())).collect(),
                             InstrumentKind::Crypto(_) => CryptoName::iter().map(|c| (InstrumentKind::Crypto(c), c.to_name())).collect(),
                         };

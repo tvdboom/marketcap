@@ -5,6 +5,7 @@ use strum::IntoEnumIterator;
 use crate::core::instruments::bonds::{BondIssuer, BondQuality};
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::crypto::CryptoName;
+use crate::core::instruments::forex::CurrencyName;
 use crate::core::instruments::stocks::{Company, ESGRating};
 use crate::core::orders::OrderKind;
 use crate::core::sectors::SectorName;
@@ -14,6 +15,7 @@ use crate::utils::NameFromEnum;
 pub enum InstrumentKind {
     Stock(Company),
     Bond(BondIssuer),
+    Forex(CurrencyName),
     Commodity(CommodityName),
     Crypto(CryptoName),
 }
@@ -23,6 +25,7 @@ impl InstrumentKind {
         match self {
             InstrumentKind::Stock(name) => name.to_name(),
             InstrumentKind::Bond(name) => name.to_name(),
+            InstrumentKind::Forex(name) => name.to_name(),
             InstrumentKind::Commodity(name) => name.to_name(),
             InstrumentKind::Crypto(name) => name.to_name(),
         }
@@ -32,6 +35,7 @@ impl InstrumentKind {
         match self {
             InstrumentKind::Stock(name) => name.to_lowername(),
             InstrumentKind::Bond(name) => name.to_lowername(),
+            InstrumentKind::Forex(name) => name.to_lowername(),
             InstrumentKind::Commodity(name) => name.to_lowername(),
             InstrumentKind::Crypto(name) => name.to_lowername(),
         }
@@ -40,6 +44,11 @@ impl InstrumentKind {
     pub fn order_options(&self) -> Vec<OrderKind> {
         match self {
             InstrumentKind::Bond(_) => vec![OrderKind::MarketOrder],
+            InstrumentKind::Forex(_) => vec![
+                OrderKind::MarketOrder,
+                OrderKind::LimitOrder,
+                OrderKind::TrailingOrder,
+            ],
             InstrumentKind::Commodity(_) => vec![
                 OrderKind::MarketOrder,
                 OrderKind::LimitOrder,

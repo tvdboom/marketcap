@@ -12,6 +12,7 @@ use crate::core::factors::interest::Interest;
 use crate::core::instruments::bonds::{Bond, start_bonds};
 use crate::core::instruments::commodities::{Commodity, start_commodities};
 use crate::core::instruments::crypto::{Crypto, start_cryptos};
+use crate::core::instruments::forex::Currency;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::instruments::stocks::{Stock, start_stocks};
 use crate::core::sectors::{Sector, start_sectors};
@@ -45,6 +46,9 @@ pub struct GlobalEconomy {
     /// Information about all bonds
     pub bonds: Vec<Bond>,
 
+    /// Currencies and their exchange rates
+    pub currencies: Vec<Currency>,
+    
     /// Information of all commodities
     pub commodities: Vec<Commodity>,
 
@@ -86,6 +90,9 @@ impl GlobalEconomy {
             InstrumentKind::Bond(issuer) => {
                 self.bonds.iter().find(|b| b.issuer == *issuer).unwrap()
             },
+            InstrumentKind::Forex(name) => {
+                self.currencies.iter().find(|c| c.name == *name).unwrap()
+            },
             InstrumentKind::Commodity(name) => {
                 self.commodities.iter().find(|c| c.name == *name).unwrap()
             },
@@ -111,6 +118,7 @@ impl Default for GlobalEconomy {
             stocks: start_stocks(),
             bonds: start_bonds(),
             commodities: start_commodities(),
+            currencies: start_currencies(),
             cryptos: start_cryptos(),
         }
     }
