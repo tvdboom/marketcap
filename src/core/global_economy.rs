@@ -12,9 +12,10 @@ use crate::core::factors::interest::Interest;
 use crate::core::instruments::bonds::{Bond, start_bonds};
 use crate::core::instruments::commodities::{Commodity, start_commodities};
 use crate::core::instruments::crypto::{Crypto, start_cryptos};
-use crate::core::instruments::forex::Currency;
+use crate::core::instruments::forex::{Currency, start_currencies};
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::instruments::stocks::{Stock, start_stocks};
+use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::sectors::{Sector, start_sectors};
 
 #[derive(Resource, Clone, Serialize, Deserialize)]
@@ -48,7 +49,7 @@ pub struct GlobalEconomy {
 
     /// Currencies and their exchange rates
     pub currencies: Vec<Currency>,
-    
+
     /// Information of all commodities
     pub commodities: Vec<Commodity>,
 
@@ -58,8 +59,8 @@ pub struct GlobalEconomy {
 
 impl GlobalEconomy {
     /// Daily changes in the global economy
-    pub fn bump(&mut self) -> (f32, f32, f32) {
-        let economy = self.economy.bump();
+    pub fn bump(&mut self, ev: f32, message: &mut EventWriter<MessageEv>) -> (f32, f32, f32) {
+        let economy = self.economy.bump(ev);
         let interest = self.interest.bump();
         let inflation = self.inflation.bump(economy, interest);
 
@@ -72,11 +73,25 @@ impl GlobalEconomy {
         }
 
         for crypto in &mut self.cryptos {
+            let price = crypto.current();
             crypto.bump(inflation);
+            if price != 0. && crypto.current() == 0. {
+                message.write(MessageEv {
+                    message: format!(
+                        "The cryptocurrency {} has become worthless and cannot be traded anymore.",
+                        crypto.name()
+                    ),
+                    level: MessageLevel::Warning,
+                });
+            }
         }
 
         for stock in &mut self.stocks {
             stock.bump(inflation, &self.sectors);
+        }
+        
+        for currency in &mut self.currencies {
+            currency.bump(&self.countries, &self.commodities);
         }
 
         (economy, inflation, interest)

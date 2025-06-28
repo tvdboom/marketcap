@@ -23,9 +23,10 @@ pub fn time_pass(
 
         // Daily operations =================================== >>
 
-        economy.bump();
+        let ev = player.enterprise_value(&economy);
+        let (_, _, interest) = economy.bump(ev, &mut message);
 
-        player.cash.bump(economy.interest.current());
+        player.cash.bump(interest);
 
         let ev = player.enterprise_value(&economy);
         player.influence.bump(ev);
@@ -96,12 +97,38 @@ pub fn time_pass(
         if economy.date.day() == 1 {
             // Monthly operations =================================== >>
 
+            // Trading volume is reset
+            economy.economy.last_traded_volume = economy.economy.current_traded_volume;
+            economy.economy.current_traded_volume = 0.;
+
             // Central bank calculates/pushes next interest rate
             let inflation = economy.inflation.current();
             economy.interest.resolve(inflation);
 
             // Interest on cash is paid
             player.cash.resolve();
+
+            // Quarterly operations =================================== >>
+
+            if economy.date.month() % 3 == 1 {
+                // Pay dividends
+                for owned in player.instruments.iter_mut() {
+                    let instrument = economy.get(&owned.kind);
+
+                    if instrument.dividend() > 0. {
+                        todo!();
+                    }
+                }
+
+                // Corporate bonds are issued
+                for bond in &mut economy
+                    .bonds
+                    .iter_mut()
+                    .filter(|b| b.kind() == BondKind::Corporate)
+                {
+                    bond.issue();
+                }
+            }
 
             // Bi-yearly operations =================================== >>
 

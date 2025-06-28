@@ -52,11 +52,13 @@ pub fn crypto_panel(
 
         for inst in OrderOptions::sort_instrument(&mut instruments, &state.cryptos, economy, player)
         {
-            let response = ui.add_instrument(inst, economy, images, window);
+            ui.add_enabled_ui(inst.current() > 0., |ui| {
+                let response = ui.add_instrument(inst, economy, images, window);
 
-            if response.clicked() {
-                state.modal = Some(inst.kind());
-            }
+                if response.clicked() {
+                    state.modal = Some(inst.kind());
+                }
+            });
         }
     });
 }

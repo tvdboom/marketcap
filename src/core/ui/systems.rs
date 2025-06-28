@@ -256,7 +256,7 @@ pub fn top_panel(
                     text_color,
                     images.get(economy.economy.image()),
                     economy.economy.description(),
-                    Some(&economy.economy.0),
+                    Some(&economy.economy.values),
                     &window,
                 );
 
@@ -353,7 +353,7 @@ pub fn central_panel(
             },
             Tab::Stocks => stock_panel(ui, &mut state, &economy, &player, &images, &window),
             Tab::Bonds => bonds_panel(ui, &mut state, &economy, &player, &images, &window),
-            Tab::Forex => forex_panel(ui, &mut state, &window),
+            Tab::Forex => forex_panel(ui, &mut state, &economy, &player, &images, &window),
             Tab::Crypto => crypto_panel(ui, &mut state, &economy, &player, &images, &window),
             Tab::Commodities => {
                 commodities_panel(ui, &mut state, &economy, &player, &images, &window)

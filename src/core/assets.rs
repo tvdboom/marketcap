@@ -8,6 +8,7 @@ use strum::IntoEnumIterator;
 use crate::core::countries::CountryName;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::crypto::CryptoName;
+use crate::core::instruments::forex::CurrencyName;
 use crate::core::instruments::stocks::Company;
 use crate::utils::NameFromEnum;
 
@@ -74,6 +75,11 @@ impl FromWorld for WorldAssets {
         for country in CountryName::iter() {
             let name = Box::leak(Box::new(country.to_lowername())).as_str();
             images.insert(name, assets.load(format!("images/bonds/{}.png", name)));
+        }
+
+        for currency in CurrencyName::iter() {
+            let name = Box::leak(Box::new(currency.to_lowername())).as_str();
+            images.insert(name, assets.load(format!("images/forex/{}.png", name)));
         }
 
         for commodity in CommodityName::iter() {

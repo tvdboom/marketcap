@@ -4,11 +4,21 @@ use serde::{Deserialize, Serialize};
 use crate::core::factors::Factor;
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct Economy(pub Vec<f32>);
+pub struct Economy {
+    /// The values of the economy over time
+    pub values: Vec<f32>,
+    
+    /// The total traded volume this month
+    pub current_traded_volume: f32,
+    
+    /// The total traded volume of the last month
+    /// A higher traded volume improves the economy and in reverse
+    pub last_traded_volume: f32,
+}
 
 impl Default for Economy {
     fn default() -> Self {
-        Self(Vec::from([Self::DEFAULT]))
+        Self { values: Vec::from([Self::DEFAULT]), current_traded_volume: 0., last_traded_volume: f32::NAN }
     }
 }
 
@@ -20,7 +30,7 @@ impl Economy {
     /// Maximum random daily fluctuation from the current value
     const FLUCTUATION: f32 = 1.5;
 
-    pub fn bump(&mut self) -> f32 {
+    pub fn bump(&mut self, ev: f32) -> f32 {
         let norm = (self.current() - Self::DEFAULT) / Self::MAX;
 
         let u = rng().random::<f32>();
@@ -33,9 +43,17 @@ impl Economy {
         };
 
         let fluctuation = bias * 2. * Self::FLUCTUATION - Self::FLUCTUATION;
-        let value = (self.current() + fluctuation).clamp(Self::MIN, Self::MAX);
+        let mut value = (self.current() + fluctuation).clamp(Self::MIN, Self::MAX);
 
-        self.0.push(value);
+        // Small gain or loss depending on last month's traded volume
+        // If the traded volume was 30% of the total enterprise value (ev), the effect is 0%
+        if !self.last_traded_volume.is_nan() {
+            println!("{} - {} - {}", self.last_traded_volume, ((self.last_traded_volume / ev) - 0.3) / 25., value);
+            value *= 1. + ((self.last_traded_volume / ev) - 0.3) / 25.;
+            println!("{} - {} - {}", self.last_traded_volume, ((self.last_traded_volume / ev) - 0.3) / 25., value);
+        }
+        
+        self.values.push(value);
         value
     }
 }
@@ -57,6 +75,6 @@ impl Factor for Economy {
     }
 
     fn current(&self) -> f32 {
-        *self.0.last().unwrap()
+        *self.values.last().unwrap()
     }
 }

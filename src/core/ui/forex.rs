@@ -17,7 +17,11 @@ pub fn forex_panel(
     window: &Window,
 ) {
     ui.label(
-        "",
+        "Forex, short for foreign exchange, is the global marketplace for buying and \
+        selling currencies. It is the largest and most liquid financial market in the world, \
+        where currencies are traded in pairs. For example, the USD/EUR pair represents \
+        the exchange rate between the US dollar and the euro. When buying this pair, you \
+        are effectively buying dollars with euros.",
     );
 
     ui.separator();
@@ -33,7 +37,7 @@ pub fn forex_panel(
                 OrderOptions::OwnedValue,
                 OrderOptions::Price,
             ]
-                .into(),
+            .into(),
             &mut state.forex,
             window,
         );
@@ -44,8 +48,7 @@ pub fn forex_panel(
             .map(|c| c as &dyn Instrument)
             .collect::<Vec<_>>();
 
-        for inst in OrderOptions::sort_instrument(&mut instruments, &state.forex, economy, player)
-        {
+        for inst in OrderOptions::sort_instrument(&mut instruments, &state.forex, economy, player) {
             let response = ui.add_instrument(inst, economy, images, window);
 
             if response.clicked() {

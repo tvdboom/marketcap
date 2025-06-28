@@ -127,12 +127,7 @@ pub fn start_countries() -> Vec<Country> {
     vec![
         Country {
             name: CountryName::Australia,
-            currency: Currency {
-                name: "Australian Dollar".to_string(),
-                acronym: "AUD".to_string(),
-                symbol: "A$".to_string(),
-                value: 0.6,
-            },
+            currency: CurrencyName::AustralianDollar,
             market: MarketKind::DevelopedMarket,
             production: HashMap::from([
                 (CommodityName::Gold, 0.5),
@@ -143,12 +138,7 @@ pub fn start_countries() -> Vec<Country> {
         },
         Country {
             name: CountryName::Brazil,
-            currency: Currency {
-                name: "Real".to_string(),
-                acronym: "BRL".to_string(),
-                symbol: "R$".to_string(),
-                value: 0.2,
-            },
+            currency: CurrencyName::Real,
             market: MarketKind::EmergingMarket,
             production: HashMap::from([
                 (CommodityName::Coffee, 0.4),
@@ -160,12 +150,7 @@ pub fn start_countries() -> Vec<Country> {
         },
         Country {
             name: CountryName::Canada,
-            currency: Currency {
-                name: "Canadian Dollar".to_string(),
-                acronym: "CAD".to_string(),
-                symbol: "C$".to_string(),
-                value: 0.7,
-            },
+            currency: CurrencyName::CanadianDollar,
             market: MarketKind::DevelopedMarket,
             production: HashMap::from([
                 (CommodityName::Oil, 0.5),
@@ -177,12 +162,7 @@ pub fn start_countries() -> Vec<Country> {
         },
         Country {
             name: CountryName::EU,
-            currency: Currency {
-                name: "Euro".to_string(),
-                acronym: "EUR".to_string(),
-                symbol: "€".to_string(),
-                value: 1.0,
-            },
+            currency: CurrencyName::Euro,
             market: MarketKind::DevelopedMarket,
             production: HashMap::from([
                 (CommodityName::LNG, 0.2),
@@ -193,23 +173,13 @@ pub fn start_countries() -> Vec<Country> {
         },
         Country {
             name: CountryName::Japan,
-            currency: Currency {
-                name: "Yen".to_string(),
-                acronym: "JPY".to_string(),
-                symbol: "¥".to_string(),
-                value: 0.006,
-            },
+            currency: CurrencyName::Yen,
             market: MarketKind::DevelopedMarket,
             production: HashMap::from([(CommodityName::Wheat, 0.2)]),
         },
         Country {
             name: CountryName::China,
-            currency: Currency {
-                name: "Yuan".to_string(),
-                acronym: "CNY".to_string(),
-                symbol: "CN¥".to_string(),
-                value: 0.15,
-            },
+            currency: CurrencyName::Yuan,
             market: MarketKind::EmergingMarket,
             production: HashMap::from([
                 (CommodityName::Iron, 0.5),
@@ -220,12 +190,7 @@ pub fn start_countries() -> Vec<Country> {
         },
         Country {
             name: CountryName::Russia,
-            currency: Currency {
-                name: "Ruble".to_string(),
-                acronym: "RUB".to_string(),
-                symbol: "₽".to_string(),
-                value: 0.01,
-            },
+            currency: CurrencyName::Ruble,
             market: MarketKind::RestrictedMarket,
             production: HashMap::from([
                 (CommodityName::Oil, 0.5),
@@ -237,23 +202,13 @@ pub fn start_countries() -> Vec<Country> {
         },
         Country {
             name: CountryName::SaudiArabia,
-            currency: Currency {
-                name: "Riyal".to_string(),
-                acronym: "SAR".to_string(),
-                symbol: "SAR".to_string(),
-                value: 0.27,
-            },
+            currency: CurrencyName::Riyal,
             market: MarketKind::EmergingMarket,
             production: HashMap::from([(CommodityName::Oil, 0.8), (CommodityName::LNG, 0.5)]),
         },
         Country {
             name: CountryName::SouthAfrica,
-            currency: Currency {
-                name: "Rand".to_string(),
-                acronym: "ZAR".to_string(),
-                symbol: "R".to_string(),
-                value: 0.05,
-            },
+            currency: CurrencyName::Rand,
             market: MarketKind::EmergingMarket,
             production: HashMap::from([
                 (CommodityName::Gold, 0.4),
@@ -264,23 +219,13 @@ pub fn start_countries() -> Vec<Country> {
         },
         Country {
             name: CountryName::Ukraine,
-            currency: Currency {
-                name: "Hryvnia".to_string(),
-                acronym: "UAH".to_string(),
-                symbol: "₴".to_string(),
-                value: 0.03,
-            },
+            currency: CurrencyName::Hryvnia,
             market: MarketKind::EmergingMarket,
             production: HashMap::from([(CommodityName::Wheat, 0.5), (CommodityName::Corn, 0.4)]),
         },
         Country {
             name: CountryName::USA,
-            currency: Currency {
-                name: "US Dollar".to_string(),
-                acronym: "USD".to_string(),
-                symbol: "$".to_string(),
-                value: 1.0,
-            },
+            currency: CurrencyName::UnitedStatesDollar,
             market: MarketKind::DevelopedMarket,
             production: HashMap::from([
                 (CommodityName::Oil, 0.5),
@@ -291,12 +236,7 @@ pub fn start_countries() -> Vec<Country> {
         },
         Country {
             name: CountryName::Venezuela,
-            currency: Currency {
-                name: "Bolívar".to_string(),
-                acronym: "VES".to_string(),
-                symbol: "Bs".to_string(),
-                value: 0.0002,
-            },
+            currency: CurrencyName::Bolivar,
             market: MarketKind::RestrictedMarket,
             production: HashMap::from([
                 (CommodityName::Oil, 0.6),

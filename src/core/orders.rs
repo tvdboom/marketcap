@@ -141,12 +141,14 @@ pub struct OrderEv {
 }
 
 pub fn execute_orders(
-    economy: Res<GlobalEconomy>,
+    mut economy: ResMut<GlobalEconomy>,
     mut player: ResMut<Player>,
     mut order_ev: EventReader<OrderEv>,
     mut message: EventWriter<MessageEv>,
 ) {
     for OrderEv { id, price } in order_ev.read() {
+        economy.economy.current_traded_volume += price.abs();
+        
         let order = Order {
             price: *price,
             status: OrderStatus::Executed,
