@@ -82,17 +82,6 @@ pub struct Currency {
 impl Currency {
     pub fn bump(&mut self, countries: &Vec<Country>, commodities: &Vec<Commodity>) -> f32 {
         let country = countries.iter().find(|c| c.name == self.country).unwrap();
-        println!(
-            "Bumping currency {} for country {:?}  - {}",
-            self.name, country.name, (country
-                .production
-                .iter()
-                .map(|(n, w)| {
-                    commodities.iter().find(|c| c.name == *n).map_or(0., |c| {
-                        w * (c.current() - c.base_price) / c.base_price
-                    })
-                })
-                .sum::<f32>()));
         let mut new_value = self.current()
             + (1.
                 * country
@@ -103,15 +92,13 @@ impl Currency {
                             w * (c.current() - c.base_price) / c.base_price
                         })
                     })
-                    .sum::<f32>());
+                    .sum::<f32>() / 100.);
 
         // Adjust value to tend towards the base value
-        // At 100% deviation, there's a 20% adjustment towards the base price
-        // At 50% deviation, there's a 5% adjustment towards the base price
         let deviation = (new_value - self.base_value) / self.base_value;
-        new_value *= 1. + -deviation * deviation.abs() / 5.;
+        new_value *= 1. + -deviation * deviation.abs() / 2.5;
 
-        new_value = new_value.max(0.);
+        new_value = new_value.max(0.001);
 
         self.values.push(new_value);
         new_value
