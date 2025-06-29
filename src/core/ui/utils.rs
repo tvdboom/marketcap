@@ -257,11 +257,20 @@ impl CustomUi for Ui {
                     });
 
                     ui.vertical(|ui| {
-                        ui.heading(instrument.name());
+                        if matches!(instrument.kind(), InstrumentKind::Forex(_)) {
+                            ui.heading(format!("{}/{}", instrument.name(), CURRENCY.to_name()));
+                        } else {
+                            ui.heading(instrument.name());
+                        }
 
                         ui.horizontal(|ui| {
                             ui.label(format!(
-                                "Price: {} {CURRENCY}{}",
+                                "{}: {} {CURRENCY}{}",
+                                if matches!(instrument.kind(), InstrumentKind::Forex(_)) {
+                                    "Exchange rate"
+                                } else {
+                                    "Price"
+                                },
                                 instrument.current().clean(),
                                 instrument.per_unit()
                             ));
@@ -327,7 +336,13 @@ impl CustomUi for Ui {
                                         paid to the holder as percentage of the face value.",
                                     );
                             },
-                            InstrumentKind::Forex(_) => {},
+                            InstrumentKind::Forex(_) => {
+                                ui.label(format!(
+                                    "Currency: {} ({})",
+                                    instrument.fullname(),
+                                    instrument.symbol()
+                                ));
+                            },
                             InstrumentKind::Commodity(name) => {
                                 ui.label(format!(
                                     "Storage costs: {:.0} {CURRENCY}{}/month",

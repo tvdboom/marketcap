@@ -113,7 +113,19 @@ pub fn trade_modal(
                 ui.add(Image::new(SizedTexture::new(
                     images.get(instrument.image().as_str()),
                     [window.height() * 0.2; 2],
-                )));
+                )))
+                .on_hover_ui(|ui| {
+                    ui.set_min_width(window.width() * 0.4);
+
+                    ui.label(instrument.name());
+                    ui.add_space(window.height() * 0.01);
+                    ui.label(instrument.description());
+
+                    if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
+                        ui.add_space(window.height() * 0.01);
+                        ui.add_plot(instrument.all());
+                    }
+                });
             });
 
             ui.vertical(|ui| {

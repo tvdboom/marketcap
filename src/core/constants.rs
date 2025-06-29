@@ -1,3 +1,4 @@
+use crate::core::instruments::forex::CurrencyName;
 use bevy_egui::egui::Color32;
 
 /// Window
@@ -18,7 +19,7 @@ pub const TOP_LABEL_FRAC: f32 = 0.1; // Fraction of the screen height for the to
 pub const LEFT_LABEL_FRAC: f32 = 0.14; // Fraction of the screen height for the left label
 pub const NA: &str = "---";
 pub const DATE_FORMAT: &str = "%d-%m-%Y";
-pub const CURRENCY: &str = "€";
+pub const CURRENCY: CurrencyName = CurrencyName::EUR; // Default currency for the game
 pub const LINE_WIDTH: f32 = 2.5;
 pub const LINE_COLOR: Color32 = Color32::LIGHT_BLUE;
 

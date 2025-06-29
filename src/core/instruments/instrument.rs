@@ -68,6 +68,9 @@ impl InstrumentKind {
 pub trait Instrument {
     fn name(&self) -> String;
     fn lowername(&self) -> String;
+    fn fullname(&self) -> String {
+        self.name().to_string()
+    }
     fn image(&self) -> String {
         self.name().to_lowercase()
     }
@@ -94,6 +97,9 @@ pub trait Instrument {
         }
     }
 
+    fn symbol(&self) -> &str {
+        ""
+    }
     fn dividend(&self) -> f32 {
         0.0
     }

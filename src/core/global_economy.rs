@@ -89,7 +89,7 @@ impl GlobalEconomy {
         for stock in &mut self.stocks {
             stock.bump(inflation, &self.sectors);
         }
-        
+
         for currency in &mut self.currencies {
             currency.bump(&self.countries, &self.commodities);
         }

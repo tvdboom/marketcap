@@ -111,7 +111,7 @@ pub fn time_pass(
             // Quarterly operations =================================== >>
 
             if economy.date.month() % 3 == 1 {
-                // Pay dividends
+                // Dividends are paid out
                 for owned in player.instruments.iter_mut() {
                     let instrument = economy.get(&owned.kind);
 

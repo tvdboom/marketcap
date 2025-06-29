@@ -127,7 +127,7 @@ pub fn start_countries() -> Vec<Country> {
     vec![
         Country {
             name: CountryName::Australia,
-            currency: CurrencyName::AustralianDollar,
+            currency: CurrencyName::AUD,
             market: MarketKind::DevelopedMarket,
             production: HashMap::from([
                 (CommodityName::Gold, 0.5),
@@ -138,7 +138,7 @@ pub fn start_countries() -> Vec<Country> {
         },
         Country {
             name: CountryName::Brazil,
-            currency: CurrencyName::Real,
+            currency: CurrencyName::BRL,
             market: MarketKind::EmergingMarket,
             production: HashMap::from([
                 (CommodityName::Coffee, 0.4),
@@ -150,7 +150,7 @@ pub fn start_countries() -> Vec<Country> {
         },
         Country {
             name: CountryName::Canada,
-            currency: CurrencyName::CanadianDollar,
+            currency: CurrencyName::CAD,
             market: MarketKind::DevelopedMarket,
             production: HashMap::from([
                 (CommodityName::Oil, 0.5),
@@ -162,7 +162,7 @@ pub fn start_countries() -> Vec<Country> {
         },
         Country {
             name: CountryName::EU,
-            currency: CurrencyName::Euro,
+            currency: CurrencyName::EUR,
             market: MarketKind::DevelopedMarket,
             production: HashMap::from([
                 (CommodityName::LNG, 0.2),
@@ -173,13 +173,13 @@ pub fn start_countries() -> Vec<Country> {
         },
         Country {
             name: CountryName::Japan,
-            currency: CurrencyName::Yen,
+            currency: CurrencyName::JPY,
             market: MarketKind::DevelopedMarket,
             production: HashMap::from([(CommodityName::Wheat, 0.2)]),
         },
         Country {
             name: CountryName::China,
-            currency: CurrencyName::Yuan,
+            currency: CurrencyName::CNY,
             market: MarketKind::EmergingMarket,
             production: HashMap::from([
                 (CommodityName::Iron, 0.5),
@@ -190,7 +190,7 @@ pub fn start_countries() -> Vec<Country> {
         },
         Country {
             name: CountryName::Russia,
-            currency: CurrencyName::Ruble,
+            currency: CurrencyName::RUB,
             market: MarketKind::RestrictedMarket,
             production: HashMap::from([
                 (CommodityName::Oil, 0.5),
@@ -202,13 +202,13 @@ pub fn start_countries() -> Vec<Country> {
         },
         Country {
             name: CountryName::SaudiArabia,
-            currency: CurrencyName::Riyal,
+            currency: CurrencyName::SAR,
             market: MarketKind::EmergingMarket,
             production: HashMap::from([(CommodityName::Oil, 0.8), (CommodityName::LNG, 0.5)]),
         },
         Country {
             name: CountryName::SouthAfrica,
-            currency: CurrencyName::Rand,
+            currency: CurrencyName::ZAR,
             market: MarketKind::EmergingMarket,
             production: HashMap::from([
                 (CommodityName::Gold, 0.4),
@@ -219,24 +219,24 @@ pub fn start_countries() -> Vec<Country> {
         },
         Country {
             name: CountryName::Ukraine,
-            currency: CurrencyName::Hryvnia,
+            currency: CurrencyName::UAH,
             market: MarketKind::EmergingMarket,
             production: HashMap::from([(CommodityName::Wheat, 0.5), (CommodityName::Corn, 0.4)]),
         },
         Country {
             name: CountryName::USA,
-            currency: CurrencyName::UnitedStatesDollar,
+            currency: CurrencyName::USD,
             market: MarketKind::DevelopedMarket,
             production: HashMap::from([
-                (CommodityName::Oil, 0.5),
-                (CommodityName::LNG, 0.4),
+                (CommodityName::Oil, 0.3),
+                (CommodityName::LNG, 0.3),
                 (CommodityName::Corn, 0.3),
                 (CommodityName::Wheat, 0.3),
             ]),
         },
         Country {
             name: CountryName::Venezuela,
-            currency: CurrencyName::Bolivar,
+            currency: CurrencyName::VES,
             market: MarketKind::RestrictedMarket,
             production: HashMap::from([
                 (CommodityName::Oil, 0.6),

@@ -118,104 +118,60 @@ pub fn overview_panel(
             }
         },
         OverviewTab::OrderBook => {
-            ui.add_combobox(
-                "Pending orders",
-                [
-                    OrderOptions::Name,
-                    OrderOptions::Created,
-                    OrderOptions::Price,
-                ]
-                .into(),
-                &mut state.overview.pending,
-                window,
-            );
-
             let pending =
                 OrderOptions::sort_order(player.pending_orders(), &state.overview.pending);
 
-            if pending.is_empty() {
+            let processed =
+                OrderOptions::sort_order(player.processed_orders(), &state.overview.processed);
+
+            if pending.is_empty() && processed.is_empty() {
                 ui.add_space(window.height() * 0.02);
 
-                ui.label("No pending orders.");
-            } else {
+                ui.label("No orders placed.");
+            }
+
+            if !pending.is_empty() {
+                ui.add_combobox(
+                    "Pending orders",
+                    [
+                        OrderOptions::Name,
+                        OrderOptions::Created,
+                        OrderOptions::Price,
+                    ]
+                    .into(),
+                    &mut state.overview.pending,
+                    window,
+                );
+
                 pending_order_table(ui, pending, economy, player, messages);
                 ui.small("Click on a row to cancel the order.");
             }
 
             ui.add_space(window.height() * 0.05);
 
-            ui.add_combobox(
-                "Processed orders",
-                [
-                    OrderOptions::Name,
-                    OrderOptions::Created,
-                    OrderOptions::Processed,
-                    OrderOptions::Price,
-                    OrderOptions::Status,
-                ]
-                .into(),
-                &mut state.overview.processed,
-                window,
-            );
+            if !processed.is_empty() {
+                ui.add_combobox(
+                    "Processed orders",
+                    [
+                        OrderOptions::Name,
+                        OrderOptions::Created,
+                        OrderOptions::Processed,
+                        OrderOptions::Price,
+                        OrderOptions::Status,
+                    ]
+                    .into(),
+                    &mut state.overview.processed,
+                    window,
+                );
 
-            let processed =
-                OrderOptions::sort_order(player.processed_orders(), &state.overview.processed);
-
-            if processed.is_empty() {
-                ui.add_space(window.height() * 0.02);
-
-                ui.label("No processed orders.");
-            } else {
                 processed_order_table(ui, state, processed, economy);
                 ui.small("Click on a row to recreate the order.");
             }
         },
         OverviewTab::Debts => {
-            ui.add_combobox(
-                "Term loans",
-                [
-                    OrderOptions::StartDate,
-                    OrderOptions::Maturity,
-                    OrderOptions::Provider,
-                    OrderOptions::Principal,
-                    OrderOptions::Outstanding,
-                    OrderOptions::Installment,
-                    OrderOptions::Interest,
-                ]
-                .into(),
-                &mut state.overview.term_loan,
-                window,
-            );
+            let term_loans = OrderOptions::sort_term_loan(&player.loans, &state.overview.term_loan);
 
-            let loans = OrderOptions::sort_term_loan(&player.loans, &state.overview.term_loan);
-
-            if loans.is_empty() {
-                ui.add_space(window.height() * 0.02);
-
-                ui.label("No outstanding term loans.");
-            } else {
-                term_loan_overview(ui, state, &loans);
-                ui.small("Click on a row to repay the loan early.");
-            }
-
-            ui.add_space(window.height() * 0.05);
-
-            ui.add_combobox(
-                "Margin loans",
-                [
-                    OrderOptions::Name,
-                    OrderOptions::Debt,
-                    OrderOptions::Collateral,
-                    OrderOptions::Interest,
-                    OrderOptions::Price,
-                    OrderOptions::Margin,
-                ]
-                .into(),
-                &mut state.overview.margin_loan,
-                window,
-            );
-
-            let loans = OrderOptions::sort_margin_loan(
+            let margin_loans = OrderOptions::sort_margin_loan(
                 player
                     .instruments
                     .iter()
@@ -225,12 +181,52 @@ pub fn overview_panel(
                 economy,
             );
 
-            if loans.is_empty() {
+            if term_loans.is_empty() && margin_loans.is_empty() {
                 ui.add_space(window.height() * 0.02);
 
-                ui.label("No outstanding margin loans.");
-            } else {
-                margin_loan_overview(ui, state, &loans, economy);
+                ui.label("No outstanding loans.");
+            }
+
+            if !term_loans.is_empty() {
+                ui.add_combobox(
+                    "Term loans",
+                    [
+                        OrderOptions::StartDate,
+                        OrderOptions::Maturity,
+                        OrderOptions::Provider,
+                        OrderOptions::Principal,
+                        OrderOptions::Outstanding,
+                        OrderOptions::Installment,
+                        OrderOptions::Interest,
+                    ]
+                    .into(),
+                    &mut state.overview.term_loan,
+                    window,
+                );
+
+                term_loan_overview(ui, state, &term_loans);
+                ui.small("Click on a row to repay the loan early.");
+            }
+
+            ui.add_space(window.height() * 0.05);
+
+            if !margin_loans.is_empty() {
+                ui.add_combobox(
+                    "Margin loans",
+                    [
+                        OrderOptions::Name,
+                        OrderOptions::Debt,
+                        OrderOptions::Collateral,
+                        OrderOptions::Interest,
+                        OrderOptions::Price,
+                        OrderOptions::Margin,
+                    ]
+                    .into(),
+                    &mut state.overview.margin_loan,
+                    window,
+                );
+
+                margin_loan_overview(ui, state, &margin_loans, economy);
                 ui.small("Click on a row to increase the loan's collateral.");
             }
         },

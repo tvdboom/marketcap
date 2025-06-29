@@ -18,7 +18,8 @@ pub enum OrderKind {
     LimitOrder,
     TrailingOrder,
     ShortSell,
-    Derivatives,
+    Futures,
+    Options,
 }
 
 impl OrderKind {
@@ -28,7 +29,8 @@ impl OrderKind {
             OrderKind::LimitOrder => "♾",
             OrderKind::TrailingOrder => "🚶‍",
             OrderKind::ShortSell => "📉",
-            OrderKind::Derivatives => "🔮",
+            OrderKind::Futures => "🔮",
+            OrderKind::Options => "📝",
         }
     }
 
@@ -60,9 +62,13 @@ impl OrderKind {
                 the time the shares are borrowed. If the stock price rises, the investor must \
                 buy back the shares at a higher price, resulting in a loss."
             },
-            OrderKind::Derivatives => {
+            OrderKind::Futures => {
                 "Financial contracts to buy or sell instruments against a predetermined price \
                 in the future. "
+            },
+            OrderKind::Options => {
+                "Financial contracts that give the buyer the right, but not the obligation, \
+                to buy or sell an instrument at a predetermined price before a specified date."
             },
         }
     }
@@ -148,7 +154,7 @@ pub fn execute_orders(
 ) {
     for OrderEv { id, price } in order_ev.read() {
         economy.economy.current_traded_volume += price.abs();
-        
+
         let order = Order {
             price: *price,
             status: OrderStatus::Executed,

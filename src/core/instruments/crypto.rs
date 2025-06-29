@@ -41,6 +41,7 @@ pub struct Crypto {
 impl Crypto {
     pub fn bump(&mut self, inflation: f32) -> f32 {
         let new_price = if self.current() == 0. {
+            self.market_cap = 0.;
             0. // If the price is zero, the coin is considered dead and cannot be traded
         } else {
             self.base_price *= 1. + inflation / 100. / 365.;
@@ -183,8 +184,8 @@ pub fn start_cryptos() -> Vec<Crypto> {
         },
         Crypto {
             name: CryptoName::Pepe,
-            base_price: 0.0002,
-            prices: vec![0.0002],
+            base_price: 0.02,
+            prices: vec![0.02],
             volatility: 9.6,
             market_cap: 4.7e9,
         },

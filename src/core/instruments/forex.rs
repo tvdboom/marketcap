@@ -1,59 +1,66 @@
-use crate::core::countries::Country;
+use crate::core::countries::{Country, CountryName};
 use crate::core::instruments::commodities::Commodity;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::utils::NameFromEnum;
 use serde::{Deserialize, Serialize};
+use std::fmt::Display;
 use strum_macros::EnumIter;
 
 #[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum CurrencyName {
-    AustralianDollar,
-    Real,
-    CanadianDollar,
-    Euro,
-    Yen,
-    Yuan,
-    Ruble,
-    Riyal,
-    Rand,
-    Hryvnia,
-    UnitedStatesDollar,
-    Bolivar,
+    AUD,
+    BRL,
+    CAD,
+    CNY,
+    EUR,
+    JPY,
+    RUB,
+    SAR,
+    UAH,
+    USD,
+    VES,
+    ZAR,
 }
 
 impl CurrencyName {
     pub fn symbol(&self) -> &str {
         match self {
-            CurrencyName::AustralianDollar => "A$",
-            CurrencyName::Real => "R$",
-            CurrencyName::CanadianDollar => "C$",
-            CurrencyName::Euro => "€",
-            CurrencyName::Yen => "¥",
-            CurrencyName::Yuan => "¥",
-            CurrencyName::Ruble => "₽",
-            CurrencyName::Riyal => "﷼",
-            CurrencyName::Rand => "R",
-            CurrencyName::Hryvnia => "₴",
-            CurrencyName::UnitedStatesDollar => "$",
-            CurrencyName::Bolivar => "Bs",
+            CurrencyName::AUD => "A$",
+            CurrencyName::BRL => "R$",
+            CurrencyName::CAD => "C$",
+            CurrencyName::CNY => "¥",
+            CurrencyName::EUR => "€",
+            CurrencyName::JPY => "¥",
+            CurrencyName::RUB => "₽",
+            CurrencyName::SAR => "﷼",
+            CurrencyName::UAH => "₴",
+            CurrencyName::USD => "$",
+            CurrencyName::VES => "Bs",
+            CurrencyName::ZAR => "R",
         }
     }
 
-    pub fn acronym(&self) -> &str {
+    pub fn fullname(&self) -> &str {
         match self {
-            CurrencyName::AustralianDollar => "AUD",
-            CurrencyName::Real => "BRL",
-            CurrencyName::CanadianDollar => "CAD",
-            CurrencyName::Euro => "EUR",
-            CurrencyName::Yen => "JPY",
-            CurrencyName::Yuan => "CNY",
-            CurrencyName::Ruble => "RUB",
-            CurrencyName::Riyal => "SAR",
-            CurrencyName::Rand => "ZAR",
-            CurrencyName::Hryvnia => "UAH",
-            CurrencyName::UnitedStatesDollar => "USD",
-            CurrencyName::Bolivar => "VES",
+            CurrencyName::AUD => "Australian Dollar",
+            CurrencyName::BRL => "Brazilian Real",
+            CurrencyName::CAD => "Canadian Dollar",
+            CurrencyName::CNY => "Chinese Yuan",
+            CurrencyName::EUR => "European Euro",
+            CurrencyName::JPY => "Japanese Yen",
+            CurrencyName::RUB => "Russian Ruble",
+            CurrencyName::SAR => "Saudi Arabian Riyal",
+            CurrencyName::UAH => "Ukrainian Hryvnia",
+            CurrencyName::USD => "United States Dollar",
+            CurrencyName::VES => "Venezuelan Bolivar",
+            CurrencyName::ZAR => "South African Rand",
         }
+    }
+}
+
+impl Display for CurrencyName {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.symbol())
     }
 }
 
@@ -61,6 +68,9 @@ impl CurrencyName {
 pub struct Currency {
     /// The currency's name
     pub name: CurrencyName,
+
+    /// The country that uses this currency
+    pub country: CountryName,
 
     /// Default value of the currency per euro
     pub base_value: f32,
@@ -71,17 +81,27 @@ pub struct Currency {
 
 impl Currency {
     pub fn bump(&mut self, countries: &Vec<Country>, commodities: &Vec<Commodity>) -> f32 {
-        let country = countries.iter().find(|c| c.currency == self.name).unwrap();
+        let country = countries.iter().find(|c| c.name == self.country).unwrap();
+        println!(
+            "Bumping currency {} for country {:?}  - {}",
+            self.name, country.name, (country
+                .production
+                .iter()
+                .map(|(n, w)| {
+                    commodities.iter().find(|c| c.name == *n).map_or(0., |c| {
+                        w * (c.current() - c.base_price) / c.base_price
+                    })
+                })
+                .sum::<f32>()));
         let mut new_value = self.current()
             + (1.
                 * country
                     .production
                     .iter()
                     .map(|(n, w)| {
-                        commodities
-                            .iter()
-                            .find(|c| c.name == *n)
-                            .map_or(0., |c| w * (c.current() - c.base_price) / c.base_price)
+                        commodities.iter().find(|c| c.name == *n).map_or(0., |c| {
+                            w * (c.current() - c.base_price) / c.base_price
+                        })
                     })
                     .sum::<f32>());
 
@@ -107,8 +127,12 @@ impl Instrument for Currency {
         self.name.to_lowername()
     }
 
+    fn fullname(&self) -> String {
+        self.name.fullname().to_string()
+    }
+    
     fn description(&self) -> &str {
-        ""
+        self.country.description()
     }
 
     fn kind(&self) -> InstrumentKind {
@@ -122,69 +146,85 @@ impl Instrument for Currency {
     fn current(&self) -> f32 {
         *self.values.last().unwrap()
     }
+
+    fn symbol(&self) -> &str {
+        self.name.symbol()
+    }
 }
 
 pub fn start_currencies() -> Vec<Currency> {
     vec![
         Currency {
-            name: CurrencyName::AustralianDollar,
+            name: CurrencyName::AUD,
+            country: CountryName::Australia,
             base_value: 0.56,
             values: vec![0.56],
         },
         Currency {
-            name: CurrencyName::Real,
+            name: CurrencyName::BRL,
+            country: CountryName::Brazil,
             base_value: 0.16,
             values: vec![0.16],
         },
         Currency {
-            name: CurrencyName::CanadianDollar,
+            name: CurrencyName::CAD,
+            country: CountryName::Canada,
             base_value: 0.6,
             values: vec![0.6],
         },
         Currency {
-            name: CurrencyName::Euro,
-            base_value: 1.0,
-            values: vec![1.0],
-        },
-        Currency {
-            name: CurrencyName::Yen,
-            base_value: 0.006,
-            values: vec![0.006],
-        },
-        Currency {
-            name: CurrencyName::Yuan,
+            name: CurrencyName::CNY,
+            country: CountryName::China,
             base_value: 0.12,
             values: vec![0.12],
         },
         Currency {
-            name: CurrencyName::Ruble,
+            name: CurrencyName::EUR,
+            country: CountryName::EU,
+            base_value: 1.0,
+            values: vec![1.0],
+        },
+        Currency {
+            name: CurrencyName::JPY,
+            country: CountryName::Japan,
+            base_value: 0.006,
+            values: vec![0.006],
+        },
+        Currency {
+            name: CurrencyName::RUB,
+            country: CountryName::Russia,
             base_value: 0.01,
             values: vec![0.01],
         },
         Currency {
-            name: CurrencyName::Riyal,
+            name: CurrencyName::SAR,
+            country: CountryName::SaudiArabia,
             base_value: 0.23,
             values: vec![0.23],
         },
         Currency {
-            name: CurrencyName::Rand,
-            base_value: 0.05,
-            values: vec![0.05],
-        },
-        Currency {
-            name: CurrencyName::Hryvnia,
+            name: CurrencyName::UAH,
+            country: CountryName::Ukraine,
             base_value: 0.02,
             values: vec![0.02],
         },
         Currency {
-            name: CurrencyName::UnitedStatesDollar,
+            name: CurrencyName::USD,
+            country: CountryName::USA,
             base_value: 0.85,
             values: vec![0.85],
         },
         Currency {
-            name: CurrencyName::Bolivar,
+            name: CurrencyName::VES,
+            country: CountryName::Venezuela,
             base_value: 0.008,
             values: vec![0.008],
+        },
+        Currency {
+            name: CurrencyName::ZAR,
+            country: CountryName::SouthAfrica,
+            base_value: 0.05,
+            values: vec![0.05],
         },
     ]
 }
