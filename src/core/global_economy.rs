@@ -59,8 +59,8 @@ pub struct GlobalEconomy {
 
 impl GlobalEconomy {
     /// Daily changes in the global economy
-    pub fn bump(&mut self, ev: f32, message: &mut EventWriter<MessageEv>) -> (f32, f32, f32) {
-        let economy = self.economy.bump(ev);
+    pub fn bump(&mut self, aum: f32, message: &mut EventWriter<MessageEv>) -> (f32, f32, f32) {
+        let economy = self.economy.bump(aum);
         let interest = self.interest.bump();
         let inflation = self.inflation.bump(economy, interest);
 

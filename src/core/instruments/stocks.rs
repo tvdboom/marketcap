@@ -1,10 +1,12 @@
-use crate::core::instruments::instrument::{Instrument, InstrumentKind};
-use crate::core::sectors::{Sector, SectorName};
-use crate::utils::NameFromEnum;
+use std::collections::HashMap;
+
 use rand::{Rng, rng};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use strum_macros::EnumIter;
+
+use crate::core::instruments::instrument::{Instrument, InstrumentKind};
+use crate::core::sectors::{Sector, SectorName};
+use crate::utils::{DQueue, NameFromEnum};
 
 #[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Company {
@@ -129,7 +131,7 @@ pub struct Stock {
     pub base_price: f32,
 
     /// The prices over time
-    pub prices: Vec<f32>,
+    pub prices: DQueue<f32>,
 
     /// Percentage of the base price that can change daily
     pub volatility: f32,
@@ -196,12 +198,8 @@ impl Instrument for Stock {
         InstrumentKind::Stock(self.issuer)
     }
 
-    fn all(&self) -> &Vec<f32> {
+    fn all(&self) -> &DQueue<f32> {
         &self.prices
-    }
-
-    fn current(&self) -> f32 {
-        *self.prices.last().unwrap()
     }
 
     fn dividend(&self) -> f32 {
@@ -230,7 +228,7 @@ pub fn start_stocks() -> Vec<Stock> {
         Stock {
             issuer: Company::Apple,
             base_price: 175.,
-            prices: vec![175.],
+            prices: DQueue::from([175.]),
             volatility: 2.5,
             dividend: 0.22,
             sector: HashMap::from([(SectorName::Technology, 1.0)]),
@@ -240,7 +238,7 @@ pub fn start_stocks() -> Vec<Stock> {
         Stock {
             issuer: Company::Boeing,
             base_price: 210.,
-            prices: vec![210.],
+            prices: DQueue::from([210.]),
             volatility: 3.2,
             dividend: 1.5,
             sector: HashMap::from([(SectorName::Transport, 0.7), (SectorName::Military, 0.3)]),
@@ -250,7 +248,7 @@ pub fn start_stocks() -> Vec<Stock> {
         Stock {
             issuer: Company::GoldmanSachs,
             base_price: 350.,
-            prices: vec![350.],
+            prices: DQueue::from([350.]),
             volatility: 2.0,
             dividend: 3.0,
             sector: HashMap::from([(SectorName::Finance, 1.0)]),
@@ -260,7 +258,7 @@ pub fn start_stocks() -> Vec<Stock> {
         Stock {
             issuer: Company::Inditex,
             base_price: 32.,
-            prices: vec![32.],
+            prices: DQueue::from([32.]),
             volatility: 1.8,
             dividend: 0.25,
             sector: HashMap::from([(SectorName::Retail, 1.0)]),
@@ -270,7 +268,7 @@ pub fn start_stocks() -> Vec<Stock> {
         Stock {
             issuer: Company::LockheedMartin,
             base_price: 470.,
-            prices: vec![470.],
+            prices: DQueue::from([470.]),
             volatility: 2.0,
             dividend: 3.25,
             sector: HashMap::from([(SectorName::Military, 0.8), (SectorName::Transport, 0.2)]),
@@ -280,7 +278,7 @@ pub fn start_stocks() -> Vec<Stock> {
         Stock {
             issuer: Company::LVMH,
             base_price: 830.,
-            prices: vec![830.],
+            prices: DQueue::from([830.]),
             volatility: 1.5,
             dividend: 4.25,
             sector: HashMap::from([(SectorName::Retail, 1.0)]),
@@ -290,7 +288,7 @@ pub fn start_stocks() -> Vec<Stock> {
         Stock {
             issuer: Company::Maersk,
             base_price: 1450.,
-            prices: vec![1450.],
+            prices: DQueue::from([1450.]),
             volatility: 2.8,
             dividend: 9.5,
             sector: HashMap::from([(SectorName::Transport, 0.7), (SectorName::Energy, 0.3)]),
@@ -300,7 +298,7 @@ pub fn start_stocks() -> Vec<Stock> {
         Stock {
             issuer: Company::Moderna,
             base_price: 110.,
-            prices: vec![110.],
+            prices: DQueue::from([110.]),
             volatility: 4.5,
             dividend: 0.0,
             sector: HashMap::from([(SectorName::Healthcare, 1.0)]),
@@ -310,7 +308,7 @@ pub fn start_stocks() -> Vec<Stock> {
         Stock {
             issuer: Company::Nestle,
             base_price: 120.,
-            prices: vec![120.],
+            prices: DQueue::from([120.]),
             volatility: 1.2,
             dividend: 0.875,
             sector: HashMap::from([(SectorName::Food, 1.0)]),
@@ -320,7 +318,7 @@ pub fn start_stocks() -> Vec<Stock> {
         Stock {
             issuer: Company::Nvidia,
             base_price: 1250.,
-            prices: vec![1250.],
+            prices: DQueue::from([1250.]),
             volatility: 4.2,
             dividend: 0.3,
             sector: HashMap::from([(SectorName::Technology, 1.0)]),
@@ -330,7 +328,7 @@ pub fn start_stocks() -> Vec<Stock> {
         Stock {
             issuer: Company::Pfizer,
             base_price: 30.,
-            prices: vec![30.],
+            prices: DQueue::from([30.]),
             volatility: 2.5,
             dividend: 0.275,
             sector: HashMap::from([(SectorName::Healthcare, 1.0)]),
@@ -340,7 +338,7 @@ pub fn start_stocks() -> Vec<Stock> {
         Stock {
             issuer: Company::RioTinto,
             base_price: 65.,
-            prices: vec![65.],
+            prices: DQueue::from([65.]),
             volatility: 1.9,
             dividend: 0.65,
             sector: HashMap::from([(SectorName::Materials, 1.0)]),
@@ -350,7 +348,7 @@ pub fn start_stocks() -> Vec<Stock> {
         Stock {
             issuer: Company::Shell,
             base_price: 65.,
-            prices: vec![65.],
+            prices: DQueue::from([65.]),
             volatility: 2.0,
             dividend: 0.625,
             sector: HashMap::from([(SectorName::Energy, 1.0)]),
@@ -360,7 +358,7 @@ pub fn start_stocks() -> Vec<Stock> {
         Stock {
             issuer: Company::Toyota,
             base_price: 190.,
-            prices: vec![190.],
+            prices: DQueue::from([190.]),
             volatility: 2.1,
             dividend: 0.45,
             sector: HashMap::from([(SectorName::Transport, 1.0)]),
@@ -370,7 +368,7 @@ pub fn start_stocks() -> Vec<Stock> {
         Stock {
             issuer: Company::Unilever,
             base_price: 50.,
-            prices: vec![50.],
+            prices: DQueue::from([50.]),
             volatility: 1.3,
             dividend: 0.475,
             sector: HashMap::from([(SectorName::Retail, 0.5), (SectorName::Food, 0.5)]),

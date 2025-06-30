@@ -1,10 +1,12 @@
+use std::fmt::Display;
+
+use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
+
 use crate::core::countries::{Country, CountryName};
 use crate::core::instruments::commodities::Commodity;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
-use crate::utils::NameFromEnum;
-use serde::{Deserialize, Serialize};
-use std::fmt::Display;
-use strum_macros::EnumIter;
+use crate::utils::{DQueue, NameFromEnum};
 
 #[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum CurrencyName {
@@ -76,7 +78,7 @@ pub struct Currency {
     pub base_value: f32,
 
     /// The values over time per euro
-    pub values: Vec<f32>,
+    pub values: DQueue<f32>,
 }
 
 impl Currency {
@@ -88,11 +90,13 @@ impl Currency {
                     .production
                     .iter()
                     .map(|(n, w)| {
-                        commodities.iter().find(|c| c.name == *n).map_or(0., |c| {
-                            w * (c.current() - c.base_price) / c.base_price
-                        })
+                        commodities
+                            .iter()
+                            .find(|c| c.name == *n)
+                            .map_or(0., |c| w * (c.current() - c.base_price) / c.base_price)
                     })
-                    .sum::<f32>() / 100.);
+                    .sum::<f32>()
+                / 100.);
 
         // Adjust value to tend towards the base value
         let deviation = (new_value - self.base_value) / self.base_value;
@@ -117,7 +121,7 @@ impl Instrument for Currency {
     fn fullname(&self) -> String {
         self.name.fullname().to_string()
     }
-    
+
     fn description(&self) -> &str {
         self.country.description()
     }
@@ -126,12 +130,8 @@ impl Instrument for Currency {
         InstrumentKind::Forex(self.name)
     }
 
-    fn all(&self) -> &Vec<f32> {
+    fn all(&self) -> &DQueue<f32> {
         &self.values
-    }
-
-    fn current(&self) -> f32 {
-        *self.values.last().unwrap()
     }
 
     fn symbol(&self) -> &str {
@@ -145,73 +145,73 @@ pub fn start_currencies() -> Vec<Currency> {
             name: CurrencyName::AUD,
             country: CountryName::Australia,
             base_value: 0.56,
-            values: vec![0.56],
+            values: DQueue::from([0.56]),
         },
         Currency {
             name: CurrencyName::BRL,
             country: CountryName::Brazil,
             base_value: 0.16,
-            values: vec![0.16],
+            values: DQueue::from([0.16]),
         },
         Currency {
             name: CurrencyName::CAD,
             country: CountryName::Canada,
             base_value: 0.6,
-            values: vec![0.6],
+            values: DQueue::from([0.6]),
         },
         Currency {
             name: CurrencyName::CNY,
             country: CountryName::China,
             base_value: 0.12,
-            values: vec![0.12],
+            values: DQueue::from([0.12]),
         },
         Currency {
             name: CurrencyName::EUR,
             country: CountryName::EU,
             base_value: 1.0,
-            values: vec![1.0],
+            values: DQueue::from([1.0]),
         },
         Currency {
             name: CurrencyName::JPY,
             country: CountryName::Japan,
             base_value: 0.006,
-            values: vec![0.006],
+            values: DQueue::from([0.006]),
         },
         Currency {
             name: CurrencyName::RUB,
             country: CountryName::Russia,
             base_value: 0.01,
-            values: vec![0.01],
+            values: DQueue::from([0.01]),
         },
         Currency {
             name: CurrencyName::SAR,
             country: CountryName::SaudiArabia,
             base_value: 0.23,
-            values: vec![0.23],
+            values: DQueue::from([0.23]),
         },
         Currency {
             name: CurrencyName::UAH,
             country: CountryName::Ukraine,
             base_value: 0.02,
-            values: vec![0.02],
+            values: DQueue::from([0.02]),
         },
         Currency {
             name: CurrencyName::USD,
             country: CountryName::USA,
             base_value: 0.85,
-            values: vec![0.85],
+            values: DQueue::from([0.85]),
         },
         Currency {
             name: CurrencyName::VES,
             country: CountryName::Venezuela,
             base_value: 0.008,
-            values: vec![0.008],
+            values: DQueue::from([0.008]),
         },
         Currency {
             name: CurrencyName::ZAR,
             country: CountryName::SouthAfrica,
             base_value: 0.05,
-            values: vec![0.05],
+            values: DQueue::from([0.05]),
         },
     ]
 }

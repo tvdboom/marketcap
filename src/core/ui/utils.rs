@@ -11,7 +11,7 @@ use crate::core::instruments::bonds::BondIssuer;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderByState, OrderOptions};
-use crate::utils::{EnhFloat, NameFromEnum, get_ratio};
+use crate::utils::{EnhFloat, NameFromEnum, get_ratio, DQueue};
 
 /// Custom IOS style toggle for UI
 pub fn toggle(on: &mut bool) -> impl Widget + '_ {
@@ -59,7 +59,7 @@ pub trait CustomUi {
         state: &mut OrderByState,
         window: &Window,
     );
-    fn add_plot(&mut self, data: &Vec<f32>);
+    fn add_plot(&mut self, data: &DQueue<f32>);
     fn add_factor(
         &mut self,
         name: impl Into<RichText>,
@@ -67,7 +67,7 @@ pub trait CustomUi {
         color: impl Into<Color32>,
         texture_id: TextureId,
         description: String,
-        plot: Option<&Vec<f32>>,
+        plot: Option<&DQueue<f32>>,
         window: &Window,
     ) -> Response;
     fn add_instrument(
@@ -154,7 +154,7 @@ impl CustomUi for Ui {
         );
     }
 
-    fn add_plot(&mut self, data: &Vec<f32>) {
+    fn add_plot(&mut self, data: &DQueue<f32>) {
         let start = data.len().saturating_sub(190); // 6 months approx.
         let points: PlotPoints = data
             .iter()
@@ -200,7 +200,7 @@ impl CustomUi for Ui {
         color: impl Into<Color32>,
         texture_id: TextureId,
         description: String,
-        plot: Option<&Vec<f32>>,
+        plot: Option<&DQueue<f32>>,
         window: &Window,
     ) -> Response {
         self.horizontal_centered(|ui| {

@@ -35,16 +35,13 @@ impl LoanProvider {
         }
     }
 
-    pub fn max_principal(&self, enterprise_value: f32, credit_score: f32) -> u32 {
+    pub fn max_principal(&self, aum: f32, credit_score: f32) -> u32 {
         match self {
             LoanProvider::Bank => {
-                ((enterprise_value * (0.3 + 0.7 * credit_score / CreditScore::MAX as f32)) as u32
-                    / LOAN_STEP)
+                ((aum * (0.3 + 0.7 * credit_score / CreditScore::MAX as f32)) as u32 / LOAN_STEP)
                     * LOAN_STEP
             },
-            LoanProvider::AlternativeLender => {
-                ((enterprise_value * 0.5) as u32 / LOAN_STEP) * LOAN_STEP
-            },
+            LoanProvider::AlternativeLender => ((aum * 0.5) as u32 / LOAN_STEP) * LOAN_STEP,
         }
     }
 
@@ -230,7 +227,7 @@ impl MarginLoan {
     }
 
     pub fn max_loan_debt(economy: &GlobalEconomy, player: &Player) -> f32 {
-        player.enterprise_value(&economy) / 2. * (0.3 + 0.7 * player.credit_score.relative())
+        player.aum(&economy) / 2. * (0.3 + 0.7 * player.credit_score.relative())
             - player
                 .instruments
                 .iter()

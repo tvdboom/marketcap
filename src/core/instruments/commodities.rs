@@ -4,7 +4,7 @@ use strum_macros::EnumIter;
 
 use crate::core::factors::economy::Economy;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
-use crate::utils::NameFromEnum;
+use crate::utils::{DQueue, NameFromEnum};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Unit {
@@ -57,7 +57,7 @@ pub struct Commodity {
     pub base_price: f32,
 
     /// The prices over time
-    pub prices: Vec<f32>,
+    pub prices: DQueue<f32>,
 
     /// The unit the commodity is traded in
     pub unit: Unit,
@@ -194,12 +194,8 @@ impl Instrument for Commodity {
         InstrumentKind::Commodity(self.name)
     }
 
-    fn all(&self) -> &Vec<f32> {
+    fn all(&self) -> &DQueue<f32> {
         &self.prices
-    }
-
-    fn current(&self) -> f32 {
-        *self.prices.last().unwrap()
     }
 
     fn storage_cost(&self) -> f32 {
@@ -220,7 +216,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Aluminium,
             base_price: 2200.,
-            prices: vec![2200.],
+            prices: DQueue::from([2200.]),
             unit: Unit::MetricTon,
             volatility: 0.6,
             economy_factor: 0.05,
@@ -229,7 +225,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Cocoa,
             base_price: 9762.,
-            prices: vec![9762.],
+            prices: DQueue::from([9762.]),
             unit: Unit::MetricTon,
             volatility: 6.2,
             economy_factor: -0.05,
@@ -238,7 +234,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Coffee,
             base_price: 3300.,
-            prices: vec![3300.],
+            prices: DQueue::from([3300.]),
             unit: Unit::MetricTon,
             volatility: 4.5,
             economy_factor: 0.04,
@@ -247,7 +243,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Copper,
             base_price: 9623.,
-            prices: vec![9623.],
+            prices: DQueue::from([9623.]),
             unit: Unit::MetricTon,
             volatility: 4.4,
             economy_factor: 0.05,
@@ -256,7 +252,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Corn,
             base_price: 215.,
-            prices: vec![215.],
+            prices: DQueue::from([215.]),
             unit: Unit::MetricTon,
             volatility: 2.5,
             economy_factor: -0.02,
@@ -265,7 +261,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Cotton,
             base_price: 85.,
-            prices: vec![85.],
+            prices: DQueue::from([85.]),
             unit: Unit::MetricTon,
             volatility: 3.5,
             economy_factor: 0.03,
@@ -274,7 +270,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Ethanol,
             base_price: 470.,
-            prices: vec![470.],
+            prices: DQueue::from([470.]),
             unit: Unit::CubicMeter,
             volatility: 5.7,
             economy_factor: 0.06,
@@ -283,7 +279,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Gold,
             base_price: 93.,
-            prices: vec![93.],
+            prices: DQueue::from([93.]),
             unit: Unit::Gram,
             volatility: 0.3,
             economy_factor: -0.01,
@@ -292,7 +288,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Iron,
             base_price: 125.,
-            prices: vec![125.],
+            prices: DQueue::from([125.]),
             unit: Unit::MetricTon,
             volatility: 0.5,
             economy_factor: 0.08,
@@ -301,7 +297,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::LNG,
             base_price: 13.,
-            prices: vec![13.],
+            prices: DQueue::from([13.]),
             unit: Unit::MillionBritishThermalUnits,
             volatility: 7.2,
             economy_factor: 0.12,
@@ -310,7 +306,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Oil,
             base_price: 65.,
-            prices: vec![65.],
+            prices: DQueue::from([65.]),
             unit: Unit::Barrel,
             volatility: 5.,
             economy_factor: 0.09,
@@ -319,7 +315,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Silicon,
             base_price: 6000.,
-            prices: vec![6000.],
+            prices: DQueue::from([6000.]),
             unit: Unit::MetricTon,
             volatility: 6.5,
             economy_factor: 0.07,
@@ -328,7 +324,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Silver,
             base_price: 1030.,
-            prices: vec![1030.],
+            prices: DQueue::from([1030.]),
             unit: Unit::Kilogram,
             volatility: 0.5,
             economy_factor: -0.02,
@@ -337,7 +333,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         Commodity {
             name: CommodityName::Wheat,
             base_price: 201.,
-            prices: vec![201.],
+            prices: DQueue::from([201.]),
             unit: Unit::MetricTon,
             volatility: 2.3,
             economy_factor: -0.05,

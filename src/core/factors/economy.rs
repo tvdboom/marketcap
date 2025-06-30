@@ -2,11 +2,12 @@ use rand::{Rng, rng};
 use serde::{Deserialize, Serialize};
 
 use crate::core::factors::Factor;
+use crate::utils::DQueue;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Economy {
     /// The values of the economy over time
-    pub values: Vec<f32>,
+    pub values: DQueue<f32>,
 
     /// The total traded volume this month
     pub current_traded_volume: f32,
@@ -19,7 +20,7 @@ pub struct Economy {
 impl Default for Economy {
     fn default() -> Self {
         Self {
-            values: Vec::from([Self::DEFAULT]),
+            values: DQueue::from([Self::DEFAULT]),
             current_traded_volume: 0.,
             last_traded_volume: f32::NAN,
         }
@@ -34,7 +35,7 @@ impl Economy {
     /// Maximum random daily fluctuation from the current value
     const FLUCTUATION: f32 = 1.5;
 
-    pub fn bump(&mut self, ev: f32) -> f32 {
+    pub fn bump(&mut self, aum: f32) -> f32 {
         let norm = (self.current() - Self::DEFAULT) / Self::MAX;
 
         let u = rng().random::<f32>();
@@ -50,9 +51,9 @@ impl Economy {
         let mut value = (self.current() + fluctuation).clamp(Self::MIN, Self::MAX);
 
         // Small gain or loss depending on last month's traded volume
-        // If the traded volume was 30% of the total enterprise value (ev), the effect is 0%
+        // If the traded volume was 30% of the total AUM, the effect is 0%
         if !self.last_traded_volume.is_nan() {
-            value *= 1. + ((self.last_traded_volume / ev) - 0.3) / 25.;
+            value *= 1. + ((self.last_traded_volume / aum) - 0.3) / 25.;
         }
 
         self.values.push(value);
@@ -77,6 +78,6 @@ impl Factor for Economy {
     }
 
     fn current(&self) -> f32 {
-        *self.values.last().unwrap()
+        *self.values.back().unwrap()
     }
 }

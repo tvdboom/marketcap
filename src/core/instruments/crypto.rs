@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
-use crate::utils::NameFromEnum;
+use crate::utils::{DQueue, NameFromEnum};
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum CryptoName {
@@ -29,7 +29,7 @@ pub struct Crypto {
     pub base_price: f32,
 
     /// The prices over time
-    pub prices: Vec<f32>,
+    pub prices: DQueue<f32>,
 
     /// Percentage of the base price that can change daily
     pub volatility: f32,
@@ -128,12 +128,8 @@ impl Instrument for Crypto {
         InstrumentKind::Crypto(self.name)
     }
 
-    fn all(&self) -> &Vec<f32> {
+    fn all(&self) -> &DQueue<f32> {
         &self.prices
-    }
-
-    fn current(&self) -> f32 {
-        *self.prices.last().unwrap()
     }
 
     fn market_cap(&self) -> f32 {
@@ -150,70 +146,70 @@ pub fn start_cryptos() -> Vec<Crypto> {
         Crypto {
             name: CryptoName::Bitcoin,
             base_price: 100000.,
-            prices: vec![100000.],
+            prices: DQueue::from([100000.]),
             volatility: 4.1,
             market_cap: 1.9e12,
         },
         Crypto {
             name: CryptoName::Cardano,
             base_price: 0.64,
-            prices: vec![0.64],
+            prices: DQueue::from([0.64]),
             volatility: 5.3,
             market_cap: 19.7e9,
         },
         Crypto {
             name: CryptoName::Dogecoin,
             base_price: 0.18,
-            prices: vec![0.18],
+            prices: DQueue::from([0.18]),
             volatility: 7.8,
             market_cap: 24.4e9,
         },
         Crypto {
             name: CryptoName::Ethereum,
             base_price: 2616.,
-            prices: vec![2616.],
+            prices: DQueue::from([2616.]),
             volatility: 4.8,
             market_cap: 293e9,
         },
         Crypto {
             name: CryptoName::Litecoin,
             base_price: 87.,
-            prices: vec![87.],
+            prices: DQueue::from([87.]),
             volatility: 6.0,
             market_cap: 6.1e9,
         },
         Crypto {
             name: CryptoName::Pepe,
             base_price: 0.02,
-            prices: vec![0.02],
+            prices: DQueue::from([0.02]),
             volatility: 9.6,
             market_cap: 4.7e9,
         },
         Crypto {
             name: CryptoName::Solana,
             base_price: 125.,
-            prices: vec![125.],
+            prices: DQueue::from([125.]),
             volatility: 5.8,
             market_cap: 76.2e9,
         },
         Crypto {
             name: CryptoName::Toncoin,
             base_price: 2.8,
-            prices: vec![2.8],
+            prices: DQueue::from([2.8]),
             volatility: 3.1,
             market_cap: 6.8e9,
         },
         Crypto {
             name: CryptoName::Tron,
             base_price: 0.28,
-            prices: vec![0.28],
+            prices: DQueue::from([0.28]),
             volatility: 11.2,
             market_cap: 26.9e9,
         },
         Crypto {
             name: CryptoName::Uniswap,
             base_price: 7.3,
-            prices: vec![7.3],
+            prices: DQueue::from([7.3]),
             volatility: 8.7,
             market_cap: 4.5e9,
         },

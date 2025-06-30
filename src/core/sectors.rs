@@ -1,8 +1,10 @@
+use std::collections::HashMap;
+
+use serde::{Deserialize, Serialize};
+
 use crate::core::factors::inflation::Inflation;
 use crate::core::instruments::commodities::{Commodity, CommodityName};
 use crate::core::instruments::instrument::Instrument;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum SectorName {

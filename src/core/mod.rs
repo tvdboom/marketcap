@@ -17,6 +17,7 @@ mod sectors;
 mod states;
 mod systems;
 mod ui;
+mod derivatives;
 
 use bevy::prelude::*;
 

@@ -5,7 +5,7 @@ use crate::core::countries::CountryName;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::instruments::stocks::Company;
 use crate::core::loans::Term;
-use crate::utils::NameFromEnum;
+use crate::utils::{DQueue, NameFromEnum};
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum BondKind {
@@ -85,7 +85,7 @@ pub struct Bond {
     pub issuer: BondIssuer,
 
     /// The face value of the bond
-    pub prices: Vec<f32>,
+    pub prices: DQueue<f32>,
 
     /// The quality of the bond (investment grade or high yield)
     pub quality: BondQuality,
@@ -108,7 +108,7 @@ impl Bond {
     /// Issue a new bond, recalculating interest and face value
     pub fn issue(&mut self) {
         self.prices
-            .push(self.prices.last().unwrap() * (1.0 + self.interest / 100.));
+            .push(self.prices.back().unwrap() * (1.0 + self.interest / 100.));
     }
 }
 
@@ -136,12 +136,8 @@ impl Instrument for Bond {
         InstrumentKind::Bond(self.issuer)
     }
 
-    fn all(&self) -> &Vec<f32> {
+    fn all(&self) -> &DQueue<f32> {
         &self.prices
-    }
-
-    fn current(&self) -> f32 {
-        *self.prices.last().unwrap()
     }
 
     fn interest(&self) -> f32 {
@@ -158,189 +154,189 @@ pub fn start_bonds() -> Vec<Bond> {
         Bond {
             issuer: BondIssuer::Government(CountryName::Australia),
             quality: BondQuality::AA,
-            prices: vec![1000.],
+            prices: DQueue::from([1000.]),
             interest: 4.8,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Brazil),
             quality: BondQuality::BBB,
-            prices: vec![1000.],
+            prices: DQueue::from([1000.]),
             interest: 6.5,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Canada),
             quality: BondQuality::AAA,
-            prices: vec![1000.],
+            prices: DQueue::from([1000.]),
             interest: 4.2,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::China),
             quality: BondQuality::A,
-            prices: vec![1000.],
+            prices: DQueue::from([1000.]),
             interest: 3.5,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::EU),
             quality: BondQuality::AAA,
-            prices: vec![1000.],
+            prices: DQueue::from([1000.]),
             interest: 3.0,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Japan),
             quality: BondQuality::AAA,
-            prices: vec![1000.],
+            prices: DQueue::from([1000.]),
             interest: 0.5,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Russia),
             quality: BondQuality::CCC,
-            prices: vec![1000.],
+            prices: DQueue::from([1000.]),
             interest: 7.5,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::SaudiArabia),
             quality: BondQuality::BBB,
-            prices: vec![1000.],
+            prices: DQueue::from([1000.]),
             interest: 3.8,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::SouthAfrica),
             quality: BondQuality::CC,
-            prices: vec![1000.],
+            prices: DQueue::from([1000.]),
             interest: 8.0,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Ukraine),
             quality: BondQuality::CC,
-            prices: vec![1000.],
+            prices: DQueue::from([1000.]),
             interest: 10.0,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::USA),
             quality: BondQuality::AAA,
-            prices: vec![1000.],
+            prices: DQueue::from([1000.]),
             interest: 4.,
             term: Term::ThreeYears,
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Venezuela),
             quality: BondQuality::C,
-            prices: vec![1000.],
+            prices: DQueue::from([1000.]),
             interest: 12.0,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Apple),
             quality: BondQuality::AAA,
-            prices: vec![100.],
+            prices: DQueue::from([100.]),
             interest: 4.0,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Boeing),
             quality: BondQuality::A,
-            prices: vec![100.],
+            prices: DQueue::from([100.]),
             interest: 5.5,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::GoldmanSachs),
             quality: BondQuality::AA,
-            prices: vec![100.],
+            prices: DQueue::from([100.]),
             interest: 4.7,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Inditex),
             quality: BondQuality::A,
-            prices: vec![100.],
+            prices: DQueue::from([100.]),
             interest: 5.5,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::LockheedMartin),
             quality: BondQuality::B,
-            prices: vec![100.],
+            prices: DQueue::from([100.]),
             interest: 9.1,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::LVMH),
             quality: BondQuality::A,
-            prices: vec![100.],
+            prices: DQueue::from([100.]),
             interest: 5.6,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Maersk),
             quality: BondQuality::BBB,
-            prices: vec![100.],
+            prices: DQueue::from([100.]),
             interest: 7.5,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Moderna),
             quality: BondQuality::BB,
-            prices: vec![100.],
+            prices: DQueue::from([100.]),
             interest: 7.8,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Nestle),
             quality: BondQuality::AAA,
-            prices: vec![100.],
+            prices: DQueue::from([100.]),
             interest: 4.1,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Nvidia),
             quality: BondQuality::B,
-            prices: vec![100.],
+            prices: DQueue::from([100.]),
             interest: 5.0,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Pfizer),
             quality: BondQuality::A,
-            prices: vec![100.],
+            prices: DQueue::from([100.]),
             interest: 4.5,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::RioTinto),
             quality: BondQuality::BB,
-            prices: vec![100.],
+            prices: DQueue::from([100.]),
             interest: 7.7,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Shell),
             quality: BondQuality::AAA,
-            prices: vec![100.],
+            prices: DQueue::from([100.]),
             interest: 4.3,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Toyota),
             quality: BondQuality::AAA,
-            prices: vec![100.],
+            prices: DQueue::from([100.]),
             interest: 4.2,
             term: Term::default(),
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Unilever),
             quality: BondQuality::A,
-            prices: vec![100.],
+            prices: DQueue::from([100.]),
             interest: 5.5,
             term: Term::default(),
         },

@@ -1,5 +1,6 @@
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::f32::consts::E;
+use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
 use crate::core::instruments::bonds::{BondIssuer, BondQuality};
@@ -9,7 +10,7 @@ use crate::core::instruments::forex::CurrencyName;
 use crate::core::instruments::stocks::{Company, ESGRating};
 use crate::core::orders::OrderKind;
 use crate::core::sectors::SectorName;
-use crate::utils::NameFromEnum;
+use crate::utils::{DQueue, NameFromEnum};
 
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum InstrumentKind {
@@ -76,14 +77,20 @@ pub trait Instrument {
     }
     fn description(&self) -> &str;
     fn kind(&self) -> InstrumentKind;
-    fn all(&self) -> &Vec<f32>;
-    fn current(&self) -> f32;
+    fn all(&self) -> &DQueue<f32>;
+    fn current(&self) -> f32 {
+        *self.all().back().unwrap()
+    }
+
+    fn future(&self, interest: f32, days: f32) -> f32 {
+        self.current() * E.powf((interest + self.storage_cost() / 100. * 365.) * days / 365.)
+    }
 
     /// Calculates the percentage difference from the average of the last 30 values
     fn diff(&self) -> f32 {
         // Add 30 initial values to ensure we always have at least 30 values
-        let mut slice = vec![self.all()[0]; 29];
-        slice.extend(self.all());
+        let mut slice = vec![*self.all().front().unwrap(); 29];
+        slice.extend(self.all().iter().collect::<Vec<_>>());
 
         let len = slice.len();
         let slice = &slice[len - 30..];
@@ -121,6 +128,8 @@ pub trait Instrument {
     fn sentiment(&self) -> u8 {
         0
     }
+
+    /// Costs of holding this instrument per unit per day
     fn storage_cost(&self) -> f32 {
         0.
     }

@@ -1,11 +1,11 @@
 use std::fmt::Debug;
-
+use std::collections::VecDeque;
 use bevy_egui::egui::TextStyle;
 use chrono::{Datelike, NaiveDate};
 use rand::distr::Alphanumeric;
 use rand::{Rng, rng};
 use regex::Regex;
-
+use serde::{Deserialize, Serialize};
 use crate::core::constants::HEIGHT;
 
 /// Get the text size ratio depending on the window size
@@ -73,6 +73,7 @@ impl<T: Debug> NameFromEnum for T {
     }
 }
 
+/// Trait to enhance floating point numbers with additional methods
 pub trait EnhFloat {
     fn round1(self) -> Self;
     fn clean(self) -> Self;
@@ -125,5 +126,52 @@ impl EnhFloat for f32 {
             x if x < 0. => x.to_string(),
             _ => "0".to_string(),
         }
+    }
+}
+
+/// Deque with a fixed capacity
+#[derive(Clone, Serialize, Deserialize)]
+pub struct DQueue<T> {
+    queue: VecDeque<T>,
+}
+
+impl<T> DQueue<T> {
+    const CAPACITY: usize = 365; // Default capacity of 1 year
+    
+    pub fn new() -> Self {
+        Self {
+            queue: VecDeque::with_capacity(Self::CAPACITY),
+        }
+    }
+    
+    pub fn from<I: IntoIterator<Item = T>>(iter: I) -> Self {
+        Self { queue: VecDeque::from_iter(iter) }
+    }
+
+    pub fn push(&mut self, item: T) {
+        if self.queue.len() == Self::CAPACITY {
+            self.queue.pop_front();
+        }
+        self.queue.push_back(item);
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = &T> {
+        self.queue.iter()
+    }
+    
+    pub fn len(&self) -> usize {
+        self.queue.len()
+    }
+    
+    pub fn front(&self) -> Option<&T> {
+        self.queue.front()
+    }
+    
+    pub fn back(&self) -> Option<&T> {
+        self.queue.back()
+    }
+    
+    pub fn back_mut(&mut self) -> Option<&mut T> {
+        self.queue.back_mut()
     }
 }

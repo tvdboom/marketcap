@@ -3,7 +3,7 @@ use std::cmp::Ordering;
 use bevy::prelude::*;
 use itertools::Itertools;
 use strum_macros::EnumIter;
-
+use crate::core::derivatives::DerivativeTerm;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondKind;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
@@ -342,6 +342,7 @@ pub struct ModalInfo {
     pub lower_bound: bool,
     pub loan: bool,
     pub memory_loan: bool,
+    pub future_term: DerivativeTerm,
 }
 
 #[derive(Resource, Default)]

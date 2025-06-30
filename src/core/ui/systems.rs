@@ -123,17 +123,16 @@ pub fn top_panel(
                 ui.add_space(window.width() * 0.06);
 
                 ui.add_factor(
-                    "Enterprise value",
-                    player.enterprise_value(&economy).format(),
+                    "Assets Under Management",
+                    player.aum(&economy).format(),
                     CUSTOM_GREEN,
-                    images.get("enterprise"),
+                    images.get("aum"),
                     format!(
-                        "The enterprise value is a comprehensive measure of a company's total \
-                        worth. This includes any kind of assets, investments and cash deposits, \
-                        minus debts.\n\n\
-                        In the game, the enterprise value represents a measure of the success \
-                        of the player. If the enterprise value drops to zero, the company goes \
-                        bankrupt and the game is lost.\n\n\
+                        "The Assets Under Management (AUM) refers to the total market value of all \
+                        financial instruments and cash deposits (minus debts) that an asset manager \
+                        oversees.\n\n\
+                        In the game, the AUM represents a measure of the success of the player. If \
+                        the AUM drops to zero, the company goes bankrupt and the game is lost.\n\n\
                         Cash: {}\n\
                         Stocks: {}\n\
                         Commodities: {}\n\
@@ -141,7 +140,7 @@ pub fn top_panel(
                         Term loan debt: {}\n\
                         Margin loan debt: {}\n\
                         ------------------------\n\
-                        Enterprise value: {}",
+                        AUM: {}",
                         player.cash.current().signed(),
                         player
                             .stocks()
@@ -163,7 +162,7 @@ pub fn top_panel(
                             .signed(),
                         (-player.term_loan_debt()).signed(),
                         (-player.margin_loan_debt()).signed(),
-                        player.enterprise_value(&economy) as i32,
+                        player.aum(&economy) as i32,
                     ),
                     None,
                     &window,

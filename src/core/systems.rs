@@ -23,12 +23,12 @@ pub fn time_pass(
 
         // Daily operations =================================== >>
 
-        let ev = player.enterprise_value(&economy);
+        let ev = player.aum(&economy);
         let (_, _, interest) = economy.bump(ev, &mut message);
 
         player.cash.bump(interest);
 
-        let ev = player.enterprise_value(&economy);
+        let ev = player.aum(&economy);
         player.influence.bump(ev);
 
         // Update bounds for trailing orders

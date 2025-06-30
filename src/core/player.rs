@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use bevy::prelude::*;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-
+use crate::core::derivatives::Derivative;
 use crate::core::factors::Factor;
 use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
@@ -30,6 +30,7 @@ pub struct Player {
     pub loans: Vec<TermLoan>,
     pub orders: Vec<Order>,
     pub instruments: Vec<OwnedInstrument>,
+    pub derivatives: Vec<Derivative>,
     pub favourites: HashMap<u8, InstrumentKind>,
 }
 
@@ -47,7 +48,7 @@ impl Player {
             .sum()
     }
 
-    pub fn enterprise_value(&self, economy: &GlobalEconomy) -> f32 {
+    pub fn aum(&self, economy: &GlobalEconomy) -> f32 {
         self.cash.amount
             + self
                 .instruments

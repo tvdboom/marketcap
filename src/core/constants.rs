@@ -1,5 +1,6 @@
-use crate::core::instruments::forex::CurrencyName;
 use bevy_egui::egui::Color32;
+
+use crate::core::instruments::forex::CurrencyName;
 
 /// Window
 pub const HEIGHT: f32 = 900.;

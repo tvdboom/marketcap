@@ -47,10 +47,10 @@ pub fn toggle_pause_keyboard(
 
         // Hack to control global economy
         if keyboard.just_pressed(KeyCode::ArrowUp) {
-            *economy.economy.values.last_mut().unwrap() += 10.0;
+            *economy.economy.values.back_mut().unwrap() += 10.0;
         }
         if keyboard.just_pressed(KeyCode::ArrowDown) {
-            *economy.economy.values.last_mut().unwrap() -= 10.0;
+            *economy.economy.values.back_mut().unwrap() -= 10.0;
         }
     }
 }

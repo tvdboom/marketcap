@@ -3,14 +3,14 @@ use serde::{Deserialize, Serialize};
 use crate::core::factors::Factor;
 use crate::core::factors::economy::Economy;
 use crate::core::factors::interest::Interest;
-use crate::utils::EnhFloat;
+use crate::utils::{DQueue, EnhFloat};
 
 #[derive(Clone, Serialize, Deserialize)]
-pub struct Inflation(pub Vec<f32>);
+pub struct Inflation(pub DQueue<f32>);
 
 impl Default for Inflation {
     fn default() -> Self {
-        Self(Vec::from([Self::DEFAULT]))
+        Self(DQueue::from([Self::DEFAULT]))
     }
 }
 
@@ -50,6 +50,6 @@ impl Factor for Inflation {
     }
 
     fn current(&self) -> f32 {
-        *self.0.last().unwrap()
+        *self.0.back().unwrap()
     }
 }

@@ -1,18 +1,18 @@
 use serde::{Deserialize, Serialize};
 
 use crate::core::factors::Factor;
-use crate::utils::EnhFloat;
+use crate::utils::{DQueue, EnhFloat};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Interest {
-    pub rate: Vec<f32>,
+    pub rate: DQueue<f32>,
     pub next_rate: Option<f32>,
 }
 
 impl Default for Interest {
     fn default() -> Self {
         Self {
-            rate: Vec::from([Self::DEFAULT]),
+            rate: DQueue::from([Self::DEFAULT]),
             next_rate: None,
         }
     }
@@ -69,6 +69,6 @@ impl Factor for Interest {
     }
 
     fn current(&self) -> f32 {
-        *self.rate.last().unwrap()
+        *self.rate.back().unwrap()
     }
 }

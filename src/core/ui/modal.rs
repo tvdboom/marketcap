@@ -155,7 +155,7 @@ pub fn trade_modal(
                                 ui.add_indicator(instrument.diff());
                             }
                         });
-
+                        
                         ui.label(format!("Owned: {owned} {}", instrument.unit()));
                         ui.label(format!(
                             "Value: {} {CURRENCY}",
@@ -176,8 +176,8 @@ pub fn trade_modal(
                                         .show_value(false)
                                         .text(amount.to_string())
                                 ).on_hover_text(
-                                    "The maximum amount you can go short depends on the enterprise \
-                                    value and the credit score."
+                                    "The maximum amount you can go short depends on the AUM \
+                                    and the credit score."
                                 )
                             } else {
                                 let max = if state.modal_info.loan {
@@ -317,8 +317,8 @@ pub fn trade_modal(
                                 ui.label(format!("Max. loan: {} {CURRENCY} ({} {})", max_loan.clean(), (max_loan / instrument.current()).floor(), instrument.lowername()))
                                     .on_hover_text(
                                         "Maximum amount that can be borrowed. This number depends \
-                                        on the enterprise value and the credit score. Any other open \
-                                        margin loans debts are subtracted from this amount.",
+                                        on the AUM and the credit score. Any other open margin loans \
+                                        debts are subtracted from this amount.",
                                     );
 
                                 ui.label(format!("Debt: {} {CURRENCY}", loan.debt.clean()))

@@ -90,7 +90,7 @@ pub fn credit_panel(
                     let max_principal = state
                         .credit
                         .provider
-                        .max_principal(player.enterprise_value(&economy), player.credit_score.current());
+                        .max_principal(player.aum(&economy), player.credit_score.current());
 
                     ui.spacing_mut().slider_width = window.width() * 0.13;
                     let principal = state.credit.principal;
@@ -103,7 +103,7 @@ pub fn credit_panel(
                         .on_hover_text(
                             "The amount of money you want to borrow. The maximum amount you \
                             can borrow is determined by the credit provider and the company's \
-                            enterprise value."
+                            AUM."
                         );
                     
                     ui.label("Kind");

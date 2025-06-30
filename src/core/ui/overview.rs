@@ -468,6 +468,7 @@ pub fn processed_order_table(
                                     lower_bound: order.lower_bound,
                                     loan: order.loan.is_some(),
                                     memory_loan: state.modal_info.memory_loan,
+                                    future_term: state.modal_info.future_term.clone(),
                                 };
                             }
                         });

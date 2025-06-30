@@ -8,8 +8,8 @@ pub struct Influence {
 }
 
 impl Influence {
-    pub fn bump(&mut self, enterprise_value: f32) {
-        self.score += enterprise_value / 1e4;
+    pub fn bump(&mut self, aum: f32) {
+        self.score += aum / 1e4;
     }
 }
 

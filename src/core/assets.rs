@@ -48,10 +48,10 @@ impl FromWorld for WorldAssets {
 
         let mut images: HashMap<&'static str, Handle<Image>> = HashMap::from([
             // Icons
+            ("aum", assets.load("images/icons/aum.png")),
             ("cash", assets.load("images/icons/cash.png")),
             ("credit-score", assets.load("images/icons/credit-score.png")),
             ("economic", assets.load("images/icons/economic.png")),
-            ("enterprise", assets.load("images/icons/enterprise.png")),
             ("inflation", assets.load("images/icons/inflation.png")),
             ("influence", assets.load("images/icons/influence.png")),
             ("interest", assets.load("images/icons/interest.png")),
