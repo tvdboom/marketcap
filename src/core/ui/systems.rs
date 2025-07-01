@@ -172,7 +172,7 @@ pub fn top_panel(
 
                 ui.add_factor(
                     "Cash",
-                    (player.cash.current() as i32).to_string(),
+                    player.cash.current().format(),
                     match player.cash.current() {
                         n if n <= -1. => Color32::RED,
                         n if n >= 1. => CUSTOM_GREEN,
@@ -186,7 +186,7 @@ pub fn top_panel(
 
                 ui.add_space(window.width() * 0.01);
 
-                let netflow = player.netflow(&economy).floor();
+                let netflow = player.netflow(&economy);
                 ui.add_factor(
                     "Net flow",
                     netflow.signed(),

@@ -1,5 +1,3 @@
-use bevy::prelude::Window;
-use bevy_egui::egui::{ScrollArea, Ui};
 use crate::core::constants::CURRENCY;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::instrument::Instrument;
@@ -7,6 +5,8 @@ use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderOptions, UiState};
 use crate::core::ui::utils::CustomUi;
+use bevy::prelude::Window;
+use bevy_egui::egui::{ScrollArea, Ui};
 
 pub fn forex_panel(
     ui: &mut Ui,
@@ -42,14 +42,14 @@ pub fn forex_panel(
             window,
         );
 
-        let mut instruments = economy
+        let instruments = economy
             .currencies
             .iter()
             .filter(|c| c.name != CURRENCY)
             .map(|c| c as &dyn Instrument)
             .collect::<Vec<_>>();
 
-        for inst in OrderOptions::sort_instrument(&mut instruments, &state.forex, economy, player) {
+        for inst in OrderOptions::sort_instrument(instruments, &state.forex, economy, player) {
             let response = ui.add_instrument(inst, economy, images, window);
 
             if response.clicked() {

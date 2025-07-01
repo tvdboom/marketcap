@@ -45,14 +45,13 @@ pub fn stock_panel(
             window,
         );
 
-        let mut instruments = economy
+        let instruments = economy
             .stocks
             .iter()
             .map(|c| c as &dyn Instrument)
             .collect::<Vec<_>>();
 
-        for inst in OrderOptions::sort_instrument(&mut instruments, &state.stocks, economy, player)
-        {
+        for inst in OrderOptions::sort_instrument(instruments, &state.stocks, economy, player) {
             let response = ui.add_instrument(inst, economy, images, window);
 
             if response.clicked() {

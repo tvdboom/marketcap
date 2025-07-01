@@ -2,6 +2,7 @@ mod assets;
 mod audio;
 pub mod constants;
 mod countries;
+mod derivatives;
 pub mod factors;
 mod game_settings;
 mod global_economy;
@@ -17,7 +18,6 @@ mod sectors;
 mod states;
 mod systems;
 mod ui;
-mod derivatives;
 
 use bevy::prelude::*;
 

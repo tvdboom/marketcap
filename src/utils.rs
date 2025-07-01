@@ -1,12 +1,12 @@
-use std::fmt::Debug;
-use std::collections::VecDeque;
+use crate::core::constants::HEIGHT;
 use bevy_egui::egui::TextStyle;
 use chrono::{Datelike, NaiveDate};
 use rand::distr::Alphanumeric;
 use rand::{Rng, rng};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use crate::core::constants::HEIGHT;
+use std::collections::VecDeque;
+use std::fmt::Debug;
 
 /// Get the text size ratio depending on the window size
 pub fn get_ratio(width: f32, height: f32, style: TextStyle) -> f32 {
@@ -137,15 +137,11 @@ pub struct DQueue<T> {
 
 impl<T> DQueue<T> {
     const CAPACITY: usize = 365; // Default capacity of 1 year
-    
-    pub fn new() -> Self {
-        Self {
-            queue: VecDeque::with_capacity(Self::CAPACITY),
-        }
-    }
-    
+
     pub fn from<I: IntoIterator<Item = T>>(iter: I) -> Self {
-        Self { queue: VecDeque::from_iter(iter) }
+        Self {
+            queue: VecDeque::from_iter(iter),
+        }
     }
 
     pub fn push(&mut self, item: T) {
@@ -158,19 +154,19 @@ impl<T> DQueue<T> {
     pub fn iter(&self) -> impl Iterator<Item = &T> {
         self.queue.iter()
     }
-    
+
     pub fn len(&self) -> usize {
         self.queue.len()
     }
-    
+
     pub fn front(&self) -> Option<&T> {
         self.queue.front()
     }
-    
+
     pub fn back(&self) -> Option<&T> {
         self.queue.back()
     }
-    
+
     pub fn back_mut(&mut self) -> Option<&mut T> {
         self.queue.back_mut()
     }

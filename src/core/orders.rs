@@ -29,13 +29,24 @@ impl OrderKind {
             OrderKind::LimitOrder => "♾",
             OrderKind::TrailingOrder => "🚶‍",
             OrderKind::ShortSell => "📉",
-            OrderKind::Futures => "🔮",
+            OrderKind::Futures => "⏱",
             OrderKind::Options => "📝",
         }
     }
 
     pub fn abbr(&self) -> String {
         self.to_name().split_whitespace().next().unwrap().to_owned()
+    }
+
+    pub fn is_derivative(&self) -> bool {
+        matches!(self, OrderKind::Futures | OrderKind::Options)
+    }
+
+    pub fn is_short_derivative(&self) -> bool {
+        matches!(
+            self,
+            OrderKind::ShortSell | OrderKind::Futures | OrderKind::Options
+        )
     }
 
     pub fn description(&self) -> &str {
@@ -64,7 +75,16 @@ impl OrderKind {
             },
             OrderKind::Futures => {
                 "Financial contracts to buy or sell instruments against a predetermined price \
-                in the future. "
+                in the future. Buying a future (going long) automatically buys the underlying \
+                instrument for the strike price at the maturity date. Selling a future (going \
+                short) provides immediate cash and the obligation to deliver the underlying \
+                instrument at the strike price at the maturity date. If the underlying instrument \
+                is not owned, it's automatically bought at the current market price and it greatly \
+                reduces the credit score.\n\n \
+                Note that buying and selling the same amount of futures don't 'cancel' each other \
+                out due to the different maturity dates. Contrary to the real world, futures in \
+                this game are hold-to-maturity only, meaning that they can't be traded before the \
+                maturity date."
             },
             OrderKind::Options => {
                 "Financial contracts that give the buyer the right, but not the obligation, \

@@ -92,6 +92,8 @@ pub fn time_pass(
 
         player.cash.amount = cash;
 
+        player.resolve_derivatives(&economy, &mut message);
+
         player.resolve_orders(&economy, &mut order_ev, &mut message);
 
         if economy.date.day() == 1 {

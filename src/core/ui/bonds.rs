@@ -70,14 +70,14 @@ pub fn bonds_panel(
             window,
         );
 
-        let mut instruments = economy
+        let instruments = economy
             .bonds
             .iter()
             .filter(|c| c.kind() == state.bonds.tab)
             .map(|c| c as &dyn Instrument)
             .collect::<Vec<_>>();
 
-        for inst in OrderOptions::sort_instrument(&mut instruments, order, economy, player) {
+        for inst in OrderOptions::sort_instrument(instruments, order, economy, player) {
             let response = ui.add_instrument(inst, economy, images, window);
 
             if response.clicked() {

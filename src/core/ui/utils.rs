@@ -11,7 +11,7 @@ use crate::core::instruments::bonds::BondIssuer;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderByState, OrderOptions};
-use crate::utils::{EnhFloat, NameFromEnum, get_ratio, DQueue};
+use crate::utils::{DQueue, EnhFloat, NameFromEnum, get_ratio};
 
 /// Custom IOS style toggle for UI
 pub fn toggle(on: &mut bool) -> impl Widget + '_ {

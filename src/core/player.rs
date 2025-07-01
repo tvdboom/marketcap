@@ -1,9 +1,6 @@
 use std::collections::HashMap;
 
-use bevy::prelude::*;
-use itertools::Itertools;
-use serde::{Deserialize, Serialize};
-use crate::core::derivatives::Derivative;
+use crate::core::derivatives::{Derivative, DerivativeAction};
 use crate::core::factors::Factor;
 use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
@@ -13,6 +10,10 @@ use crate::core::instruments::instrument::InstrumentKind;
 use crate::core::loans::{MarginLoan, TermLoan};
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
+use crate::utils::NameFromEnum;
+use bevy::prelude::*;
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct OwnedInstrument {
@@ -29,8 +30,8 @@ pub struct Player {
     pub influence: Influence,
     pub loans: Vec<TermLoan>,
     pub orders: Vec<Order>,
-    pub instruments: Vec<OwnedInstrument>,
     pub derivatives: Vec<Derivative>,
+    pub instruments: Vec<OwnedInstrument>,
     pub favourites: HashMap<u8, InstrumentKind>,
 }
 
@@ -166,6 +167,27 @@ impl Player {
             .collect::<Vec<_>>()
     }
 
+    pub fn pending_derivatives(&self) -> Vec<&Derivative> {
+        self.derivatives
+            .iter()
+            .filter(|d| d.status == OrderStatus::Pending)
+            .collect::<Vec<_>>()
+    }
+
+    pub fn pending_derivatives_mut(&mut self) -> Vec<&mut Derivative> {
+        self.derivatives
+            .iter_mut()
+            .filter(|d| d.status == OrderStatus::Pending)
+            .collect::<Vec<_>>()
+    }
+
+    pub fn processed_derivatives(&self) -> Vec<&Derivative> {
+        self.derivatives
+            .iter()
+            .filter(|d| d.status != OrderStatus::Pending)
+            .collect::<Vec<_>>()
+    }
+
     pub fn resolve_orders(
         &mut self,
         economy: &GlobalEconomy,
@@ -249,6 +271,111 @@ impl Player {
             order.processed = economy.date;
             order.price = price;
             order.status = status;
+        }
+    }
+
+    pub fn resolve_derivatives(
+        &mut self,
+        economy: &GlobalEconomy,
+        message: &mut EventWriter<MessageEv>,
+    ) {
+        let pending = self
+            .pending_derivatives()
+            .into_iter()
+            .cloned()
+            .collect::<Vec<_>>();
+        for derivative in pending {
+            if economy.date == derivative.maturity_date() {
+                if derivative.execute {
+                    match derivative.action {
+                        DerivativeAction::Bought => {
+                            if let Some(owned) = self.get_mut(&derivative.instrument) {
+                                owned.amount += derivative.amount as i32;
+                            } else {
+                                self.instruments.push(OwnedInstrument {
+                                    kind: derivative.instrument.clone(),
+                                    amount: derivative.amount as i32,
+                                    loan: None,
+                                    warning: false,
+                                });
+                            }
+
+                            message.write(MessageEv {
+                                message: format!(
+                                    "Executed {} buy for {} {}.",
+                                    derivative.kind.to_lowername(),
+                                    derivative.amount,
+                                    derivative.instrument.lowername(),
+                                ),
+                                level: MessageLevel::Info,
+                            });
+                        },
+                        DerivativeAction::Sold => {
+                            let remaining =
+                                if let Some(owned) = self.get_mut(&derivative.instrument) {
+                                    if owned.amount >= derivative.amount as i32 {
+                                        owned.amount -= derivative.amount as i32;
+                                        0
+                                    } else if owned.amount > 0 {
+                                        let remaining = derivative.amount - owned.amount as u32;
+                                        owned.amount = 0;
+                                        remaining
+                                    } else {
+                                        derivative.amount
+                                    }
+                                } else {
+                                    derivative.amount
+                                };
+
+                            if remaining > 0 {
+                                // Not sufficient instruments owned to cover the derivative
+                                self.cash.amount -= derivative.price * remaining as f32;
+                                self.credit_score.decrease();
+
+                                message.write(MessageEv {
+                                    message: format!(
+                                        "Executed {} sell for {} {}. Insufficient amount owned.",
+                                        derivative.kind.to_lowername(),
+                                        derivative.amount,
+                                        derivative.instrument.lowername(),
+                                    ),
+                                    level: MessageLevel::Error,
+                                });
+                            } else {
+                                message.write(MessageEv {
+                                    message: format!(
+                                        "Executed {} sell for {} {}.",
+                                        derivative.kind.to_lowername(),
+                                        derivative.amount,
+                                        derivative.instrument.lowername(),
+                                    ),
+                                    level: MessageLevel::Info,
+                                });
+                            }
+                        },
+                    }
+                } else {
+                    message.write(MessageEv {
+                        message: format!(
+                            "Option for {} {} matured without execution.",
+                            derivative.amount,
+                            derivative.instrument.lowername()
+                        ),
+                        level: MessageLevel::Info,
+                    });
+                }
+            }
+        }
+
+        // Second pass to update the status
+        for derivative in self.pending_derivatives_mut() {
+            if economy.date == derivative.maturity_date() {
+                derivative.status = if derivative.execute {
+                    OrderStatus::Executed
+                } else {
+                    OrderStatus::Canceled
+                }
+            }
         }
     }
 }

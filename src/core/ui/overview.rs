@@ -4,6 +4,7 @@ use egui_extras::{Column, TableBuilder};
 use strum::IntoEnumIterator;
 
 use crate::core::constants::{CURRENCY, DATE_FORMAT, NA};
+use crate::core::derivatives::{Derivative, DerivativeKind};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::instrument::InstrumentKind;
 use crate::core::loans::TermLoan;
@@ -11,7 +12,7 @@ use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderKind, OrderStatus};
 use crate::core::player::{OwnedInstrument, Player};
 use crate::core::ui::state::{CreditTab, ModalInfo, OrderOptions, OverviewTab, Tab, UiState};
-use crate::core::ui::utils::CustomUi;
+use crate::core::ui::utils::{CustomUi, toggle};
 use crate::utils::{EnhFloat, NameFromEnum};
 
 pub fn overview_panel(
@@ -37,21 +38,21 @@ pub fn overview_panel(
     match state.overview.tab {
         OverviewTab::Portfolio => {
             let stocks = OrderOptions::sort_owned_instrument(
-                &mut player.stocks(),
+                player.stocks(),
                 &state.overview.stocks,
                 economy,
                 player,
             );
 
             let commodities = OrderOptions::sort_owned_instrument(
-                &mut player.commodities(),
+                player.commodities(),
                 &state.overview.commodities,
                 economy,
                 player,
             );
 
             let crypto = OrderOptions::sort_owned_instrument(
-                &mut player.crypto(),
+                player.crypto(),
                 &state.overview.crypto,
                 economy,
                 player,
@@ -119,10 +120,12 @@ pub fn overview_panel(
         },
         OverviewTab::OrderBook => {
             let pending =
-                OrderOptions::sort_order(player.pending_orders(), &state.overview.pending);
+                OrderOptions::sort_order(player.pending_orders(), &state.overview.pending_order);
 
-            let processed =
-                OrderOptions::sort_order(player.processed_orders(), &state.overview.processed);
+            let processed = OrderOptions::sort_order(
+                player.processed_orders(),
+                &state.overview.processed_order,
+            );
 
             if pending.is_empty() && processed.is_empty() {
                 ui.add_space(window.height() * 0.02);
@@ -139,7 +142,7 @@ pub fn overview_panel(
                         OrderOptions::Price,
                     ]
                     .into(),
-                    &mut state.overview.pending,
+                    &mut state.overview.pending_order,
                     window,
                 );
 
@@ -160,12 +163,73 @@ pub fn overview_panel(
                         OrderOptions::Status,
                     ]
                     .into(),
-                    &mut state.overview.processed,
+                    &mut state.overview.processed_order,
                     window,
                 );
 
                 processed_order_table(ui, state, processed, economy);
                 ui.small("Click on a row to recreate the order.");
+            }
+        },
+        OverviewTab::Derivatives => {
+            let pending = OrderOptions::sort_derivative_mut(
+                player.pending_derivatives_mut(),
+                &state.overview.pending_derivative,
+            );
+
+            let no_pending = pending.is_empty();
+
+            if !no_pending {
+                ui.add_combobox(
+                    "Pending derivatives",
+                    [
+                        OrderOptions::Name,
+                        OrderOptions::Maturity,
+                        OrderOptions::Kind,
+                        OrderOptions::Action,
+                        OrderOptions::OwnedAmount,
+                        OrderOptions::OwnedValue,
+                        OrderOptions::Price,
+                        OrderOptions::Execute,
+                    ]
+                    .into(),
+                    &mut state.overview.processed_order,
+                    window,
+                );
+
+                pending_derivative_table(ui, state, economy, pending);
+                ui.small("Click on a row to trade that instrument.");
+            }
+
+            let processed = OrderOptions::sort_derivative(
+                player.processed_derivatives(),
+                &state.overview.processed_derivative,
+            );
+
+            if !processed.is_empty() {
+                ui.add_combobox(
+                    "Processed derivatives",
+                    [
+                        OrderOptions::Name,
+                        OrderOptions::Maturity,
+                        OrderOptions::Kind,
+                        OrderOptions::Status,
+                        OrderOptions::OwnedAmount,
+                        OrderOptions::OwnedValue,
+                        OrderOptions::Price,
+                        OrderOptions::Execute,
+                    ]
+                    .into(),
+                    &mut state.overview.processed_order,
+                    window,
+                );
+
+                processed_derivative_table(ui, state, economy, processed);
+                ui.small("Click on a row to recreate the contract.");
+            } else if no_pending {
+                ui.add_space(window.height() * 0.02);
+
+                ui.label("No derivatives traded.");
             }
         },
         OverviewTab::Debts => {
@@ -318,7 +382,7 @@ pub fn pending_order_table(
         "Kind",
         "Amount",
         "Threshold",
-        "Current price",
+        "Market price",
     ];
 
     Frame::new()
@@ -467,8 +531,171 @@ pub fn processed_order_table(
                                     trailing_stop: order.threshold as u32,
                                     lower_bound: order.lower_bound,
                                     loan: order.loan.is_some(),
-                                    memory_loan: state.modal_info.memory_loan,
-                                    future_term: state.modal_info.future_term.clone(),
+                                    ..state.modal_info.clone()
+                                };
+                            }
+                        });
+                    }
+                });
+        });
+}
+
+pub fn pending_derivative_table(
+    ui: &mut Ui,
+    state: &mut UiState,
+    economy: &GlobalEconomy,
+    derivatives: Vec<&mut Derivative>,
+) {
+    let columns = vec![
+        "Name",
+        "Maturity",
+        "Kind",
+        "Status",
+        "Market price",
+        "Strike price",
+        "Owned",
+        "Value",
+        "Execute",
+    ];
+
+    Frame::new()
+        .inner_margin(ui.spacing().menu_margin)
+        .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
+        .show(ui, |ui| {
+            TableBuilder::new(ui)
+                .striped(false)
+                .sense(Sense::click())
+                .columns(Column::remainder(), columns.len())
+                .header(30., |mut header| {
+                    for col in columns {
+                        header.col(|ui| {
+                            ui.strong(col);
+                        });
+                    }
+                })
+                .body(|mut body| {
+                    for derivative in derivatives {
+                        let instrument = economy.get(&derivative.instrument);
+
+                        let content = vec![
+                            instrument.name(),
+                            derivative.maturity_date().format(DATE_FORMAT).to_string(),
+                            derivative.kind.to_name(),
+                            derivative.action.to_name(),
+                            format!("{} {CURRENCY}", instrument.current().clean()),
+                            format!(
+                                "{} {CURRENCY} ({} {CURRENCY})",
+                                derivative.price.clean(),
+                                (derivative.price - instrument.current()).signed()
+                            ),
+                            derivative.amount.to_string(),
+                            format!(
+                                "{} {CURRENCY}",
+                                (derivative.amount as f32 * derivative.price).clean()
+                            ),
+                        ];
+
+                        body.row(30., |mut row| {
+                            for col in content {
+                                row.col(|ui| {
+                                    ui.label(col);
+                                });
+                            }
+
+                            row.col(|ui| {
+                                ui.add_enabled(
+                                    derivative.kind == DerivativeKind::Option,
+                                    toggle(&mut derivative.execute),
+                                );
+                            });
+
+                            if row.response().clicked() {
+                                state.modal = Some(derivative.instrument.clone());
+                                state.modal_info.tab = if derivative.kind == DerivativeKind::Future
+                                {
+                                    OrderKind::Futures
+                                } else {
+                                    OrderKind::Options
+                                };
+                            }
+                        });
+                    }
+                });
+        });
+}
+
+pub fn processed_derivative_table(
+    ui: &mut Ui,
+    state: &mut UiState,
+    economy: &GlobalEconomy,
+    derivatives: Vec<&Derivative>,
+) {
+    let columns = vec![
+        "Name",
+        "Maturity",
+        "Kind",
+        "Status",
+        "Market price",
+        "Strike price",
+        "Owned",
+        "Value",
+    ];
+
+    Frame::new()
+        .inner_margin(ui.spacing().menu_margin)
+        .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
+        .show(ui, |ui| {
+            TableBuilder::new(ui)
+                .striped(false)
+                .sense(Sense::click())
+                .columns(Column::remainder(), columns.len())
+                .header(30., |mut header| {
+                    for col in columns {
+                        header.col(|ui| {
+                            ui.strong(col);
+                        });
+                    }
+                })
+                .body(|mut body| {
+                    for derivative in derivatives {
+                        let instrument = economy.get(&derivative.instrument);
+
+                        let content = vec![
+                            instrument.name(),
+                            derivative.maturity_date().format(DATE_FORMAT).to_string(),
+                            derivative.kind.to_name(),
+                            derivative.action.to_name(),
+                            format!("{} {CURRENCY}", instrument.current().clean()),
+                            format!(
+                                "{} {CURRENCY} ({} {CURRENCY})",
+                                derivative.price.clean(),
+                                (derivative.price - instrument.current()).signed()
+                            ),
+                            derivative.amount.to_string(),
+                            format!(
+                                "{} {CURRENCY}",
+                                (derivative.amount as f32 * derivative.price).clean()
+                            ),
+                        ];
+
+                        body.row(30., |mut row| {
+                            for col in content {
+                                row.col(|ui| {
+                                    ui.label(col);
+                                });
+                            }
+
+                            if row.response().clicked() {
+                                state.modal = Some(derivative.instrument.clone());
+                                state.modal_info = ModalInfo {
+                                    tab: if derivative.kind == DerivativeKind::Future {
+                                        OrderKind::Futures
+                                    } else {
+                                        OrderKind::Options
+                                    },
+                                    amount: derivative.amount,
+                                    future_term: derivative.term.clone(),
+                                    ..state.modal_info.clone()
                                 };
                             }
                         });
@@ -554,7 +781,7 @@ pub fn margin_loan_overview(
         "Collateral",
         "Interest",
         "Margin frac",
-        "Current price",
+        "Market price",
         "Margin",
     ];
 

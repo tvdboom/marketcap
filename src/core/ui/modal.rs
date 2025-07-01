@@ -1,12 +1,13 @@
 use bevy::prelude::{EventWriter, Res, ResMut, Single, Window};
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::{ComboBox, Id, Image, Modal, Sense, Separator, Sides, Slider};
+use bevy_egui::egui::{ComboBox, Id, Image, Modal, RichText, Sense, Separator, Sides, Slider};
 use chrono::NaiveDate;
 use strum::IntoEnumIterator;
 
 use crate::core::constants::CURRENCY;
 use crate::core::countries::CountryName;
+use crate::core::derivatives::{Derivative, DerivativeAction, DerivativeKind, DerivativeTerm};
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondIssuer;
@@ -53,9 +54,25 @@ pub fn trade_modal(
     let trailing_stop = state.modal_info.trailing_stop;
     let storage_costs = (amount * 30) as f32 * instrument.storage_cost();
 
-    let mut price = instrument.current() * amount as f32;
+    let future_price = instrument.future(
+        economy.interest.current(),
+        state.modal_info.future_term.days(),
+    );
+    let futures = player
+        .derivatives
+        .iter()
+        .cloned()
+        .filter(|d| d.instrument == kind && d.kind == DerivativeKind::Future)
+        .collect::<Vec<_>>();
+
+    let mut total_price = if tab.is_derivative() {
+        future_price * amount as f32
+    } else {
+        instrument.current() * amount as f32
+    };
+
     let loan = if state.modal_info.loan {
-        let mut loan = MarginLoan::new(price, &economy, &player);
+        let mut loan = MarginLoan::new(total_price, &economy, &player);
 
         // If the player already has a loan, use the largest interest rate and margin_frac
         if let Some(owned) = &player.get(&kind) {
@@ -71,6 +88,7 @@ pub fn trade_modal(
     };
 
     let max_loan = MarginLoan::max_loan_debt(&economy, &player);
+    let max_future_sell = Derivative::max_sell(&economy, &player);
 
     let modal = Modal::new(Id::new("modal")).show(contexts.ctx_mut(), |ui| {
         ui.set_min_width(window.width() * 0.5);
@@ -145,23 +163,54 @@ pub fn trade_modal(
                 ui.horizontal(|ui| {
                     ui.vertical(|ui| {
                         ui.horizontal(|ui| {
-                            ui.label(format!(
-                                "Price: {} {CURRENCY}{}",
-                                instrument.current().clean(),
-                                instrument.per_unit()
-                            ));
+                            ui.vertical(|ui| {
+                                ui.horizontal(|ui| {
+                                    ui.label(format!(
+                                        "Price: {} {CURRENCY}{}",
+                                        instrument.current().clean(),
+                                        instrument.per_unit()
+                                    ))
+                                    .on_hover_text(format!("Current market price of {}.", instrument.lowername()));
 
-                            if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
-                                ui.add_indicator(instrument.diff());
+                                    if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
+                                        ui.add_indicator(instrument.diff());
+                                    }
+                                });
+
+                                ui.label(format!("Owned: {owned} {}", instrument.unit()));
+                                ui.label(format!(
+                                    "Value: {} {CURRENCY}",
+                                    player.get_value(&kind, &economy).clean()
+                                ))
+                                .on_hover_text(format!("Current market value of all owned {}.", instrument.lowername()));
+                            });
+                            
+                            if tab == OrderKind::Futures {
+                                ui.add(Separator::default().vertical());
+
+                                ui.vertical(|ui| {
+                                    ui.label(format!(
+                                        "Strike price: {} {CURRENCY}{}  ({} {CURRENCY})",
+                                        future_price.clean(),
+                                        instrument.per_unit(),
+                                        (future_price - instrument.current()).round().signed(),
+                                    ))
+                                    .on_hover_text(format!("Future price of {} at the maturity date.", instrument.lowername()));
+
+                                    ui.label(
+                                        format!("Bought / Sold: {} / {}",
+                                                futures.iter().filter(|d| d.action == DerivativeAction::Bought).count(),
+                                                futures.iter().filter(|d| d.action == DerivativeAction::Sold).count(),
+                                        ));
+                                    ui.label(format!(
+                                        "Futures value: {}",
+                                        futures.iter().map(|d| d.price * if d.action == DerivativeAction::Bought { 1. } else { -1. }).sum::<f32>().signed(),
+                                    ))
+                                    .on_hover_text(format!("Sum of the strike prices of all {} futures (bought - sold).", instrument.lowername()))
+                                });
                             }
                         });
                         
-                        ui.label(format!("Owned: {owned} {}", instrument.unit()));
-                        ui.label(format!(
-                            "Value: {} {CURRENCY}",
-                            player.get_value(&kind, &economy).clean()
-                        ));
-
                         ui.spacing_mut().slider_width = window.width() * 0.17;
 
                         ui.horizontal(|ui| {
@@ -177,6 +226,17 @@ pub fn trade_modal(
                                         .text(amount.to_string())
                                 ).on_hover_text(
                                     "The maximum amount you can go short depends on the AUM \
+                                    and the credit score."
+                                )
+                            } else if tab.is_short_derivative() {
+                                let max = (future_price / max_future_sell).max(player.cash.current() / future_price) as u32;
+                                
+                                ui.add(
+                                    Slider::new(&mut state.modal_info.amount,0..=max)
+                                        .show_value(false)
+                                        .text(format!("{amount} futures")),
+                                ).on_hover_text(
+                                    "The maximum amount you can sell depends on the AUM \
                                     and the credit score."
                                 )
                             } else {
@@ -210,7 +270,7 @@ pub fn trade_modal(
                                 .on_hover_text("If the price crosses this limit, the order is executed.");
                             });
 
-                            price = limit_stop * amount as f32
+                            total_price = limit_stop * amount as f32
                         } else if tab == OrderKind::TrailingOrder {
                             ui.horizontal(|ui| {
                                 ui.label("Trailing stop:");
@@ -246,14 +306,24 @@ pub fn trade_modal(
                                 }
                             });
 
-                            price = if state.modal_info.lower_bound {
+                            total_price = if state.modal_info.lower_bound {
                                 (100 + trailing_stop) as f32 / 100. * amount as f32 * instrument.current()
                             } else {
                                 (100 - trailing_stop) as f32 / 100. * amount as f32 * instrument.current()
                             }
+                        } else if tab.is_derivative() {
+                            ui.horizontal(|ui| {
+                                for label in DerivativeTerm::iter() {
+                                    ui.selectable_value(
+                                        &mut state.modal_info.future_term,
+                                        label.clone(),
+                                        RichText::new(label.to_name()).small(),
+                                    ).on_hover_text("Time before the maturity of the derivative.");
+                                }
+                            });
                         }
 
-                        if matches!(kind, InstrumentKind::Commodity(_)) && tab != OrderKind::ShortSell {
+                        if matches!(kind, InstrumentKind::Commodity(_)) && !tab.is_short_derivative() {
                             ui.label(format!("Storage costs: {storage_costs:.0} {CURRENCY}/month"))
                                 .on_hover_text(
                                     "Storage costs for the selected amount. This amount is deducted \
@@ -263,7 +333,7 @@ pub fn trade_modal(
                         }
 
                         if tab == OrderKind::TrailingOrder {
-                            ui.label(format!("Trailing price: {} {CURRENCY}", if amount == 0 { 0. } else { (price / amount as f32).clean() }))
+                            ui.label(format!("Trailing price: {} {CURRENCY}", if amount == 0 { 0. } else { (total_price / amount as f32).clean() }))
                                 .on_hover_text(
                                     "If the price surpasses this value (greater for lower bound \
                                     or lesser for upper bound), the order is executed.",
@@ -271,11 +341,11 @@ pub fn trade_modal(
                         }
 
                         if tab != OrderKind::ShortSell {
-                            ui.label(format!("Total price: {} {CURRENCY}", price.clean()));
+                            ui.label(format!("Total price: {} {CURRENCY}", total_price.clean()));
                         }
                     });
 
-                    if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
+                    if !matches!(instrument.kind(), InstrumentKind::Bond(_)) && !tab.is_derivative() {
                         ui.add(Separator::default().vertical());
 
                         ui.vertical(|ui| {
@@ -391,10 +461,10 @@ pub fn trade_modal(
                         } else {
                             ui.add_enabled_ui(
                                 amount > 0
-                                    && price > 0. // Price can be zero for dead cryptos
+                                    && total_price > 0. // Price can be zero for dead cryptos
                                     && player.cash.current() >= loan.collateral
                                     && (tab != OrderKind::LimitOrder || limit_stop < instrument.current())
-                                    && (tab != OrderKind::MarketOrder || player.cash.current() >= price),
+                                    && (tab != OrderKind::MarketOrder || player.cash.current() >= total_price),
                                 |ui| {
                                     let button = ui
                                         .add_modal_button(
@@ -405,9 +475,10 @@ pub fn trade_modal(
                                             }, &window
                                         )
                                         .on_hover_text(format!(
-                                            "Buy {} {}.",
+                                            "Buy {} {}{}.",
                                             amount,
                                             instrument.lowername(),
+                                            if tab == OrderKind::Futures { " future contracts" } else { "" }
                                         ));
 
                                     if button.clicked() {
@@ -420,39 +491,43 @@ pub fn trade_modal(
                     |ui| {
                         if tab != OrderKind::ShortSell {
                             ui.add_enabled_ui(
-                                price > 0.
-                                    && owned > 0
-                                    && !state.modal_info.loan
+                                total_price > 0.
+                                    && (tab.is_derivative() || (owned > 0 && !state.modal_info.loan))
                                     && (tab != OrderKind::LimitOrder || limit_stop > instrument.current()),
                                 |ui| {
-                                let mut button = ui
-                                    .add_modal_button(
-                                        if tab == OrderKind::MarketOrder {
-                                            "Close position"
-                                        } else {
-                                            "Close order"
-                                        }, &window
-                                    )
-                                    .on_hover_text(format!(
-                                        "Sell all owned {}.",
-                                        instrument.lowername()
-                                    ));
 
-                                if state.modal_info.loan  {  
-                                    button = button.on_disabled_hover_text("Can't sell with a margin loan.");
-                                } else if owned < amount as i32 {
-                                    button = button.on_disabled_hover_text(format!(
-                                        "No {} to sell.",
-                                        instrument.lowername()
-                                    ));
-                                }
-                                    
-                                if button.clicked() {
-                                    close_clicked = true;
+                                if !tab.is_derivative() {
+                                    let mut button = ui
+                                        .add_modal_button(
+                                            if tab == OrderKind::MarketOrder {
+                                                "Close position"
+                                            } else {
+                                                "Close order"
+                                            }, &window
+                                        )
+                                        .on_hover_text(format!(
+                                            "Sell all owned {}.",
+                                            instrument.lowername()
+                                        ));
+
+                                    if state.modal_info.loan  {
+                                        button = button.on_disabled_hover_text("Can't sell with a margin loan.");
+                                    } else if owned < amount as i32 {
+                                        button = button.on_disabled_hover_text(format!(
+                                            "No {} to sell.",
+                                            instrument.lowername()
+                                        ));
+                                    }
+
+                                    if button.clicked() {
+                                        close_clicked = true;
+                                    }
                                 }
 
                                 ui.add_enabled_ui(
-                                    amount > 0 && (tab != OrderKind::MarketOrder || owned >= amount as i32),
+                                    amount > 0
+                                        && (tab != OrderKind::MarketOrder || owned >= amount as i32)
+                                        && (tab != OrderKind::Futures || (max_future_sell / future_price) as u32 >= amount),
                                     |ui| {
                                         let mut button = ui
                                             .add_modal_button(
@@ -463,13 +538,18 @@ pub fn trade_modal(
                                                 }, &window
                                             )
                                             .on_hover_text(format!(
-                                                "Sell {} {}.",
+                                                "Sell {} {}{}.",
                                                 amount,
-                                                instrument.lowername()
+                                                instrument.lowername(),
+                                                if tab == OrderKind::Futures { " future contracts" } else { "" }
                                             ));
 
                                         if state.modal_info.loan  {
                                             button = button.on_disabled_hover_text("Can't sell with a margin loan.");
+                                        } else if tab == OrderKind::Futures {
+                                            button = button.on_disabled_hover_text(format!(
+                                                "Not enough credit to sell {amount} future contracts.",
+                                            ));
                                         } else if owned < amount as i32 {
                                             button = button.on_disabled_hover_text(format!(
                                                 "Not enough {} to sell.",
@@ -501,60 +581,95 @@ pub fn trade_modal(
     };
 
     if let Some(command) = command {
-        let mut order = Order {
-            id: create_guid(),
-            created: economy.date,
-            instrument: kind,
-            command,
-            kind: tab,
-            lower_bound: if tab == OrderKind::LimitOrder {
-                limit_stop < instrument.current()
-            } else {
-                state.modal_info.lower_bound
-            },
-            amount: if tab != OrderKind::ShortSell {
-                amount as i32
-            } else {
-                -(amount as i32)
-            },
-            price: price
-                - if command == Command::Buy {
-                    0.
+        if tab.is_derivative() {
+            let derivative = Derivative {
+                instrument: kind,
+                kind: if tab == OrderKind::Futures {
+                    DerivativeKind::Future
                 } else {
-                    storage_costs
+                    DerivativeKind::Option
                 },
-            threshold: if tab == OrderKind::LimitOrder {
-                limit_stop
-            } else {
-                trailing_stop as f32
-            },
-            loan: state.modal_info.loan.then_some(loan),
-            bound: instrument.current(),
-            processed: NaiveDate::default(),
-            status: OrderStatus::Executed,
-        };
-
-        if matches!(tab, OrderKind::MarketOrder | OrderKind::ShortSell) {
-            order.processed = economy.date;
-            order_ev.write(OrderEv {
-                id: order.id.clone(),
-                price,
-            });
-        } else {
-            order.status = OrderStatus::Pending;
+                action: if command == Command::Buy {
+                    DerivativeAction::Bought
+                } else {
+                    DerivativeAction::Sold
+                },
+                term: state.modal_info.future_term.clone(),
+                amount,
+                price: future_price,
+                start_date: economy.date,
+                execute: true,
+                status: OrderStatus::Pending,
+            };
 
             message.write(MessageEv {
                 message: format!(
-                    "Created {} {} order {}.",
-                    tab.abbr().to_lowercase(),
-                    command.to_lowername(),
-                    order.id
+                    "{} {} {} {}s.",
+                    derivative.action.to_name(),
+                    amount,
+                    instrument.lowername(),
+                    derivative.kind.to_lowername(),
                 ),
                 level: MessageLevel::Info,
             });
-        }
 
-        player.orders.push(order);
+            player.derivatives.push(derivative);
+        } else {
+            let mut order = Order {
+                id: create_guid(),
+                created: economy.date,
+                instrument: kind,
+                command,
+                kind: tab,
+                lower_bound: if tab == OrderKind::LimitOrder {
+                    limit_stop < instrument.current()
+                } else {
+                    state.modal_info.lower_bound
+                },
+                amount: if tab != OrderKind::ShortSell {
+                    amount as i32
+                } else {
+                    -(amount as i32)
+                },
+                price: total_price
+                    - if command == Command::Buy {
+                        0.
+                    } else {
+                        storage_costs
+                    },
+                threshold: if tab == OrderKind::LimitOrder {
+                    limit_stop
+                } else {
+                    trailing_stop as f32
+                },
+                loan: state.modal_info.loan.then_some(loan),
+                bound: instrument.current(),
+                processed: NaiveDate::default(),
+                status: OrderStatus::Executed,
+            };
+
+            if matches!(tab, OrderKind::MarketOrder | OrderKind::ShortSell) {
+                order.processed = economy.date;
+                order_ev.write(OrderEv {
+                    id: order.id.clone(),
+                    price: total_price,
+                });
+            } else {
+                order.status = OrderStatus::Pending;
+
+                message.write(MessageEv {
+                    message: format!(
+                        "Created {} {} order {}.",
+                        tab.abbr().to_lowercase(),
+                        command.to_lowername(),
+                        order.id
+                    ),
+                    level: MessageLevel::Info,
+                });
+            }
+
+            player.orders.push(order);
+        }
     }
 
     if modal.should_close() {

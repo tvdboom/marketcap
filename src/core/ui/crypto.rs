@@ -44,14 +44,13 @@ pub fn crypto_panel(
             window,
         );
 
-        let mut instruments = economy
+        let instruments = economy
             .cryptos
             .iter()
             .map(|c| c as &dyn Instrument)
             .collect::<Vec<_>>();
 
-        for inst in OrderOptions::sort_instrument(&mut instruments, &state.cryptos, economy, player)
-        {
+        for inst in OrderOptions::sort_instrument(instruments, &state.cryptos, economy, player) {
             ui.add_enabled_ui(inst.current() > 0., |ui| {
                 let response = ui.add_instrument(inst, economy, images, window);
 

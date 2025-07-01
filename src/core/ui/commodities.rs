@@ -45,14 +45,13 @@ pub fn commodities_panel(
             window,
         );
 
-        let mut instruments = economy
+        let instruments = economy
             .commodities
             .iter()
             .map(|c| c as &dyn Instrument)
             .collect::<Vec<_>>();
 
-        for inst in
-            OrderOptions::sort_instrument(&mut instruments, &state.commodities, economy, player)
+        for inst in OrderOptions::sort_instrument(instruments, &state.commodities, economy, player)
         {
             let response = ui.add_instrument(inst, economy, images, window);
 

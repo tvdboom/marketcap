@@ -1,6 +1,6 @@
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::f32::consts::E;
-use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
 use crate::core::instruments::bonds::{BondIssuer, BondQuality};
@@ -82,8 +82,8 @@ pub trait Instrument {
         *self.all().back().unwrap()
     }
 
-    fn future(&self, interest: f32, days: f32) -> f32 {
-        self.current() * E.powf((interest + self.storage_cost() / 100. * 365.) * days / 365.)
+    fn future(&self, interest: f32, days: u32) -> f32 {
+        self.current() * E.powf((interest + self.storage_cost() / 100. * 365.) * days as f32 / 365.)
     }
 
     /// Calculates the percentage difference from the average of the last 30 values
