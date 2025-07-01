@@ -209,9 +209,9 @@ impl Player {
             let condition = match order.kind {
                 OrderKind::LimitOrder => {
                     if order.lower_bound {
-                        instrument.current() >= order.threshold
-                    } else {
                         instrument.current() <= order.threshold
+                    } else {
+                        instrument.current() >= order.threshold
                     }
                 },
                 OrderKind::TrailingOrder => {

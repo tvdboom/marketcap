@@ -82,8 +82,8 @@ pub trait Instrument {
         *self.all().back().unwrap()
     }
 
-    fn future(&self, interest: f32, days: u32) -> f32 {
-        self.current() * E.powf((interest + self.storage_cost() / 100. * 365.) * days as f32 / 365.)
+    fn future(&self, interest: f32, years: f32) -> f32 {
+        self.current() * E.powf((interest / 100. + self.storage_cost() / 100. * 365.) * years)
     }
 
     /// Calculates the percentage difference from the average of the last 30 values

@@ -272,6 +272,7 @@ pub fn execute_orders(
                             let remainder = *price - loan.debt;
 
                             cash += remainder + loan.collateral;
+                            owned.loan = None;
 
                             message.write(MessageEv {
                                 message: format!(

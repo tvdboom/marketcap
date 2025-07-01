@@ -117,9 +117,7 @@ pub fn time_pass(
                 for owned in player.instruments.iter_mut() {
                     let instrument = economy.get(&owned.kind);
 
-                    if instrument.dividend() > 0. {
-                        todo!();
-                    }
+                    if instrument.dividend() > 0. {} // todo!
                 }
 
                 // Corporate bonds are issued

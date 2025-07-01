@@ -56,7 +56,7 @@ pub fn trade_modal(
 
     let future_price = instrument.future(
         economy.interest.current(),
-        state.modal_info.future_term.days(),
+        state.modal_info.future_term.years(),
     );
     let futures = player
         .derivatives
@@ -470,6 +470,8 @@ pub fn trade_modal(
                                         .add_modal_button(
                                             if tab == OrderKind::MarketOrder {
                                                 "Buy"
+                                            } else if tab.is_derivative() {
+                                                "Buy contract"
                                             } else {
                                                 "Buy order"
                                             }, &window
@@ -533,6 +535,8 @@ pub fn trade_modal(
                                             .add_modal_button(
                                                 if tab == OrderKind::MarketOrder {
                                                     "Sell"
+                                                } else if tab.is_derivative() {
+                                                    "Sell contract"
                                                 } else {
                                                     "Sell order"
                                                 }, &window

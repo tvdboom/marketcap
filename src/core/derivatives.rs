@@ -9,17 +9,19 @@ use strum_macros::EnumIter;
 #[derive(EnumIter, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum DerivativeTerm {
     #[default]
-    Month,
-    Quarter,
-    Year,
+    OneMonth,
+    ThreeMonths,
+    SixMonths,
+    OneYear,
 }
 
 impl DerivativeTerm {
-    pub fn days(&self) -> u32 {
+    pub fn years(&self) -> f32 {
         match self {
-            DerivativeTerm::Month => 30,
-            DerivativeTerm::Quarter => 90,
-            DerivativeTerm::Year => 365,
+            DerivativeTerm::OneMonth => 0.0833,
+            DerivativeTerm::ThreeMonths => 0.25,
+            DerivativeTerm::SixMonths => 0.5,
+            DerivativeTerm::OneYear => 1.0,
         }
     }
 }
@@ -63,7 +65,7 @@ impl Derivative {
 
     pub fn maturity_date(&self) -> NaiveDate {
         self.start_date
-            .checked_add_signed(Duration::days(self.term.days() as i64))
+            .checked_add_signed(Duration::days(self.term.years() as i64))
             .unwrap()
     }
 }

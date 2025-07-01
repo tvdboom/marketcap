@@ -412,8 +412,8 @@ pub fn pending_order_table(
                             order.kind.abbr(),
                             format!("{} {}", order.amount, instrument.unit()),
                             match order.kind {
-                                OrderKind::LimitOrder => format!("{} {CURRENCY}", order.threshold),
-                                OrderKind::TrailingOrder => format!("{}%", order.threshold),
+                                OrderKind::LimitOrder => format!("{} {CURRENCY}", order.threshold.clean()),
+                                OrderKind::TrailingOrder => format!("{}%", order.threshold.clean()),
                                 _ => NA.to_string(),
                             },
                             format!("{:.0} {CURRENCY}", instrument.current()),
