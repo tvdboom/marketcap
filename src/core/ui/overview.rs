@@ -303,7 +303,7 @@ pub fn instrument_table(
     economy: &GlobalEconomy,
     instruments: Vec<&OwnedInstrument>,
 ) {
-    let mut columns = vec!["Name", "Price", "Owned", "Value"];
+    let mut columns = vec!["Name", "Market price", "Owned", "Value"];
 
     if matches!(
         instruments.first().unwrap().kind,
@@ -412,7 +412,9 @@ pub fn pending_order_table(
                             order.kind.abbr(),
                             format!("{} {}", order.amount, instrument.unit()),
                             match order.kind {
-                                OrderKind::LimitOrder => format!("{} {CURRENCY}", order.threshold.clean()),
+                                OrderKind::LimitOrder => {
+                                    format!("{} {CURRENCY}", order.threshold.clean())
+                                },
                                 OrderKind::TrailingOrder => format!("{}%", order.threshold.clean()),
                                 _ => NA.to_string(),
                             },
@@ -550,9 +552,9 @@ pub fn pending_derivative_table(
         "Name",
         "Maturity",
         "Kind",
-        "Status",
+        "Action",
         "Market price",
-        "Strike price",
+        "Contract price",
         "Owned",
         "Value",
         "Execute",
@@ -634,11 +636,9 @@ pub fn processed_derivative_table(
         "Name",
         "Maturity",
         "Kind",
-        "Status",
-        "Market price",
-        "Strike price",
-        "Owned",
-        "Value",
+        "Action",
+        "Transaction price",
+        "Contract price",
     ];
 
     Frame::new()
@@ -665,16 +665,11 @@ pub fn processed_derivative_table(
                             derivative.maturity_date().format(DATE_FORMAT).to_string(),
                             derivative.kind.to_name(),
                             derivative.action.to_name(),
-                            format!("{} {CURRENCY}", instrument.current().clean()),
+                            format!("{} {CURRENCY}", derivative.transaction_price.clean()),
                             format!(
                                 "{} {CURRENCY} ({} {CURRENCY})",
                                 derivative.price.clean(),
-                                (derivative.price - instrument.current()).signed()
-                            ),
-                            derivative.amount.to_string(),
-                            format!(
-                                "{} {CURRENCY}",
-                                (derivative.amount as f32 * derivative.price).clean()
+                                (derivative.price - derivative.transaction_price).signed()
                             ),
                         ];
 
@@ -694,7 +689,7 @@ pub fn processed_derivative_table(
                                         OrderKind::Options
                                     },
                                     amount: derivative.amount,
-                                    future_term: derivative.term.clone(),
+                                    derivative_term: derivative.term.clone(),
                                     ..state.modal_info.clone()
                                 };
                             }

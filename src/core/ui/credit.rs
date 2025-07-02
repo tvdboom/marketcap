@@ -414,6 +414,7 @@ pub fn credit_panel(
                                     ui.add_space(window.height() * 0.02);
 
                                     if ui.button("Repay loan").clicked() {
+                                        owned.warning = false;
                                         player.cash.amount -= collateral_amount as f32;
                                         loan.collateral += collateral_amount as f32;
 

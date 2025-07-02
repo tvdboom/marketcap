@@ -388,7 +388,8 @@ pub struct ModalInfo {
     pub lower_bound: bool,
     pub loan: bool,
     pub memory_loan: bool,
-    pub future_term: DerivativeTerm,
+    pub derivative_term: DerivativeTerm,
+    pub strike_price: i32,
 }
 
 #[derive(Resource, Default)]

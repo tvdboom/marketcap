@@ -6,6 +6,7 @@ use rand::{Rng, rng};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
+use std::f32::consts::PI;
 use std::fmt::Debug;
 
 /// Get the text size ratio depending on the window size
@@ -54,6 +55,24 @@ fn extract_variant_name(text: String) -> String {
         .to_string()
 }
 
+/// Approximation of the cumulative distribution function for a standard normal distribution
+pub fn norm_cdf(x: f32) -> f32 {
+    0.5 * (1.0
+        + (x / (1.0 + 0.2316419 * x.abs())).exp().recip() * {
+            let t = 1.0 / (1.0 + 0.2316419 * x.abs());
+            let a1 = 0.319381530;
+            let a2 = -0.356563782;
+            let a3 = 1.781477937;
+            let a4 = -1.821255978;
+            let a5 = 1.330274429;
+
+            let poly = ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t;
+            let pdf = (-x * x / 2.0).exp() / (2.0 * PI).sqrt();
+            1.0 - pdf * poly
+        })
+        * if x < 0.0 { -1.0 } else { 1.0 }
+}
+
 /// Trait to get the text of an enum variant
 pub trait NameFromEnum {
     fn to_name(&self) -> String;
@@ -70,6 +89,21 @@ impl<T: Debug> NameFromEnum for T {
 
     fn to_lowername(&self) -> String {
         self.to_name().to_lowercase()
+    }
+}
+
+/// Trait to enhance integers with additional methods
+pub trait EnhInt {
+    fn signed(self) -> String;
+}
+
+impl EnhInt for i32 {
+    fn signed(self) -> String {
+        match self {
+            x if x > 0 => format!("+{}", x),
+            x if x < 0 => x.to_string(),
+            _ => "0".to_string(),
+        }
     }
 }
 

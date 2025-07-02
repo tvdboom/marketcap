@@ -7,7 +7,7 @@ use strum::IntoEnumIterator;
 
 use crate::core::constants::CURRENCY;
 use crate::core::countries::CountryName;
-use crate::core::derivatives::{Derivative, DerivativeAction, DerivativeKind, DerivativeTerm};
+use crate::core::derivatives::{Derivative, DerivativeAction, DerivativeKind, DerivativeTerm, OptionKind};
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondIssuer;
@@ -23,7 +23,7 @@ use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::UiState;
 use crate::core::ui::utils::{CustomUi, toggle};
-use crate::utils::{EnhFloat, NameFromEnum, create_guid};
+use crate::utils::{EnhFloat, EnhInt, NameFromEnum, create_guid};
 
 pub fn trade_modal(
     mut contexts: EguiContexts,
@@ -52,24 +52,43 @@ pub fn trade_modal(
     let amount = state.modal_info.amount;
     let limit_stop = state.modal_info.limit_stop;
     let trailing_stop = state.modal_info.trailing_stop;
+    let strike_price = state.modal_info.strike_price;
     let storage_costs = (amount * 30) as f32 * instrument.storage_cost();
 
-    let future_price = instrument.future(
-        economy.interest.current(),
-        state.modal_info.future_term.years(),
-    );
-    let futures = player
+    let derivatives = player
         .derivatives
         .iter()
         .cloned()
-        .filter(|d| d.instrument == kind && d.kind == DerivativeKind::Future)
+        .filter(|d| d.instrument == kind && d.kind == if tab == OrderKind::Futures {
+            DerivativeKind::Future
+        } else {
+            DerivativeKind::Option
+        })
         .collect::<Vec<_>>();
+    
+    let future_price = instrument.future_price(
+        economy.interest.current(),
+        state.modal_info.derivative_term.years(),
+        instrument.volatility(),
+    );
+    
+    let call_price = instrument.option_price(
+        instrument.current() * (1. + strike_price as f32 / 100.),
+        economy.interest.current(),
+        state.modal_info.derivative_term.years(),
+        instrument.volatility(),
+        OptionKind::Call,
+    );
+    
+    let put_price = instrument.option_price(
+        instrument.current() * (1. - strike_price as f32 / 100.),
+        economy.interest.current(),
+        state.modal_info.derivative_term.years(),
+        instrument.volatility(),
+        OptionKind::Put,
+    );
 
-    let mut total_price = if tab.is_derivative() {
-        future_price * amount as f32
-    } else {
-        instrument.current() * amount as f32
-    };
+    let mut total_price = instrument.current() * amount as f32;
 
     let loan = if state.modal_info.loan {
         let mut loan = MarginLoan::new(total_price, &economy, &player);
@@ -185,28 +204,45 @@ pub fn trade_modal(
                                 .on_hover_text(format!("Current market value of all owned {}.", instrument.lowername()));
                             });
                             
-                            if tab == OrderKind::Futures {
+                            if tab.is_derivative() {
+                                ui.add_space(window.width() * 0.02);
                                 ui.add(Separator::default().vertical());
+                                ui.add_space(window.width() * 0.02);
 
                                 ui.vertical(|ui| {
                                     ui.label(format!(
-                                        "Strike price: {} {CURRENCY}{}  ({} {CURRENCY})",
-                                        future_price.clean(),
+                                        "{} price: {} {CURRENCY}{}  ({} {CURRENCY})",
+                                        if tab == OrderKind::Futures {
+                                            "Contract"
+                                        } else {
+                                            "Strike"
+                                        },
+                                        derivative_price.clean(),
                                         instrument.per_unit(),
-                                        (future_price - instrument.current()).round().signed(),
+                                        (derivative_price - instrument.current()).round().signed(),
                                     ))
-                                    .on_hover_text(format!("Future price of {} at the maturity date.", instrument.lowername()));
+                                    .on_hover_text(format!("Price for {} at the maturity date.", instrument.lowername()));
 
                                     ui.label(
                                         format!("Bought / Sold: {} / {}",
-                                                futures.iter().filter(|d| d.action == DerivativeAction::Bought).count(),
-                                                futures.iter().filter(|d| d.action == DerivativeAction::Sold).count(),
+                                                derivatives.iter().filter(|d| d.action == DerivativeAction::Bought).count(),
+                                                derivatives.iter().filter(|d| d.action == DerivativeAction::Sold).count(),
                                         ));
                                     ui.label(format!(
-                                        "Futures value: {}",
-                                        futures.iter().map(|d| d.price * if d.action == DerivativeAction::Bought { 1. } else { -1. }).sum::<f32>().signed(),
+                                        "{}s value: {} {CURRENCY}",
+                                        tab.to_name(),
+                                        derivatives.iter().map(|d| d.price * if d.action == DerivativeAction::Bought { 1. } else { -1. }).sum::<f32>().signed(),
                                     ))
-                                    .on_hover_text(format!("Sum of the strike prices of all {} futures (bought - sold).", instrument.lowername()))
+                                    .on_hover_text(
+                                        format!("Sum of the {} prices of all {}s {} (bought - sold).",
+                                                if tab == OrderKind::Futures {
+                                                    "Contract"
+                                                } else {
+                                                    "Strike"
+                                                },
+                                                instrument.lowername(),
+                                                tab.to_lowername()
+                                        ))
                                 });
                             }
                         });
@@ -223,18 +259,18 @@ pub fn trade_modal(
                                         0..=(max_loan / instrument.current()) as u32,
                                     )
                                         .show_value(false)
-                                        .text(amount.to_string())
+                                        .text(format!("{amount} {}", instrument.unit())),
                                 ).on_hover_text(
                                     "The maximum amount you can go short depends on the AUM \
                                     and the credit score."
                                 )
-                            } else if tab.is_short_derivative() {
-                                let max = (future_price / max_future_sell).max(player.cash.current() / future_price) as u32;
+                            } else if tab.is_derivative() {
+                                let max = (derivative_price / max_future_sell).max(player.cash.current() / derivative_price) as u32;
                                 
                                 ui.add(
                                     Slider::new(&mut state.modal_info.amount,0..=max)
                                         .show_value(false)
-                                        .text(format!("{amount} futures")),
+                                        .text(format!("{amount} {}", instrument.unit())),
                                 ).on_hover_text(
                                     "The maximum amount you can sell depends on the AUM \
                                     and the credit score."
@@ -268,6 +304,23 @@ pub fn trade_modal(
                                         .text(format!("{} {CURRENCY}", limit_stop.clean())),
                                 )
                                 .on_hover_text("If the price crosses this limit, the order is executed.");
+                            });
+
+                            ui.horizontal(|ui| {
+                                ui.label("Bound:").on_hover_text(
+                                    "Whether the limit stop is applied to the upper or lower bound.",
+                                );
+                                
+                                let lower_bound = limit_stop <= instrument.current();
+                                ui.label(if lower_bound {
+                                    "▼ Lower"
+                                } else {
+                                    "▲ Upper"
+                                }).on_hover_text(if lower_bound {
+                                    "Lower bound, i.e., the order is executed when te price is lower than the limit price."
+                                } else {
+                                    "Upper bound, i.e., the order is executed when the price is higher than the limit price."
+                                });
                             });
 
                             total_price = limit_stop * amount as f32
@@ -312,10 +365,28 @@ pub fn trade_modal(
                                 (100 - trailing_stop) as f32 / 100. * amount as f32 * instrument.current()
                             }
                         } else if tab.is_derivative() {
+                            if tab == OrderKind::Options {
+                                ui.horizontal(|ui| {
+                                    ui.label("Strike price:");
+
+                                    ui.add(
+                                        Slider::new(
+                                            &mut state.modal_info.strike_price,
+                                            -25..=25,
+                                        )
+                                            .step_by(5.)
+                                            .show_value(false)
+                                            .text(format!("{}%", strike_price.signed())),
+                                    )
+                                    .on_hover_text(
+                                        "Strike price for the option as percentage of the market price.");
+                                });
+                            }
+                            
                             ui.horizontal(|ui| {
                                 for label in DerivativeTerm::iter() {
                                     ui.selectable_value(
-                                        &mut state.modal_info.future_term,
+                                        &mut state.modal_info.derivative_term,
                                         label.clone(),
                                         RichText::new(label.to_name()).small(),
                                     ).on_hover_text("Time before the maturity of the derivative.");
@@ -461,27 +532,20 @@ pub fn trade_modal(
                         } else {
                             ui.add_enabled_ui(
                                 amount > 0
-                                    && total_price > 0. // Price can be zero for dead cryptos
                                     && player.cash.current() >= loan.collateral
                                     && (tab != OrderKind::LimitOrder || limit_stop < instrument.current())
                                     && (tab != OrderKind::MarketOrder || player.cash.current() >= total_price),
                                 |ui| {
                                     let button = ui
                                         .add_modal_button(
-                                            if tab == OrderKind::MarketOrder {
-                                                "Buy"
-                                            } else if tab.is_derivative() {
-                                                "Buy contract"
-                                            } else {
-                                                "Buy order"
-                                            }, &window
-                                        )
-                                        .on_hover_text(format!(
-                                            "Buy {} {}{}.",
-                                            amount,
-                                            instrument.lowername(),
-                                            if tab == OrderKind::Futures { " future contracts" } else { "" }
-                                        ));
+                                            match tab {
+                                                OrderKind::MarketOrder => "Buy",
+                                                OrderKind::Futures => "Buy future",
+                                                OrderKind::Options => "Buy call option",
+                                                _ => "Place buy order"
+                                            },
+                                            &window
+                                        );
 
                                     if button.clicked() {
                                         buy_clicked = true;
@@ -504,7 +568,7 @@ pub fn trade_modal(
                                             if tab == OrderKind::MarketOrder {
                                                 "Close position"
                                             } else {
-                                                "Close order"
+                                                "Place close order"
                                             }, &window
                                         )
                                         .on_hover_text(format!(
@@ -529,25 +593,28 @@ pub fn trade_modal(
                                 ui.add_enabled_ui(
                                     amount > 0
                                         && (tab != OrderKind::MarketOrder || owned >= amount as i32)
-                                        && (tab != OrderKind::Futures || (max_future_sell / future_price) as u32 >= amount),
+                                        && (tab != OrderKind::Futures || (max_future_sell / derivative_price) as u32 >= amount),
                                     |ui| {
                                         let mut button = ui
                                             .add_modal_button(
-                                                if tab == OrderKind::MarketOrder {
-                                                    "Sell"
-                                                } else if tab.is_derivative() {
-                                                    "Sell contract"
-                                                } else {
-                                                    "Sell order"
+                                                match tab {
+                                                    OrderKind::MarketOrder => "Sell",
+                                                    OrderKind::Futures => "Sell future",
+                                                    OrderKind::Options => "Sell call option",
+                                                    _ => "Place sell order"
                                                 }, &window
-                                            )
-                                            .on_hover_text(format!(
-                                                "Sell {} {}{}.",
-                                                amount,
-                                                instrument.lowername(),
-                                                if tab == OrderKind::Futures { " future contracts" } else { "" }
-                                            ));
+                                            );
 
+                                        if tab == OrderKind::Futures {
+                                            button = button.on_hover_text(
+                                                "Note that you are selling a future contract,\
+                                                 taking the obligation to sell the underlying \
+                                                 instrument at the maturity date. You are effectively \
+                                                 going short on the instrument. It's not possible \
+                                                 to sell an owned long future contract."
+                                            );
+                                        }
+                                        
                                         if state.modal_info.loan  {
                                             button = button.on_disabled_hover_text("Can't sell with a margin loan.");
                                         } else if tab == OrderKind::Futures {
@@ -598,9 +665,10 @@ pub fn trade_modal(
                 } else {
                     DerivativeAction::Sold
                 },
-                term: state.modal_info.future_term.clone(),
+                term: state.modal_info.derivative_term.clone(),
                 amount,
-                price: future_price,
+                price: derivative_price,
+                transaction_price: 0., // Real value is filled at maturity
                 start_date: economy.date,
                 execute: true,
                 status: OrderStatus::Pending,
@@ -625,11 +693,6 @@ pub fn trade_modal(
                 instrument: kind,
                 command,
                 kind: tab,
-                lower_bound: if tab == OrderKind::LimitOrder {
-                    limit_stop < instrument.current()
-                } else {
-                    state.modal_info.lower_bound
-                },
                 amount: if tab != OrderKind::ShortSell {
                     amount as i32
                 } else {
@@ -648,6 +711,11 @@ pub fn trade_modal(
                 },
                 loan: state.modal_info.loan.then_some(loan),
                 bound: instrument.current(),
+                lower_bound: if tab == OrderKind::LimitOrder {
+                    limit_stop < instrument.current()
+                } else {
+                    state.modal_info.lower_bound
+                },
                 processed: NaiveDate::default(),
                 status: OrderStatus::Executed,
             };

@@ -7,10 +7,12 @@ use crate::core::instruments::bonds::BondKind;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::OrderEv;
 use crate::core::player::Player;
+use crate::core::ui::state::UiState;
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
     mut player: ResMut<Player>,
+    mut state: ResMut<UiState>,
     mut order_ev: EventWriter<OrderEv>,
     mut message: EventWriter<MessageEv>,
     time: Res<Time>,
@@ -24,12 +26,12 @@ pub fn time_pass(
         // Daily operations =================================== >>
 
         let ev = player.aum(&economy);
-        let (_, _, interest) = economy.bump(ev, &mut message);
+        let (_, _, interest) = economy.bump(ev, &mut state, &mut message);
 
         player.cash.bump(interest);
 
-        let ev = player.aum(&economy);
-        player.influence.bump(ev);
+        let aum = player.aum(&economy);
+        player.influence.bump(aum);
 
         // Update bounds for trailing orders
         for order in player.pending_orders_mut() {
@@ -82,8 +84,6 @@ pub fn time_pass(
                         ),
                         level: MessageLevel::Warning,
                     });
-                } else if owned.warning && (owned.amount > 0 && price < margin * 0.8) || (owned.amount < 0 && price > margin * 0.8) {
-                    owned.warning = false; // Reset warning if price is below 80% of the margin
                 }
             }
 

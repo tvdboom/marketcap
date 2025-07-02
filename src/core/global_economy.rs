@@ -17,6 +17,7 @@ use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::instruments::stocks::{Stock, start_stocks};
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::sectors::{Sector, start_sectors};
+use crate::core::ui::state::UiState;
 
 #[derive(Resource, Clone, Serialize, Deserialize)]
 pub struct GlobalEconomy {
@@ -59,7 +60,12 @@ pub struct GlobalEconomy {
 
 impl GlobalEconomy {
     /// Daily changes in the global economy
-    pub fn bump(&mut self, aum: f32, message: &mut EventWriter<MessageEv>) -> (f32, f32, f32) {
+    pub fn bump(
+        &mut self,
+        aum: f32,
+        state: &mut UiState,
+        message: &mut EventWriter<MessageEv>,
+    ) -> (f32, f32, f32) {
         let economy = self.economy.bump(aum);
         let interest = self.interest.bump();
         let inflation = self.inflation.bump(economy, interest);
@@ -76,6 +82,10 @@ impl GlobalEconomy {
             let price = crypto.current();
             crypto.bump(inflation);
             if price != 0. && crypto.current() == 0. {
+                if state.modal == Some(InstrumentKind::Crypto(crypto.name)) {
+                    state.modal = None;
+                }
+
                 message.write(MessageEv {
                     message: format!(
                         "The cryptocurrency {} has become worthless and cannot be traded anymore.",

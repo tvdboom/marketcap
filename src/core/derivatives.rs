@@ -16,6 +16,15 @@ pub enum DerivativeTerm {
 }
 
 impl DerivativeTerm {
+    pub fn days(&self) -> u32 {
+        match self {
+            DerivativeTerm::OneMonth => 30,
+            DerivativeTerm::ThreeMonths => 90,
+            DerivativeTerm::SixMonths => 180,
+            DerivativeTerm::OneYear => 365,
+        }
+    }
+
     pub fn years(&self) -> f32 {
         match self {
             DerivativeTerm::OneMonth => 0.0833,
@@ -33,6 +42,12 @@ pub enum DerivativeKind {
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
+pub enum OptionKind {
+    Call,
+    Put,
+}
+
+#[derive(Clone, PartialEq, Debug, Serialize, Deserialize)]
 pub enum DerivativeAction {
     Bought,
     Sold,
@@ -40,14 +55,34 @@ pub enum DerivativeAction {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Derivative {
+    /// Instrument being traded
     pub instrument: InstrumentKind,
+
+    /// Type of derivative, either a future or an option
     pub kind: DerivativeKind,
+
+    /// Action taken on the derivative, either bought or sold
     pub action: DerivativeAction,
+
+    /// Term of the derivative, e.g., 1 month, 3 months, etc.
     pub term: DerivativeTerm,
+
+    /// Number of contracts, options, or futures
     pub amount: u32,
+
+    /// Strike price for options, or contract price for futures
     pub price: f32,
+
+    /// Market price at the moment the transaction was made
+    pub transaction_price: f32,
+
+    /// Date when the derivative was created
     pub start_date: NaiveDate,
+
+    /// Whether to execute the derivative at maturity (only for options)
     pub execute: bool,
+
+    /// Whether the derivative is pending, executed or canceled
     pub status: OrderStatus,
 }
 
@@ -65,7 +100,7 @@ impl Derivative {
 
     pub fn maturity_date(&self) -> NaiveDate {
         self.start_date
-            .checked_add_signed(Duration::days(self.term.years() as i64))
+            .checked_add_signed(Duration::days(self.term.days() as i64))
             .unwrap()
     }
 }

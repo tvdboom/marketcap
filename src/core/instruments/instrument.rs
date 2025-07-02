@@ -1,8 +1,4 @@
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::f32::consts::E;
-use strum::IntoEnumIterator;
-
+use crate::core::derivatives::OptionKind;
 use crate::core::instruments::bonds::{BondIssuer, BondQuality};
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::crypto::CryptoName;
@@ -10,7 +6,11 @@ use crate::core::instruments::forex::CurrencyName;
 use crate::core::instruments::stocks::{Company, ESGRating};
 use crate::core::orders::OrderKind;
 use crate::core::sectors::SectorName;
-use crate::utils::{DQueue, NameFromEnum};
+use crate::utils::{DQueue, NameFromEnum, norm_cdf};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::f32::consts::E;
+use strum::IntoEnumIterator;
 
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum InstrumentKind {
@@ -82,8 +82,34 @@ pub trait Instrument {
         *self.all().back().unwrap()
     }
 
-    fn future(&self, interest: f32, years: f32) -> f32 {
-        self.current() * E.powf((interest / 100. + self.storage_cost() / 100. * 365.) * years)
+    fn future_price(&self, interest: f32, years: f32, volatility: f32) -> f32 {
+        self.current()
+            * E.powf(
+                (interest / 100. + self.storage_cost() / 100. * 365. + volatility / 100.) * years,
+            )
+    }
+
+    fn option_price(
+        &self,
+        strike_price: f32,
+        interest: f32,
+        years: f32,
+        volatility: f32,
+        kind: OptionKind,
+    ) -> f32 {
+        let s = self.current();
+        let k = strike_price;
+        let t = years;
+        let r = interest / 100.;
+        let sigma = volatility / 100.;
+
+        let d1 = (f32::ln(s / k) + (r + 0.5 * sigma * sigma) * t) / (sigma * f32::sqrt(t));
+        let d2 = d1 - sigma * f32::sqrt(t);
+
+        match kind {
+            OptionKind::Call => s * norm_cdf(d1) - k * E.powf(-r * t) * norm_cdf(d2),
+            OptionKind::Put => k * E.powf(-r * t) * norm_cdf(-d2) - s * norm_cdf(-d1),
+        }
     }
 
     /// Calculates the percentage difference from the average of the last 30 values

@@ -367,9 +367,10 @@ impl Player {
             }
         }
 
-        // Second pass to update the status
+        // Second pass to update the attributes
         for derivative in self.pending_derivatives_mut() {
             if economy.date == derivative.maturity_date() {
+                derivative.transaction_price = economy.get_price(&derivative.instrument);
                 derivative.status = if derivative.execute {
                     OrderStatus::Executed
                 } else {

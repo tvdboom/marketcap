@@ -201,8 +201,8 @@ pub fn start_cryptos() -> Vec<Crypto> {
         },
         Crypto {
             name: CryptoName::Tron,
-            base_price: 0.28,
-            prices: DQueue::from([0.28]),
+            base_price: 0.42,
+            prices: DQueue::from([0.42]),
             volatility: 11.2,
             market_cap: 26.9e9,
         },
