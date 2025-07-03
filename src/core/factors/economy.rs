@@ -53,7 +53,7 @@ impl Economy {
         // Small gain or loss depending on last month's traded volume
         // If the traded volume was 30% of the total AUM, the effect is 0%
         if !self.last_traded_volume.is_nan() {
-            value *= 1. + ((self.last_traded_volume / aum) - 0.3) / 25.;
+            value *= 1. + ((self.last_traded_volume / aum) - 0.3) / 50.;
         }
 
         self.values.push(value);

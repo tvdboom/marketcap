@@ -59,7 +59,7 @@ impl Factor for Cash {
             cash deposits.\n\n\
             Cash: {}\n\
             Current interest: {:.1}%\n\
-            Accumulated interest: {} {CURRENCY}",
+            Accumulated interest: {}{CURRENCY}",
             self.amount.signed(),
             if self.amount >= 0. {
                 self.current_interest

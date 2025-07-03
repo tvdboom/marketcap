@@ -333,10 +333,10 @@ pub fn instrument_table(
 
                         let mut content = vec![
                             instrument.name(),
-                            format!("{} {CURRENCY}", instrument.current().clean()),
+                            format!("{}{CURRENCY}", instrument.current().clean()),
                             format!("{} {}", owned.amount, instrument.unit()),
                             format!(
-                                "{} {CURRENCY}",
+                                "{}{CURRENCY}",
                                 (owned.amount as f32 * instrument.current()).clean()
                             ),
                         ];
@@ -346,7 +346,7 @@ pub fn instrument_table(
                             InstrumentKind::Commodity(_)
                         ) {
                             content.push(format!(
-                                "{} {CURRENCY}/month",
+                                "{}{CURRENCY}/month",
                                 (30. * owned.amount as f32 * instrument.storage_cost()).max(0.)
                                     as u32
                             ));
@@ -413,12 +413,12 @@ pub fn pending_order_table(
                             format!("{} {}", order.amount, instrument.unit()),
                             match order.kind {
                                 OrderKind::LimitOrder => {
-                                    format!("{} {CURRENCY}", order.threshold.clean())
+                                    format!("{}{CURRENCY}", order.threshold.clean())
                                 },
                                 OrderKind::TrailingOrder => format!("{}%", order.threshold.clean()),
                                 _ => NA.to_string(),
                             },
-                            format!("{:.0} {CURRENCY}", instrument.current()),
+                            format!("{:.0}{CURRENCY}", instrument.current()),
                         ];
 
                         body.row(30., |mut row| {
@@ -497,9 +497,9 @@ pub fn processed_order_table(
                             },
                             order.kind.abbr(),
                             format!("{} {}", order.amount, instrument.unit()),
-                            format!("{:.0} {CURRENCY}", order.price),
+                            format!("{:.0}{CURRENCY}", order.price),
                             match order.kind {
-                                OrderKind::LimitOrder => format!("{} {CURRENCY}", order.threshold),
+                                OrderKind::LimitOrder => format!("{}{CURRENCY}", order.threshold),
                                 OrderKind::TrailingOrder => format!("{}%", order.threshold),
                                 _ => NA.to_string(),
                             },
@@ -553,9 +553,9 @@ pub fn pending_derivative_table(
         "Maturity",
         "Kind",
         "Action",
+        "Amount",
         "Market price",
         "Contract price",
-        "Owned",
         "Value",
         "Execute",
     ];
@@ -584,15 +584,15 @@ pub fn pending_derivative_table(
                             derivative.maturity_date().format(DATE_FORMAT).to_string(),
                             derivative.kind.to_name(),
                             derivative.action.to_name(),
-                            format!("{} {CURRENCY}", instrument.current().clean()),
+                            derivative.amount.to_string(),
+                            format!("{}{CURRENCY}", instrument.current().clean()),
                             format!(
-                                "{} {CURRENCY} ({} {CURRENCY})",
+                                "{}{CURRENCY} ({}{CURRENCY})",
                                 derivative.price.clean(),
                                 (derivative.price - instrument.current()).signed()
                             ),
-                            derivative.amount.to_string(),
                             format!(
-                                "{} {CURRENCY}",
+                                "{}{CURRENCY}",
                                 (derivative.amount as f32 * derivative.price).clean()
                             ),
                         ];
@@ -637,6 +637,7 @@ pub fn processed_derivative_table(
         "Maturity",
         "Kind",
         "Action",
+        "Amount",
         "Transaction price",
         "Contract price",
     ];
@@ -665,9 +666,10 @@ pub fn processed_derivative_table(
                             derivative.maturity_date().format(DATE_FORMAT).to_string(),
                             derivative.kind.to_name(),
                             derivative.action.to_name(),
-                            format!("{} {CURRENCY}", derivative.transaction_price.clean()),
+                            derivative.amount.to_string(),
+                            format!("{}{CURRENCY}", derivative.transaction_price.clean()),
                             format!(
-                                "{} {CURRENCY} ({} {CURRENCY})",
+                                "{}{CURRENCY} ({}{CURRENCY})",
                                 derivative.price.clean(),
                                 (derivative.price - derivative.transaction_price).signed()
                             ),
@@ -736,9 +738,9 @@ pub fn term_loan_overview(ui: &mut Ui, state: &mut UiState, loans: &Vec<TermLoan
                             loan.start_date.format(DATE_FORMAT).to_string(),
                             loan.maturity_date().format(DATE_FORMAT).to_string(),
                             loan.provider.to_name(),
-                            format!("{} {CURRENCY}", &loan.principal),
-                            format!("{:.0} {CURRENCY}", &loan.outstanding),
-                            format!("{:.0} {CURRENCY}", &loan.next_installment_amount()),
+                            format!("{}{CURRENCY}", &loan.principal),
+                            format!("{:.0}{CURRENCY}", &loan.outstanding),
+                            format!("{:.0}{CURRENCY}", &loan.next_installment_amount()),
                             format!("{:.1}%", loan.interest_rate),
                             loan.kind.to_name(),
                             loan.no_fee.to_string(),
@@ -804,12 +806,12 @@ pub fn margin_loan_overview(
                             loan.id.clone(),
                             instrument.name(),
                             format!("{} {}", owned.amount, instrument.unit()),
-                            format!("{} {CURRENCY}", loan.debt.clean()),
-                            format!("{} {CURRENCY}", loan.collateral.clean()),
+                            format!("{}{CURRENCY}", loan.debt.clean()),
+                            format!("{}{CURRENCY}", loan.collateral.clean()),
                             format!("{:.1}%", loan.interest_rate),
                             format!("{:.0}%", loan.margin_frac * 100.),
-                            format!("{} {CURRENCY}", economy.get_price(&owned.kind).clean()),
-                            format!("{} {CURRENCY}", loan.margin(owned.amount).clean()),
+                            format!("{}{CURRENCY}", economy.get_price(&owned.kind).clean()),
+                            format!("{}{CURRENCY}", loan.margin(owned.amount).clean()),
                         ];
 
                         body.row(30., |mut row| {

@@ -80,15 +80,25 @@ impl OrderKind {
                 short) provides immediate cash and the obligation to deliver the underlying \
                 instrument at the strike price at the maturity date. If the underlying instrument \
                 is not owned, it's automatically bought at the current market price and it greatly \
-                reduces the credit score.\n\n \
+                reduces the credit score.\n\n\
                 Note that buying and selling the same amount of futures don't 'cancel' each other \
-                out due to the different maturity dates. Contrary to the real world, futures in \
-                this game are hold-to-maturity only, meaning that they can't be traded before the \
-                maturity date."
+                out due to the different maturity dates. Futures in this game are hold-to-maturity \
+                only, meaning that they can't be traded before the maturity date."
             },
             OrderKind::Options => {
-                "Financial contracts that give the buyer the right, but not the obligation, \
-                to buy or sell an instrument at a predetermined price before a specified date."
+                "Financial contracts that grant the right, but not the obligation, to buy or sell \
+                instruments at a predetermined price at the maturity date. Buying a call option \
+                gives the right to buy the underlying instrument at the strike price, while buying \
+                a put option gives the right to sell it. Selling (writing) an option provides \
+                immediate cash but creates a contingent obligation if the option is exercised by \
+                the buyer.\n\n\
+                Unlike futures, options can expire worthless if market prices don't reach favorable \
+                levels, making them less risky for buyers but riskier for sellers. Exercising an \
+                option automatically executes the corresponding buy or sell transaction at the \
+                strike price. If the necessary instruments aren't available, they are acquired at \
+                the current market price and the credit score is greatly reduced.\n\n\
+                In this game, all options are European-style and hold-to-maturity only — they can \
+                only be exercised at the maturity date and cannot be traded once purchased."
             },
         }
     }

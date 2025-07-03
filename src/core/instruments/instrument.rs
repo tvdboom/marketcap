@@ -1,3 +1,4 @@
+use crate::core::constants::{CURRENCY, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
 use crate::core::derivatives::OptionKind;
 use crate::core::instruments::bonds::{BondIssuer, BondQuality};
 use crate::core::instruments::commodities::CommodityName;
@@ -6,7 +7,9 @@ use crate::core::instruments::forex::CurrencyName;
 use crate::core::instruments::stocks::{Company, ESGRating};
 use crate::core::orders::OrderKind;
 use crate::core::sectors::SectorName;
-use crate::utils::{DQueue, NameFromEnum, norm_cdf};
+use crate::utils::{DQueue, EnhFloat, NameFromEnum, norm_cdf};
+use bevy_egui::egui::Ui;
+use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::f32::consts::E;
@@ -82,26 +85,20 @@ pub trait Instrument {
         *self.all().back().unwrap()
     }
 
-    fn future_price(&self, interest: f32, years: f32, volatility: f32) -> f32 {
+    fn future_price(&self, interest: f32, years: f32) -> f32 {
         self.current()
             * E.powf(
-                (interest / 100. + self.storage_cost() / 100. * 365. + volatility / 100.) * years,
+                (interest / 100. + self.storage_cost() / 100. * 365. + self.volatility() / 100.)
+                    * years,
             )
     }
 
-    fn option_price(
-        &self,
-        strike_price: f32,
-        interest: f32,
-        years: f32,
-        volatility: f32,
-        kind: OptionKind,
-    ) -> f32 {
+    fn option_price(&self, strike_price: f32, interest: f32, years: f32, kind: OptionKind) -> f32 {
         let s = self.current();
         let k = strike_price;
         let t = years;
         let r = interest / 100.;
-        let sigma = volatility / 100.;
+        let sigma = self.volatility() / 100.;
 
         let d1 = (f32::ln(s / k) + (r + 0.5 * sigma * sigma) * t) / (sigma * f32::sqrt(t));
         let d2 = d1 - sigma * f32::sqrt(t);

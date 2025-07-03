@@ -61,6 +61,9 @@ pub struct Derivative {
     /// Type of derivative, either a future or an option
     pub kind: DerivativeKind,
 
+    /// Call or put option (only for options)
+    pub option_kind: OptionKind,
+
     /// Action taken on the derivative, either bought or sold
     pub action: DerivativeAction,
 

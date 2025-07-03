@@ -182,7 +182,7 @@ pub fn credit_panel(
 
                     ui.label(
                         format!(
-                            "Installment: {:.0} {CURRENCY}",
+                            "Installment: {:.0}{CURRENCY}",
                             loan.next_installment_amount(),
                         ),
                     )
@@ -280,14 +280,14 @@ pub fn credit_panel(
                                             as u32,
                                     )
                                         .show_value(false)
-                                        .text(format!("{repay_amount} {CURRENCY}")),
+                                        .text(format!("{repay_amount}{CURRENCY}")),
                                 );
 
                                 let costs = state.credit.repay_amount as f32 + fee;
 
                                 ui.add_space(window.height() * 0.02);
 
-                                ui.label(format!("Fee: {fee:.0} {CURRENCY}"))
+                                ui.label(format!("Fee: {fee:.0}{CURRENCY}"))
                                     .on_hover_text(
                                         "If the global interest rate has increased since \
                                         the start of the loan, the fee consists of up to twelve \
@@ -297,7 +297,7 @@ pub fn credit_panel(
                                         interest plus the current difference multiplied by the \
                                         number of missed installments."
                                     );
-                                ui.label(format!("Total costs: {costs:.0} {CURRENCY}"))
+                                ui.label(format!("Total costs: {costs:.0}{CURRENCY}"))
                                     .on_hover_text("Total amount to be paid. Includes the repaid amount plus the repayment fee.");
 
                                 ui.add_space(window.height() * 0.02);
@@ -320,7 +320,7 @@ pub fn credit_panel(
                                     loan.outstanding -= state.credit.repay_amount as f32;
 
                                     message.write(MessageEv {
-                                        message: format!("You repaid {} {CURRENCY} of loan {}.", state.credit.repay_amount, loan.id),
+                                        message: format!("You repaid {}{CURRENCY} of loan {}.", state.credit.repay_amount, loan.id),
                                         level: MessageLevel::Info,
                                     });
                                     
@@ -336,9 +336,9 @@ pub fn credit_panel(
                                 ui.label(format!("Start date: {}", loan.start_date.format(DATE_FORMAT)));
                                 ui.label(format!("Maturity date: {}", loan.maturity_date().format(DATE_FORMAT)));
                                 ui.label(format!("Provider: {}", loan.provider.to_name()));
-                                ui.label(format!("Principal: {:.0} {CURRENCY}", loan.principal));
-                                ui.label(format!("Outstanding: {:.0} {CURRENCY}", loan.outstanding));
-                                ui.label(format!("Installment: {:.0} {CURRENCY}", loan.next_installment_amount()));
+                                ui.label(format!("Principal: {:.0}{CURRENCY}", loan.principal));
+                                ui.label(format!("Outstanding: {:.0}{CURRENCY}", loan.outstanding));
+                                ui.label(format!("Installment: {:.0}{CURRENCY}", loan.next_installment_amount()));
                                 ui.label(format!("Interest rate: {:.1}%", loan.interest_rate));
                             });
                         });
@@ -408,7 +408,7 @@ pub fn credit_panel(
                                             0..=loan.collateral.min(player.cash.current()) as u32,
                                         )
                                         .show_value(false)
-                                        .text(format!("{collateral_amount} {CURRENCY}")),
+                                        .text(format!("{collateral_amount}{CURRENCY}")),
                                     );
 
                                     ui.add_space(window.height() * 0.02);
@@ -420,7 +420,7 @@ pub fn credit_panel(
 
                                         message.write(MessageEv {
                                             message: format!(
-                                                "Collateral increased with {} {CURRENCY} for loan {}.",
+                                                "Collateral increased with {}{CURRENCY} for loan {}.",
                                                 collateral_amount, loan.id
                                             ),
                                             level: MessageLevel::Info,
@@ -436,9 +436,9 @@ pub fn credit_panel(
                                 ui.vertical(|ui| {
                                     ui.heading("Details");
                                     ui.label(format!("Instrument: {}", owned.kind.name()));
-                                    ui.label(format!("Debt: {} {CURRENCY}", loan.debt.clean()));
+                                    ui.label(format!("Debt: {}{CURRENCY}", loan.debt.clean()));
                                     ui.label(format!(
-                                        "Collateral: {} {CURRENCY}",
+                                        "Collateral: {}{CURRENCY}",
                                         loan.collateral.clean()
                                     ));
                                     ui.label(format!("Interest: {:.1}%", loan.interest_rate));

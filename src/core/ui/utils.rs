@@ -59,7 +59,7 @@ pub trait CustomUi {
         state: &mut OrderByState,
         window: &Window,
     );
-    fn add_plot(&mut self, data: &DQueue<f32>);
+    fn add_price_plot(&mut self, data: &DQueue<f32>);
     fn add_factor(
         &mut self,
         name: impl Into<RichText>,
@@ -154,7 +154,7 @@ impl CustomUi for Ui {
         );
     }
 
-    fn add_plot(&mut self, data: &DQueue<f32>) {
+    fn add_price_plot(&mut self, data: &DQueue<f32>) {
         let start = data.len().saturating_sub(190); // 6 months approx.
         let points: PlotPoints = data
             .iter()
@@ -219,7 +219,7 @@ impl CustomUi for Ui {
             ui.label(description);
             if let Some(values) = plot {
                 ui.add_space(window.height() * 0.01);
-                ui.add_plot(values);
+                ui.add_price_plot(values);
             }
         })
     }
@@ -252,7 +252,7 @@ impl CustomUi for Ui {
                         
                         if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
                             ui.add_space(window.height() * 0.01);
-                            ui.add_plot(instrument.all());
+                            ui.add_price_plot(instrument.all());
                         }
                     });
 
@@ -265,7 +265,7 @@ impl CustomUi for Ui {
 
                         ui.horizontal(|ui| {
                             ui.label(format!(
-                                "{}: {} {CURRENCY}{}",
+                                "{}: {}{CURRENCY}{}",
                                 if matches!(instrument.kind(), InstrumentKind::Forex(_)) {
                                     "Exchange rate"
                                 } else {
@@ -345,7 +345,7 @@ impl CustomUi for Ui {
                             },
                             InstrumentKind::Commodity(name) => {
                                 ui.label(format!(
-                                    "Storage costs: {:.0} {CURRENCY}{}/month",
+                                    "Storage costs: {:.0}{CURRENCY}{}/month",
                                     instrument.storage_cost() * 30.,
                                     instrument.per_unit(),
                                 ))
@@ -375,7 +375,7 @@ impl CustomUi for Ui {
                             },
                             InstrumentKind::Crypto(_) => {
                                 ui.label(format!(
-                                    "Market cap: {} {CURRENCY}",
+                                    "Market cap: {}{CURRENCY}",
                                     instrument.market_cap().format()
                                 ))
                                 .on_hover_text(

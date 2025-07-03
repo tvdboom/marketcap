@@ -92,21 +92,6 @@ impl<T: Debug> NameFromEnum for T {
     }
 }
 
-/// Trait to enhance integers with additional methods
-pub trait EnhInt {
-    fn signed(self) -> String;
-}
-
-impl EnhInt for i32 {
-    fn signed(self) -> String {
-        match self {
-            x if x > 0 => format!("+{}", x),
-            x if x < 0 => x.to_string(),
-            _ => "0".to_string(),
-        }
-    }
-}
-
 /// Trait to enhance floating point numbers with additional methods
 pub trait EnhFloat {
     fn round1(self) -> Self;
