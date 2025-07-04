@@ -1,6 +1,4 @@
-use bevy::prelude::*;
-use chrono::Datelike;
-
+use crate::core::derivatives::{DerivativeAction, DerivativeKind, OptionKind};
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondKind;
@@ -8,6 +6,8 @@ use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::OrderEv;
 use crate::core::player::Player;
 use crate::core::ui::state::UiState;
+use bevy::prelude::*;
+use chrono::Datelike;
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
@@ -39,6 +39,21 @@ pub fn time_pass(
                 order.bound = order.bound.min(economy.get_price(&order.instrument));
             } else {
                 order.bound = order.bound.max(economy.get_price(&order.instrument));
+            }
+        }
+
+        // Update execution for options
+        for option in player.pending_derivatives_mut() {
+            if option.kind == DerivativeKind::Option
+                && !option.force_execute
+                && option.action == DerivativeAction::Bought
+            {
+                let market_price = economy.get_price(&option.instrument);
+
+                option.execute = match option.option_kind {
+                    OptionKind::Call => market_price >= option.price,
+                    OptionKind::Put => market_price < option.price,
+                }
             }
         }
 
@@ -92,7 +107,7 @@ pub fn time_pass(
 
         player.cash.amount = cash;
 
-        player.resolve_derivatives(&economy, &mut message);
+        player.resolve_derivatives(&mut economy, &mut message);
 
         player.resolve_orders(&economy, &mut order_ev, &mut message);
 

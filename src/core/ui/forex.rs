@@ -50,7 +50,7 @@ pub fn forex_panel(
             .collect::<Vec<_>>();
 
         for inst in OrderOptions::sort_instrument(instruments, &state.forex, economy, player) {
-            let response = ui.add_instrument(inst, economy, images, window);
+            let response = ui.add_instrument(inst, economy, player, images, window);
 
             if response.clicked() {
                 state.modal = Some(inst.kind());

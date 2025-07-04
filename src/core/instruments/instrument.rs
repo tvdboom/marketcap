@@ -1,4 +1,3 @@
-use crate::core::constants::{CURRENCY, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
 use crate::core::derivatives::OptionKind;
 use crate::core::instruments::bonds::{BondIssuer, BondQuality};
 use crate::core::instruments::commodities::CommodityName;
@@ -7,9 +6,7 @@ use crate::core::instruments::forex::CurrencyName;
 use crate::core::instruments::stocks::{Company, ESGRating};
 use crate::core::orders::OrderKind;
 use crate::core::sectors::SectorName;
-use crate::utils::{DQueue, EnhFloat, NameFromEnum, norm_cdf};
-use bevy_egui::egui::Ui;
-use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
+use crate::utils::{DQueue, NameFromEnum, norm_cdf};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::f32::consts::E;
@@ -93,12 +90,13 @@ pub trait Instrument {
             )
     }
 
+    /// Calculates the price of an option using the Black-Scholes formula
     fn option_price(&self, strike_price: f32, interest: f32, years: f32, kind: OptionKind) -> f32 {
         let s = self.current();
         let k = strike_price;
         let t = years;
         let r = interest / 100.;
-        let sigma = self.volatility() / 100.;
+        let sigma = self.volatility() / 100. * f32::sqrt(365.);  // Convert daily volatility to annual
 
         let d1 = (f32::ln(s / k) + (r + 0.5 * sigma * sigma) * t) / (sigma * f32::sqrt(t));
         let d2 = d1 - sigma * f32::sqrt(t);

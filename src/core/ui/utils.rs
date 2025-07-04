@@ -9,9 +9,11 @@ use crate::core::constants::{CURRENCY, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondIssuer;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
+use crate::core::orders::{Command, Order};
+use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderByState, OrderOptions};
-use crate::utils::{DQueue, EnhFloat, NameFromEnum, get_ratio};
+use crate::utils::{DQueue, EnhFloat, NameFromEnum, create_guid, get_ratio};
 
 /// Custom IOS style toggle for UI
 pub fn toggle(on: &mut bool) -> impl Widget + '_ {
@@ -59,7 +61,7 @@ pub trait CustomUi {
         state: &mut OrderByState,
         window: &Window,
     );
-    fn add_price_plot(&mut self, data: &DQueue<f32>);
+    fn add_plot(&mut self, data: &DQueue<f32>, orders: Option<Vec<&Order>>);
     fn add_factor(
         &mut self,
         name: impl Into<RichText>,
@@ -74,6 +76,7 @@ pub trait CustomUi {
         &mut self,
         instrument: &dyn Instrument,
         economy: &GlobalEconomy,
+        player: &Player,
         images: &ImageIds,
         window: &Window,
     ) -> Response;
@@ -154,7 +157,9 @@ impl CustomUi for Ui {
         );
     }
 
-    fn add_price_plot(&mut self, data: &DQueue<f32>) {
+    fn add_plot(&mut self, data: &DQueue<f32>, orders: Option<Vec<&Order>>) {
+        let date = GlobalEconomy::default().date;
+
         let start = data.len().saturating_sub(190); // 6 months approx.
         let points: PlotPoints = data
             .iter()
@@ -163,13 +168,14 @@ impl CustomUi for Ui {
             .map(|(i, &v)| [(start + i) as f64, v as f64])
             .collect();
 
-        Plot::new("plot")
+        Plot::new(create_guid())
+            .sense(Sense::empty()) // Disable dragging
             .view_aspect(WIDTH / HEIGHT)
             .show_background(false)
             .x_grid_spacer(|grid| {
                 (grid.bounds.0 as i64..grid.bounds.1 as i64)
                     .map(|x| {
-                        let d = GlobalEconomy::default().date + Duration::days(x);
+                        let d = date + Duration::days(x);
                         GridMark {
                             value: x as f64,
                             step_size: if d.day() == 1 { 30. } else { 0. },
@@ -178,7 +184,7 @@ impl CustomUi for Ui {
                     .collect()
             })
             .custom_x_axes(vec![AxisHints::new_x().formatter(|mark, _| {
-                let d = GlobalEconomy::default().date + Duration::days(mark.value as i64);
+                let d = date + Duration::days(mark.value as i64);
                 format!("{:02}-{}", d.month(), d.year())
             })])
             .custom_y_axes(vec![
@@ -186,10 +192,40 @@ impl CustomUi for Ui {
             ])
             .show(self, |plot_ui| {
                 plot_ui.line(
-                    Line::new("line", points)
+                    Line::new("price", points)
                         .width(LINE_WIDTH)
                         .color(LINE_COLOR),
-                )
+                );
+
+                if let Some(orders) = orders {
+                    for order in orders {
+                        let points: PlotPoints = data
+                            .iter()
+                            .skip(start)
+                            .enumerate()
+                            .map(|(i, _)| {
+                                [
+                                    (start + i) as f64,
+                                    if order.created <= date + Duration::days((start + i) as i64) {
+                                        order.limit_price() as f64
+                                    } else {
+                                        f64::NAN
+                                    },
+                                ]
+                            })
+                            .collect();
+
+                        plot_ui.line(
+                            Line::new(create_guid(), points)
+                                .width(LINE_WIDTH - 1.)
+                                .color(match order.command {
+                                    Command::Buy => Color32::LIGHT_GREEN,
+                                    Command::Sell => Color32::LIGHT_RED,
+                                    Command::Close => Color32::RED,
+                                }),
+                        );
+                    }
+                }
             });
     }
 
@@ -219,7 +255,7 @@ impl CustomUi for Ui {
             ui.label(description);
             if let Some(values) = plot {
                 ui.add_space(window.height() * 0.01);
-                ui.add_price_plot(values);
+                ui.add_plot(values, None);
             }
         })
     }
@@ -228,6 +264,7 @@ impl CustomUi for Ui {
         &mut self,
         instrument: &dyn Instrument,
         economy: &GlobalEconomy,
+        player: &Player,
         images: &ImageIds,
         window: &Window,
     ) -> Response {
@@ -239,23 +276,6 @@ impl CustomUi for Ui {
                 ui.set_width(ui.available_width() * 0.98);
 
                 ui.horizontal(|ui| {
-                    ui.add(Image::new(SizedTexture::new(
-                        images.get(instrument.image().as_str()),
-                        [window.height() * 0.2; 2],
-                    )))
-                    .on_hover_ui(|ui| {
-                        ui.set_min_width(window.width() * 0.4);
-
-                        ui.label(instrument.name());
-                        ui.add_space(window.height() * 0.01);
-                        ui.label(instrument.description());
-                        
-                        if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
-                            ui.add_space(window.height() * 0.01);
-                            ui.add_price_plot(instrument.all());
-                        }
-                    });
-
                     ui.vertical(|ui| {
                         if matches!(instrument.kind(), InstrumentKind::Forex(_)) {
                             ui.heading(format!("{}/{}", instrument.name(), CURRENCY.to_name()));
@@ -263,128 +283,156 @@ impl CustomUi for Ui {
                             ui.heading(instrument.name());
                         }
 
+                        ui.add(Image::new(SizedTexture::new(
+                            images.get(instrument.image().as_str()),
+                            [window.height() * 0.2; 2],
+                        )));
+                    });
+
+                    ui.vertical(|ui| {
+                        ui.set_width(ui.available_width() * 0.5);
+
+                        ui.label(instrument.description());
+                        ui.add_space(window.height() * 0.01);
+
                         ui.horizontal(|ui| {
-                            ui.label(format!(
-                                "{}: {}{CURRENCY}{}",
-                                if matches!(instrument.kind(), InstrumentKind::Forex(_)) {
-                                    "Exchange rate"
-                                } else {
-                                    "Price"
-                                },
-                                instrument.current().clean(),
-                                instrument.per_unit()
-                            ));
+                            ui.vertical(|ui| {
+                                ui.horizontal(|ui| {
+                                    ui.label(format!(
+                                        "{}: {}{CURRENCY}{}",
+                                        if matches!(instrument.kind(), InstrumentKind::Forex(_)) {
+                                            "Exchange rate"
+                                        } else {
+                                            "Price"
+                                        },
+                                        instrument.current().clean(),
+                                        instrument.per_unit()
+                                    ));
 
-                            if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
-                                ui.add_indicator(instrument.diff());
-                            }
-                        });
+                                    if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
+                                        ui.add_indicator(instrument.diff());
+                                    }
+                                });
 
-                        if instrument.volatility() > 0. {
-                            ui.label(format!("Volatility: {:.2}%", instrument.volatility() * 0.5))
-                                .on_hover_text(
-                                    "Median daily price fluctuation as percentage of the initial price.",
-                                );
-                        }
+                                if instrument.volatility() > 0. {
+                                    ui.label(format!("Volatility: {:.2}%", instrument.volatility() * 0.5))
+                                        .on_hover_text(
+                                            "Median daily price fluctuation as percentage of the initial price.",
+                                        );
+                                }
 
-                        match instrument.kind() {
-                            InstrumentKind::Stock(_) => {
-                                ui.label(format!("Dividend: {}", instrument.dividend().clean()))
-                                    .on_hover_text(
-                                        "The dividend is a portion of the company's earnings \
+                                match instrument.kind() {
+                                    InstrumentKind::Stock(_) => {
+                                        ui.label(format!("Dividend: {}", instrument.dividend().clean()))
+                                            .on_hover_text(
+                                                "The dividend is a portion of the company's earnings \
                                         distributed to shareholders. It is paid quarterly and the \
                                         amount is at the discretion of the company.",
-                                    );
+                                            );
 
-                                ui.label(format!("Sentiment: {}", instrument.sentiment()))
-                                    .on_hover_text(
-                                        "People's feelings towards the company (0-100). Higher \
+                                        ui.label(format!("Sentiment: {}", instrument.sentiment()))
+                                            .on_hover_text(
+                                                "People's feelings towards the company (0-100). Higher \
                                         scores means favorable sentiment, thus usually higher stock \
                                         prices.",
-                                    );
+                                            );
 
-                                ui.label(format!("ESG: {}", instrument.esg().to_name()))
-                                    .on_hover_text(format!(
-                                        "ESG ratings evaluate a company's performance in three key \
+                                        ui.label(format!("ESG: {}", instrument.esg().to_name()))
+                                            .on_hover_text(format!(
+                                                "ESG ratings evaluate a company's performance in three key \
                                         areas: Environmental, Social, and Governance. These scores \
                                         help investors assess how responsibly a company operates \
                                         beyond financial metrics. Score {}: {}", instrument.esg().to_name(), instrument.esg().description()));
+                                    },
+                                    InstrumentKind::Bond(issuer) => {
+                                        ui.label(format!("Quality: {}", instrument.quality().to_name()))
+                                            .on_hover_text(instrument.quality().description());
 
-                                ui.label("Sectors");
-                                for (name, weight) in instrument.sector().iter().sorted_by(|a, b| b.1.partial_cmp(&a.1).unwrap()) {
-                                    ui.add(
-                                        ProgressBar::new(*weight)
-                                            .text(RichText::new(format!("{} {}", name.emoji(), name.to_name())).small())
-                                            .corner_radius(5.)
-                                            .desired_width(ui.available_width() * 0.3)
-                                    ).on_hover_text(name.description());
-                                }
-                            },
-                            InstrumentKind::Bond(issuer) => {
-                                ui.label(format!("Quality: {}", instrument.quality().to_name()))
-                                    .on_hover_text(instrument.quality().description());
+                                        if let BondIssuer::Government(country) = issuer {
+                                            let country = economy.countries.iter().find(|c| c.name == country).unwrap();
+                                            ui.label(format!("Classification: {}", country.market.to_name()))
+                                                .on_hover_text(country.market.description());
+                                        }
 
-                                if let BondIssuer::Government(country) = issuer {
-                                    let country = economy.countries.iter().find(|c| c.name == country).unwrap();
-                                    ui.label(format!("Classification: {}", country.market.to_name()))
-                                        .on_hover_text(country.market.description());
-                                }
-                                
-                                ui.label(format!("Interest: {:.1}%", instrument.interest()))
-                                    .on_hover_text(
-                                        "Also known as the coupon payment. Fixed interest \
+                                        ui.label(format!("Interest: {:.1}%", instrument.interest()))
+                                            .on_hover_text(
+                                                "Also known as the coupon payment. Fixed interest \
                                         paid to the holder as percentage of the face value.",
-                                    );
-                            },
-                            InstrumentKind::Forex(_) => {
-                                ui.label(format!(
-                                    "Currency: {} ({})",
-                                    instrument.fullname(),
-                                    instrument.symbol()
-                                ));
-                            },
-                            InstrumentKind::Commodity(name) => {
-                                ui.label(format!(
-                                    "Storage costs: {:.0}{CURRENCY}{}/month",
-                                    instrument.storage_cost() * 30.,
-                                    instrument.per_unit(),
-                                ))
-                                .on_hover_text(
-                                    "Current price of storage per month. Note that this \
+                                            );
+                                    },
+                                    InstrumentKind::Forex(_) => {
+                                        ui.label(format!(
+                                            "Currency: {} ({})",
+                                            instrument.fullname(),
+                                            instrument.symbol()
+                                        ));
+                                    },
+                                    InstrumentKind::Commodity(name) => {
+                                        ui.label(format!(
+                                            "Storage costs: {:.0}{CURRENCY}{}/month",
+                                            instrument.storage_cost() * 30.,
+                                            instrument.per_unit(),
+                                        ))
+                                            .on_hover_text(
+                                                "Current price of storage per month. Note that this \
                                         price increases with inflation. Storage costs are deducted \
                                         every month or when the commodity is sold.",
-                                );
+                                            );
 
-                                ui.label(format!(
-                                    "Production: {}",
-                                    economy
-                                        .countries
-                                        .iter()
-                                        .filter_map(|c| c
-                                            .production
-                                            .keys()
-                                            .contains(&name)
-                                            .then_some(c.name.to_name()))
-                                        .collect::<Vec<_>>()
-                                        .join(", ")
-                                ))
-                                .on_hover_text(
-                                    "Countries producing this commodity. Bond prices for \
+                                        ui.label(format!(
+                                            "Production: {}",
+                                            economy
+                                                .countries
+                                                .iter()
+                                                .filter_map(|c| c
+                                                    .production
+                                                    .keys()
+                                                    .contains(&name)
+                                                    .then_some(c.name.to_name()))
+                                                .collect::<Vec<_>>()
+                                                .join(", ")
+                                        ))
+                                            .on_hover_text(
+                                                "Countries producing this commodity. Bond prices for \
                                         these countries might be affected by the commodity price.",
-                                );
-                            },
-                            InstrumentKind::Crypto(_) => {
-                                ui.label(format!(
-                                    "Market cap: {}{CURRENCY}",
-                                    instrument.market_cap().format()
-                                ))
-                                .on_hover_text(
-                                    "Total market capitalization of the cryptocurrency. This \
+                                            );
+                                    },
+                                    InstrumentKind::Crypto(_) => {
+                                        ui.label(format!(
+                                            "Market cap: {}{CURRENCY}",
+                                            instrument.market_cap().format()
+                                        ))
+                                            .on_hover_text(
+                                                "Total market capitalization of the cryptocurrency. This \
                                     is a good indication of the coin's popularity and adoption.",
-                                );
-                            },
-                        }
+                                            );
+                                    },
+                                }
+                            });
+
+                            if matches!(instrument.kind(), InstrumentKind::Stock(_)) {
+                                ui.add_space(window.width() * 0.02);
+                                ui.vertical(|ui| {
+                                    ui.label("Sector");
+                                    for (name, weight) in instrument.sector().iter().sorted_by(|a, b| b.1.partial_cmp(&a.1).unwrap()) {
+                                        ui.add(
+                                            ProgressBar::new(*weight)
+                                                .text(RichText::new(format!("{} {}", name.emoji(), name.to_name())).small())
+                                                .corner_radius(5.)
+                                                .desired_width(ui.available_width() * 0.6)
+                                        ).on_hover_text(name.description());
+                                    }
+                                });
+                            }
+                        });
                     });
+
+                    if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
+                        ui.add_space(window.width() * 0.01);
+                        ui.vertical(|ui| {
+                            ui.add_plot(instrument.all(), Some(player.pending_orders().into_iter().filter(|o| o.instrument == instrument.kind()).collect()));
+                        });
+                    }
                 })
             })
             .inner

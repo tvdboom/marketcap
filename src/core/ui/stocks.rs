@@ -52,7 +52,7 @@ pub fn stock_panel(
             .collect::<Vec<_>>();
 
         for inst in OrderOptions::sort_instrument(instruments, &state.stocks, economy, player) {
-            let response = ui.add_instrument(inst, economy, images, window);
+            let response = ui.add_instrument(inst, economy, player, images, window);
 
             if response.clicked() {
                 state.modal = Some(inst.kind());

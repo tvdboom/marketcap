@@ -85,6 +85,9 @@ pub struct Derivative {
     /// Whether to execute the derivative at maturity (only for options)
     pub execute: bool,
 
+    /// Whether the player decided to force the execution
+    pub force_execute: bool,
+
     /// Whether the derivative is pending, executed or canceled
     pub status: OrderStatus,
 }

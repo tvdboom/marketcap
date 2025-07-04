@@ -4,7 +4,7 @@ use egui_extras::{Column, TableBuilder};
 use strum::IntoEnumIterator;
 
 use crate::core::constants::{CURRENCY, DATE_FORMAT, NA};
-use crate::core::derivatives::{Derivative, DerivativeKind};
+use crate::core::derivatives::{Derivative, DerivativeAction, DerivativeKind};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::instrument::InstrumentKind;
 use crate::core::loans::TermLoan;
@@ -565,6 +565,7 @@ pub fn pending_derivative_table(
         .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
         .show(ui, |ui| {
             TableBuilder::new(ui)
+                .id_salt("pending_derivative_table")
                 .striped(false)
                 .sense(Sense::click())
                 .columns(Column::remainder(), columns.len())
@@ -605,10 +606,20 @@ pub fn pending_derivative_table(
                             }
 
                             row.col(|ui| {
-                                ui.add_enabled(
-                                    derivative.kind == DerivativeKind::Option,
+                                let button = ui.add_enabled(
+                                    derivative.kind == DerivativeKind::Option
+                                        && derivative.action == DerivativeAction::Bought,
                                     toggle(&mut derivative.execute),
+                                ).on_hover_text(
+                                    "Whether to execute the option at maturity. Note that \
+                                    manually changing the value will no longer update the option \
+                                    automatically when prices changes unfavorably."
                                 );
+
+                                if button.clicked() {
+                                    // The button will no longer be updated automatically
+                                    derivative.force_execute = true;
+                                }
                             });
 
                             if row.response().clicked() {
@@ -647,6 +658,7 @@ pub fn processed_derivative_table(
         .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
         .show(ui, |ui| {
             TableBuilder::new(ui)
+                .id_salt("processed_derivative_table")
                 .striped(false)
                 .sense(Sense::click())
                 .columns(Column::remainder(), columns.len())

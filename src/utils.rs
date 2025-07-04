@@ -6,7 +6,6 @@ use rand::{Rng, rng};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::VecDeque;
-use std::f32::consts::PI;
 use std::fmt::Debug;
 
 /// Get the text size ratio depending on the window size
@@ -57,20 +56,21 @@ fn extract_variant_name(text: String) -> String {
 
 /// Approximation of the cumulative distribution function for a standard normal distribution
 pub fn norm_cdf(x: f32) -> f32 {
-    0.5 * (1.0
-        + (x / (1.0 + 0.2316419 * x.abs())).exp().recip() * {
-            let t = 1.0 / (1.0 + 0.2316419 * x.abs());
-            let a1 = 0.319381530;
-            let a2 = -0.356563782;
-            let a3 = 1.781477937;
-            let a4 = -1.821255978;
-            let a5 = 1.330274429;
+    let sign = if x < 0.0 { -1.0 } else { 1.0 };
+    let x = x.abs();
 
-            let poly = ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t;
-            let pdf = (-x * x / 2.0).exp() / (2.0 * PI).sqrt();
-            1.0 - pdf * poly
-        })
-        * if x < 0.0 { -1.0 } else { 1.0 }
+    let t = 1.0 / (1.0 + 0.2316419 * x);
+    let a1 = 0.319381530;
+    let a2 = -0.356563782;
+    let a3 = 1.781477937;
+    let a4 = -1.821255978;
+    let a5 = 1.330274429;
+
+    let poly = ((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t;
+    let pdf = (-x * x / 2.0).exp() / (2.0 * std::f32::consts::PI).sqrt();
+    let cdf = 1.0 - pdf * poly;
+
+    if sign == 1.0 { cdf } else { 1.0 - cdf }
 }
 
 /// Trait to get the text of an enum variant

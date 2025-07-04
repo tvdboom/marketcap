@@ -209,16 +209,16 @@ impl Player {
             let condition = match order.kind {
                 OrderKind::LimitOrder => {
                     if order.lower_bound {
-                        instrument.current() <= order.threshold
+                        instrument.current() <= order.limit_price()
                     } else {
-                        instrument.current() >= order.threshold
+                        instrument.current() >= order.limit_price()
                     }
                 },
                 OrderKind::TrailingOrder => {
                     if order.lower_bound {
-                        instrument.current() >= (1. + order.threshold / 100.) * order.bound
+                        instrument.current() >= order.limit_price()
                     } else {
-                        instrument.current() <= (1. - order.threshold / 100.) * order.bound
+                        instrument.current() <= order.limit_price()
                     }
                 },
                 _ => unreachable!(),
@@ -276,7 +276,7 @@ impl Player {
 
     pub fn resolve_derivatives(
         &mut self,
-        economy: &GlobalEconomy,
+        economy: &mut GlobalEconomy,
         message: &mut EventWriter<MessageEv>,
     ) {
         let pending = self
@@ -284,9 +284,13 @@ impl Player {
             .into_iter()
             .cloned()
             .collect::<Vec<_>>();
+
         for derivative in pending {
             if economy.date == derivative.maturity_date() {
                 if derivative.execute {
+                    economy.economy.current_traded_volume +=
+                        derivative.price * derivative.amount as f32;
+
                     match derivative.action {
                         DerivativeAction::Bought => {
                             if let Some(owned) = self.get_mut(&derivative.instrument) {

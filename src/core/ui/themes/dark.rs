@@ -61,10 +61,6 @@ impl Aesthetics for NordDark {
         18.0
     }
 
-    fn scroll_bar_width_style(&self) -> f32 {
-        14.0
-    }
-
     fn rounding_visuals(&self) -> u8 {
         6
     }

@@ -74,7 +74,9 @@ pub trait Aesthetics {
     /// Scroll bar width.
     ///
     /// - Egui default is 6.0
-    fn scroll_bar_width_style(&self) -> f32;
+    fn scroll_bar_width_style(&self) -> f32 {
+        14.0
+    }
 
     /// Custom rounding value for all buttons and frames.
     ///

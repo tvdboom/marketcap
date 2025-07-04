@@ -52,7 +52,7 @@ pub fn crypto_panel(
 
         for inst in OrderOptions::sort_instrument(instruments, &state.cryptos, economy, player) {
             ui.add_enabled_ui(inst.current() > 0., |ui| {
-                let response = ui.add_instrument(inst, economy, images, window);
+                let response = ui.add_instrument(inst, economy, player, images, window);
 
                 if response.clicked() {
                     state.modal = Some(inst.kind());

@@ -170,6 +170,18 @@ pub struct Order {
     pub status: OrderStatus,
 }
 
+impl Order {
+    pub fn limit_price(&self) -> f32 {
+        if self.kind == OrderKind::LimitOrder {
+            self.threshold
+        } else if self.lower_bound {
+            (1. + self.threshold / 100.) * self.bound
+        } else {
+            (1. - self.threshold / 100.) * self.bound
+        }
+    }
+}
+
 #[derive(Event)]
 pub struct OrderEv {
     pub id: String,
