@@ -1,12 +1,14 @@
-use crate::core::constants::HEIGHT;
+use std::collections::VecDeque;
+use std::fmt::Debug;
+
 use bevy_egui::egui::TextStyle;
 use chrono::{Datelike, NaiveDate};
 use rand::distr::Alphanumeric;
 use rand::{Rng, rng};
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::collections::VecDeque;
-use std::fmt::Debug;
+
+use crate::core::constants::HEIGHT;
 
 /// Get the text size ratio depending on the window size
 pub fn get_ratio(width: f32, height: f32, style: TextStyle) -> f32 {

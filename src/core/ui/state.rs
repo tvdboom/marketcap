@@ -1,5 +1,10 @@
 use std::cmp::Ordering;
 
+use bevy::prelude::*;
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
+
 use crate::core::derivatives::{Derivative, DerivativeTerm};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondKind;
@@ -8,10 +13,6 @@ use crate::core::loans::{LoanKind, LoanProvider, Term, TermLoan};
 use crate::core::orders::{Order, OrderKind};
 use crate::core::player::{OwnedInstrument, Player};
 use crate::utils::NameFromEnum;
-use bevy::prelude::*;
-use itertools::Itertools;
-use serde::{Deserialize, Serialize};
-use strum_macros::EnumIter;
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum Tab {

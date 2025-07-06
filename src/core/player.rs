@@ -1,6 +1,10 @@
 use std::collections::HashMap;
 
-use crate::core::derivatives::{Derivative, DerivativeAction, DerivativeKind, OptionKind};
+use bevy::prelude::*;
+use itertools::Itertools;
+use serde::{Deserialize, Serialize};
+
+use crate::core::derivatives::{Derivative, DerivativeKind};
 use crate::core::factors::Factor;
 use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
@@ -11,9 +15,6 @@ use crate::core::loans::{MarginLoan, TermLoan};
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
 use crate::utils::NameFromEnum;
-use bevy::prelude::*;
-use itertools::Itertools;
-use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct OwnedInstrument {

@@ -1,3 +1,6 @@
+use bevy::prelude::*;
+use chrono::{Datelike, Duration};
+
 use crate::core::constants::DATE_FORMAT;
 use crate::core::derivatives::{DerivativeAction, DerivativeKind, OptionKind};
 use crate::core::factors::Factor;
@@ -8,8 +11,6 @@ use crate::core::orders::OrderEv;
 use crate::core::player::Player;
 use crate::core::ui::state::UiState;
 use crate::utils::NameFromEnum;
-use bevy::prelude::*;
-use chrono::{Datelike, Duration};
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
@@ -216,32 +217,43 @@ pub fn time_pass(
         // Update derivatives ====================================== >>
 
         // Update execution for options
-        for option in player.pending_derivatives_mut() {
-            if option.kind == DerivativeKind::Option {
-                let market_price = economy.get_price(&option.instrument);
+        let mut status = vec![];
+        for option in player.pending_derivatives() {
+            let mut execute = option.execute;
 
+            if option.kind == DerivativeKind::Option {
                 // Only adjust automatically when execute not changed by the player
                 if !option.force_execute {
-                    option.execute = match option.option_kind {
-                        OptionKind::Call => market_price >= option.price,
-                        OptionKind::Put => market_price < option.price,
-                    }
+                    let market_price = economy.get_price(&option.instrument);
+
+                    execute = if option.is_buy() {
+                        market_price > option.price
+                    } else {
+                        market_price < option.price
+                    };
                 }
 
                 // Always disable bought options when there is no cash or instruments to cover
                 if option.action == DerivativeAction::Bought
-                    && (
-                    (option.option_kind == OptionKind::Call && cash < option.price * option.amount as f32)
-                        || (option.option_kind == OptionKind::Put && player
-                            .instruments
-                            .iter()
-                            .filter(|o| o.kind == option.instrument)
-                            .count()
-                            < option.amount as usize))
+                    && ((option.option_kind == OptionKind::Call
+                        && cash < option.price * option.amount as f32)
+                        || (option.option_kind == OptionKind::Put
+                            && player.get_owned(&option.instrument) < option.amount as i32))
                 {
-                    option.execute = false;
+                    execute = false;
                 }
             }
+
+            status.push(execute);
+        }
+
+        // Assign execution status to derivatives
+        for (option, status) in player
+            .pending_derivatives_mut()
+            .into_iter()
+            .zip(status.into_iter())
+        {
+            option.execute = status;
         }
 
         player.cash.amount = cash;

@@ -1,3 +1,6 @@
+use bevy::prelude::Window;
+use bevy_egui::egui::{ScrollArea, Ui};
+
 use crate::core::constants::CURRENCY;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::instrument::Instrument;
@@ -5,8 +8,6 @@ use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderOptions, UiState};
 use crate::core::ui::utils::CustomUi;
-use bevy::prelude::Window;
-use bevy_egui::egui::{ScrollArea, Ui};
 
 pub fn forex_panel(
     ui: &mut Ui,

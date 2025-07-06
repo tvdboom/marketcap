@@ -1,3 +1,9 @@
+use std::collections::HashMap;
+use std::f32::consts::E;
+
+use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
+
 use crate::core::derivatives::OptionKind;
 use crate::core::instruments::bonds::{BondIssuer, BondQuality};
 use crate::core::instruments::commodities::CommodityName;
@@ -7,10 +13,6 @@ use crate::core::instruments::stocks::{Company, ESGRating};
 use crate::core::orders::OrderKind;
 use crate::core::sectors::SectorName;
 use crate::utils::{DQueue, NameFromEnum, norm_cdf};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::f32::consts::E;
-use strum::IntoEnumIterator;
 
 #[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum InstrumentKind {
