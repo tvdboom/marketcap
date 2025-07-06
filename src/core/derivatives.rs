@@ -109,4 +109,14 @@ impl Derivative {
             .checked_add_signed(Duration::days(self.term.days() as i64))
             .unwrap()
     }
+
+    pub fn is_buy(&self) -> bool {
+        (self.option_kind == OptionKind::Call && self.action == DerivativeAction::Bought)
+            || (self.option_kind == OptionKind::Put && self.action == DerivativeAction::Sold)
+    }
+
+    pub fn is_sell(&self) -> bool {
+        (self.option_kind == OptionKind::Call && self.action == DerivativeAction::Sold)
+            || (self.option_kind == OptionKind::Put && self.action == DerivativeAction::Bought)
+    }
 }

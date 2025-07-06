@@ -13,6 +13,7 @@ use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::player::Player;
 use crate::core::states::AppState;
+use crate::core::ui::state::UiState;
 
 #[derive(Event)]
 pub struct LoadGameEv;
@@ -25,6 +26,7 @@ pub struct SaveAll {
     pub game_settings: GameSettings,
     pub global_economy: GlobalEconomy,
     pub player: Player,
+    pub state: UiState,
 }
 
 fn save_to_bin(file_path: &str, data: &SaveAll) -> io::Result<()> {
@@ -53,6 +55,7 @@ pub fn load_game(
     mut game_settings: ResMut<GameSettings>,
     mut global_economy: ResMut<GlobalEconomy>,
     mut player: ResMut<Player>,
+    mut state: ResMut<UiState>,
     mut next_app_state: ResMut<NextState<AppState>>,
 ) {
     for _ in load_game_ev.read() {
@@ -63,6 +66,7 @@ pub fn load_game(
             *game_settings = data.game_settings;
             *global_economy = data.global_economy;
             *player = data.player;
+            *state = data.state;
 
             next_app_state.set(AppState::Game);
         }
@@ -75,6 +79,7 @@ pub fn save_game(
     game_settings: Res<GameSettings>,
     global_economy: Res<GlobalEconomy>,
     player: Res<Player>,
+    state: Res<UiState>,
 ) {
     for _ in save_game_ev.read() {
         if let Some(mut file_path) = FileDialog::new().save_file() {
@@ -87,6 +92,7 @@ pub fn save_game(
                 game_settings: game_settings.clone(),
                 global_economy: global_economy.clone(),
                 player: player.clone(),
+                state: state.clone(),
             };
 
             save_to_bin(&file_path_str, &data).expect("Failed to save the game.");

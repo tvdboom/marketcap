@@ -10,9 +10,10 @@ use crate::core::player::{OwnedInstrument, Player};
 use crate::utils::NameFromEnum;
 use bevy::prelude::*;
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
-#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum Tab {
     #[default]
     Overview,
@@ -40,7 +41,7 @@ impl Tab {
     }
 }
 
-#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum OverviewTab {
     #[default]
     Portfolio,
@@ -60,7 +61,7 @@ impl OverviewTab {
     }
 }
 
-#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum OrderOptions {
     #[default]
     Name,
@@ -275,12 +276,13 @@ impl OrderOptions {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct OrderByState {
     pub order: OrderOptions,
     pub descending: bool,
 }
 
+#[derive(Clone, Serialize, Deserialize)]
 pub struct OverviewState {
     pub tab: OverviewTab,
     pub stocks: OrderByState,
@@ -338,14 +340,14 @@ impl Default for OverviewState {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct BondState {
     pub tab: BondKind,
     pub order_government: OrderByState,
     pub order_corporate: OrderByState,
 }
 
-#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq)]
+#[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum CreditTab {
     #[default]
     NewLoan,
@@ -365,7 +367,7 @@ impl CreditTab {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct CreditState {
     pub tab: CreditTab,
     pub provider: LoanProvider,
@@ -379,10 +381,11 @@ pub struct CreditState {
     pub collateral_amount: u32,
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Serialize, Deserialize)]
 pub struct ModalInfo {
     pub tab: OrderKind,
     pub amount: u32,
+    pub cds: bool,
     pub limit_stop: f32,
     pub trailing_stop: u32,
     pub lower_bound: bool,
@@ -392,7 +395,7 @@ pub struct ModalInfo {
     pub strike_percentage: i32,
 }
 
-#[derive(Resource, Default)]
+#[derive(Resource, Clone, Default, Serialize, Deserialize)]
 pub struct UiState {
     pub tab: Tab,
     pub overview: OverviewState,

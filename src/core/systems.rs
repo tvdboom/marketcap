@@ -1,3 +1,4 @@
+use crate::core::constants::DATE_FORMAT;
 use crate::core::derivatives::{DerivativeAction, DerivativeKind, OptionKind};
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
@@ -6,8 +7,9 @@ use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::OrderEv;
 use crate::core::player::Player;
 use crate::core::ui::state::UiState;
+use crate::utils::NameFromEnum;
 use bevy::prelude::*;
-use chrono::Datelike;
+use chrono::{Datelike, Duration};
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
@@ -42,23 +44,9 @@ pub fn time_pass(
             }
         }
 
-        // Update execution for options
-        for option in player.pending_derivatives_mut() {
-            if option.kind == DerivativeKind::Option
-                && !option.force_execute
-                && option.action == DerivativeAction::Bought
-            {
-                let market_price = economy.get_price(&option.instrument);
-
-                option.execute = match option.option_kind {
-                    OptionKind::Call => market_price >= option.price,
-                    OptionKind::Put => market_price < option.price,
-                }
-            }
-        }
+        let mut cash = player.cash.current();
 
         // Check margin call for margin loans
-        let mut cash = player.cash.current();
         player.instruments.retain_mut(|owned| {
             if let Some(loan) = &mut owned.loan {
                 let price = economy.get_price(&owned.kind);
@@ -107,9 +95,9 @@ pub fn time_pass(
 
         player.cash.amount = cash;
 
-        player.resolve_derivatives(&mut economy, &mut message);
-
         player.resolve_orders(&economy, &mut order_ev, &mut message);
+
+        let mut cash = player.cash.current();
 
         if economy.date.day() == 1 {
             // Monthly operations =================================== >>
@@ -180,7 +168,6 @@ pub fn time_pass(
             // Resolve debts ======================================= >>
 
             let mut has_debt = false;
-            let mut cash = player.cash.amount;
 
             // Pay storage costs for commodities
             let storage_costs = player
@@ -224,11 +211,44 @@ pub fn time_pass(
                     }
                 }
             }
-
-            player.cash.amount = cash;
         }
 
-        // Warning messages =================================== >>
+        // Update derivatives ====================================== >>
+
+        // Update execution for options
+        for option in player.pending_derivatives_mut() {
+            if option.kind == DerivativeKind::Option {
+                let market_price = economy.get_price(&option.instrument);
+
+                // Only adjust automatically when execute not changed by the player
+                if !option.force_execute {
+                    option.execute = match option.option_kind {
+                        OptionKind::Call => market_price >= option.price,
+                        OptionKind::Put => market_price < option.price,
+                    }
+                }
+
+                // Always disable bought options when there is no cash or instruments to cover
+                if option.action == DerivativeAction::Bought
+                    && (
+                    (option.option_kind == OptionKind::Call && cash < option.price * option.amount as f32)
+                        || (option.option_kind == OptionKind::Put && player
+                            .instruments
+                            .iter()
+                            .filter(|o| o.kind == option.instrument)
+                            .count()
+                            < option.amount as usize))
+                {
+                    option.execute = false;
+                }
+            }
+        }
+
+        player.cash.amount = cash;
+
+        player.resolve_derivatives(&mut economy, &mut message);
+
+        // Warning messages ======================================== >>
 
         // Warn every month when cash is negative
         if economy.date.day() == 1 && player.cash.current() < 0. {
@@ -239,13 +259,59 @@ pub fn time_pass(
             });
         }
 
-        // Check if player has enough cash to cover outflow next month
+        // Check if the player has enough cash to cover outflow next month
         if economy.date.day() == 20 && player.outflow(&economy) > player.cash.current() {
             message.write(MessageEv {
                 message: "You're outflow for next month is larger than your cash reserve!"
                     .to_string(),
                 level: MessageLevel::Warning,
             });
+        }
+
+        // Warn if the player hasn't enough cash or instruments to cover a derivative in 20 days
+        for derivative in player.pending_derivatives() {
+            if derivative.maturity_date() == economy.date + Duration::days(20) {
+                let total_price = derivative.price * derivative.amount as f32;
+
+                // Buy requires cash and sell requires instruments
+                let no_buy = derivative.kind == DerivativeKind::Option
+                    && derivative.is_buy()
+                    && player.cash.current() < total_price;
+
+                let no_sell = derivative.is_sell()
+                    && player
+                        .instruments
+                        .iter()
+                        .filter(|o| o.kind == derivative.instrument)
+                        .count()
+                        < derivative.amount as usize;
+
+                if no_buy || no_sell {
+                    message.write(MessageEv {
+                        message: format!(
+                            "Not enough {} to {} {}{} on {}.",
+                            if no_buy {
+                                "cash".to_string()
+                            } else {
+                                derivative.instrument.lowername()
+                            },
+                            if derivative.action == DerivativeAction::Bought {
+                                "execute"
+                            } else {
+                                "cover"
+                            },
+                            if derivative.kind == DerivativeKind::Future {
+                                "".to_string()
+                            } else {
+                                format!("{} ", derivative.option_kind.to_lowername())
+                            },
+                            derivative.kind.to_lowername(),
+                            derivative.maturity_date().format(DATE_FORMAT),
+                        ),
+                        level: MessageLevel::Warning,
+                    });
+                }
+            }
         }
     }
 }

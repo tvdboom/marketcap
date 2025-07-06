@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::core::derivatives::{Derivative, DerivativeAction};
+use crate::core::derivatives::{Derivative, DerivativeAction, DerivativeKind, OptionKind};
 use crate::core::factors::Factor;
 use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
@@ -288,75 +288,90 @@ impl Player {
         for derivative in pending {
             if economy.date == derivative.maturity_date() {
                 if derivative.execute {
-                    economy.economy.current_traded_volume +=
-                        derivative.price * derivative.amount as f32;
+                    let total_price = derivative.price * derivative.amount as f32;
 
-                    match derivative.action {
-                        DerivativeAction::Bought => {
-                            if let Some(owned) = self.get_mut(&derivative.instrument) {
-                                owned.amount += derivative.amount as i32;
-                            } else {
-                                self.instruments.push(OwnedInstrument {
-                                    kind: derivative.instrument.clone(),
-                                    amount: derivative.amount as i32,
-                                    loan: None,
-                                    warning: false,
+                    economy.economy.current_traded_volume += total_price;
+
+                    if derivative.is_buy() {
+                        // Futures are already paid for
+                        if derivative.kind == DerivativeKind::Option {
+                            self.cash.amount -= total_price;
+                            if self.cash.amount < 0. {
+                                self.credit_score.decrease();
+                                message.write(MessageEv {
+                                    message: "Forced buy to cover option. Credit score reduced."
+                                        .to_string(),
+                                    level: MessageLevel::Error,
                                 });
                             }
+                        }
+
+                        if let Some(owned) = self.get_mut(&derivative.instrument) {
+                            owned.amount += derivative.amount as i32;
+                        } else {
+                            self.instruments.push(OwnedInstrument {
+                                kind: derivative.instrument.clone(),
+                                amount: derivative.amount as i32,
+                                loan: None,
+                                warning: false,
+                            });
+                        }
+
+                        message.write(MessageEv {
+                            message: format!(
+                                "Executed {}{}. Bought {} {}.",
+                                if derivative.kind == DerivativeKind::Option {
+                                    format!("{} ", derivative.option_kind.to_lowername())
+                                } else {
+                                    "".to_string()
+                                },
+                                derivative.kind.to_lowername(),
+                                derivative.amount,
+                                derivative.instrument.lowername(),
+                            ),
+                            level: MessageLevel::Info,
+                        });
+                    } else {
+                        let remaining = if let Some(owned) = self.get_mut(&derivative.instrument) {
+                            if owned.amount >= derivative.amount as i32 {
+                                owned.amount -= derivative.amount as i32;
+                                0
+                            } else if owned.amount > 0 {
+                                let remaining = derivative.amount - owned.amount as u32;
+                                owned.amount = 0;
+                                remaining
+                            } else {
+                                derivative.amount
+                            }
+                        } else {
+                            derivative.amount
+                        };
+
+                        if remaining > 0 {
+                            // Not sufficient instruments owned to cover the derivative
+                            self.cash.amount -= derivative.price * remaining as f32;
+                            self.credit_score.decrease();
 
                             message.write(MessageEv {
                                 message: format!(
-                                    "Executed {} buy for {} {}.",
+                                    "Executed {} sell for {} {}. Insufficient amount owned.",
+                                    derivative.kind.to_lowername(),
+                                    derivative.amount,
+                                    derivative.instrument.lowername(),
+                                ),
+                                level: MessageLevel::Error,
+                            });
+                        } else {
+                            message.write(MessageEv {
+                                message: format!(
+                                    "Executed {} sell for {} {}.",
                                     derivative.kind.to_lowername(),
                                     derivative.amount,
                                     derivative.instrument.lowername(),
                                 ),
                                 level: MessageLevel::Info,
                             });
-                        },
-                        DerivativeAction::Sold => {
-                            let remaining =
-                                if let Some(owned) = self.get_mut(&derivative.instrument) {
-                                    if owned.amount >= derivative.amount as i32 {
-                                        owned.amount -= derivative.amount as i32;
-                                        0
-                                    } else if owned.amount > 0 {
-                                        let remaining = derivative.amount - owned.amount as u32;
-                                        owned.amount = 0;
-                                        remaining
-                                    } else {
-                                        derivative.amount
-                                    }
-                                } else {
-                                    derivative.amount
-                                };
-
-                            if remaining > 0 {
-                                // Not sufficient instruments owned to cover the derivative
-                                self.cash.amount -= derivative.price * remaining as f32;
-                                self.credit_score.decrease();
-
-                                message.write(MessageEv {
-                                    message: format!(
-                                        "Executed {} sell for {} {}. Insufficient amount owned.",
-                                        derivative.kind.to_lowername(),
-                                        derivative.amount,
-                                        derivative.instrument.lowername(),
-                                    ),
-                                    level: MessageLevel::Error,
-                                });
-                            } else {
-                                message.write(MessageEv {
-                                    message: format!(
-                                        "Executed {} sell for {} {}.",
-                                        derivative.kind.to_lowername(),
-                                        derivative.amount,
-                                        derivative.instrument.lowername(),
-                                    ),
-                                    level: MessageLevel::Info,
-                                });
-                            }
-                        },
+                        }
                     }
                 } else {
                     message.write(MessageEv {

@@ -96,7 +96,7 @@ pub trait Instrument {
         let k = strike_price;
         let t = years;
         let r = interest / 100.;
-        let sigma = self.volatility() / 100. * f32::sqrt(365.);  // Convert daily volatility to annual
+        let sigma = self.volatility() / 100. * f32::sqrt(365.); // Convert daily volatility to annual
 
         let d1 = (f32::ln(s / k) + (r + 0.5 * sigma * sigma) * t) / (sigma * f32::sqrt(t));
         let d2 = d1 - sigma * f32::sqrt(t);
@@ -146,8 +146,8 @@ pub trait Instrument {
     fn sector(&self) -> HashMap<SectorName, f32> {
         HashMap::new()
     }
-    fn sentiment(&self) -> u8 {
-        0
+    fn sentiment(&self) -> f32 {
+        0.
     }
 
     /// Costs of holding this instrument per unit per day

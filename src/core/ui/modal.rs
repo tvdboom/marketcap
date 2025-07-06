@@ -449,6 +449,19 @@ pub fn trade_modal(
                             });
                         }
 
+                        if matches!(kind, InstrumentKind::Bond(_)) {
+                            ui.horizontal(|ui| {
+                                ui.label("Credit default swap:");
+
+                                ui.add(toggle(&mut state.modal_info.cds));
+                            }).response.on_hover_text(
+                                "A credit default swap (CDS) is a financial derivative \
+                                that allows an investor to 'swap' or transfer the credit \
+                                risk of a bond to another party. It ensures bond payments \
+                                are always paid, even when the issuer defaults."
+                            );
+                        }
+
                         if matches!(kind, InstrumentKind::Commodity(_)) && !tab.is_short_derivative() {
                             ui.label(format!("Storage costs: {storage_costs:.0}{CURRENCY}/month"))
                                 .on_hover_text(
@@ -777,7 +790,7 @@ pub fn trade_modal(
                 } else {
                     DerivativeKind::Option
                 },
-                option_kind,
+                option_kind: option_kind.clone(),
                 action: if command == Command::Buy {
                     DerivativeAction::Bought
                 } else {
@@ -795,10 +808,15 @@ pub fn trade_modal(
 
             message.write(MessageEv {
                 message: format!(
-                    "{} {} {} {}.",
+                    "{} {} {} {}{}.",
                     derivative.action.to_name(),
                     amount,
                     instrument.lowername(),
+                    if tab == OrderKind::Futures {
+                        "".to_string()
+                    } else {
+                        format!("{} ", option_kind.to_lowername())
+                    },
                     tab.to_lowername(),
                 ),
                 level: MessageLevel::Info,

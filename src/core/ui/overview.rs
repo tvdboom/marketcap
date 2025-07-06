@@ -606,15 +606,17 @@ pub fn pending_derivative_table(
                             }
 
                             row.col(|ui| {
-                                let button = ui.add_enabled(
-                                    derivative.kind == DerivativeKind::Option
-                                        && derivative.action == DerivativeAction::Bought,
-                                    toggle(&mut derivative.execute),
-                                ).on_hover_text(
-                                    "Whether to execute the option at maturity. Note that \
+                                let button = ui
+                                    .add_enabled(
+                                        derivative.kind == DerivativeKind::Option
+                                            && derivative.action == DerivativeAction::Bought,
+                                        toggle(&mut derivative.execute),
+                                    )
+                                    .on_hover_text(
+                                        "Whether to execute the option at maturity. Note that \
                                     manually changing the value will no longer update the option \
-                                    automatically when prices changes unfavorably."
-                                );
+                                    automatically when prices changes unfavorably.",
+                                    );
 
                                 if button.clicked() {
                                     // The button will no longer be updated automatically
