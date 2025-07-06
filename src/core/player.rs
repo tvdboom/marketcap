@@ -333,6 +333,10 @@ impl Player {
                             level: MessageLevel::Info,
                         });
                     } else {
+                        if derivative.kind == DerivativeKind::Option {
+                            self.cash.amount += total_price;
+                        }
+
                         let remaining = if let Some(owned) = self.get_mut(&derivative.instrument) {
                             if owned.amount >= derivative.amount as i32 {
                                 owned.amount -= derivative.amount as i32;
@@ -350,7 +354,9 @@ impl Player {
 
                         if remaining > 0 {
                             // Not sufficient instruments owned to cover the derivative
-                            self.cash.amount -= derivative.price * remaining as f32;
+                            // Buy the remaining amount at market price
+                            self.cash.amount -=
+                                economy.get_price(&derivative.instrument) * remaining as f32;
                             self.credit_score.decrease();
 
                             message.write(MessageEv {
