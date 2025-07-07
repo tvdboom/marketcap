@@ -219,7 +219,8 @@ impl Instrument for Stock {
     }
 
     fn dividend(&self) -> f32 {
-        self.dividend
+        // Good performing stocks pay out a higher dividend
+        self.dividend * (1. + (self.current() - self.base_price) / self.base_price)
     }
 
     fn esg(&self) -> ESGRating {

@@ -323,26 +323,27 @@ impl CustomUi for Ui {
 
                                 match instrument.kind() {
                                     InstrumentKind::Stock(_) => {
-                                        ui.label(format!("Dividend: {}", instrument.dividend().clean()))
+                                        ui.label(format!("Dividend: {}{CURRENCY}/share", instrument.dividend().clean()))
                                             .on_hover_text(
                                                 "The dividend is a portion of the company's earnings \
-                                        distributed to shareholders. It is paid quarterly and the \
-                                        amount is at the discretion of the company.",
+                                                distributed to shareholders. It is paid quarterly and the \
+                                                amount is at the discretion of the company (the shown amount \
+                                                is an indication).",
                                             );
 
                                         ui.label(format!("Sentiment: {}", instrument.sentiment()))
                                             .on_hover_text(
                                                 "People's feelings towards the company (0-100). Higher \
-                                        scores means favorable sentiment, thus usually higher stock \
-                                        prices.",
+                                                scores means favorable sentiment, thus usually higher stock \
+                                                prices.",
                                             );
 
                                         ui.label(format!("ESG: {}", instrument.esg().to_name()))
                                             .on_hover_text(format!(
                                                 "ESG ratings evaluate a company's performance in three key \
-                                        areas: Environmental, Social, and Governance. These scores \
-                                        help investors assess how responsibly a company operates \
-                                        beyond financial metrics. Score {}: {}", instrument.esg().to_name(), instrument.esg().description()));
+                                                areas: Environmental, Social, and Governance. These scores \
+                                                help investors assess how responsibly a company operates \
+                                                beyond financial metrics. Score {}: {}", instrument.esg().to_name(), instrument.esg().description()));
                                     },
                                     InstrumentKind::Bond(issuer) => {
                                         ui.label(format!("Quality: {}", instrument.quality().to_name()))
@@ -354,10 +355,11 @@ impl CustomUi for Ui {
                                                 .on_hover_text(country.market.description());
                                         }
 
-                                        ui.label(format!("Interest: {:.1}%", instrument.interest()))
+                                        ui.label(format!("Interest: ≥{:.1}%", instrument.interest()))
                                             .on_hover_text(
                                                 "Also known as the coupon payment. Fixed interest \
-                                        paid to the holder as percentage of the face value.",
+                                                paid to the holder as percentage of the face value. \
+                                                The interest increases with the bond's term.",
                                             );
                                     },
                                     InstrumentKind::Forex(_) => {
@@ -375,8 +377,8 @@ impl CustomUi for Ui {
                                         ))
                                             .on_hover_text(
                                                 "Current price of storage per month. Note that this \
-                                        price increases with inflation. Storage costs are deducted \
-                                        every month or when the commodity is sold.",
+                                                price increases with inflation. Storage costs are deducted \
+                                                every month or when the commodity is sold.",
                                             );
 
                                         ui.label(format!(
@@ -394,7 +396,7 @@ impl CustomUi for Ui {
                                         ))
                                             .on_hover_text(
                                                 "Countries producing this commodity. Bond prices for \
-                                        these countries might be affected by the commodity price.",
+                                                these countries might be affected by the commodity price.",
                                             );
                                     },
                                     InstrumentKind::Crypto(_) => {
@@ -404,7 +406,7 @@ impl CustomUi for Ui {
                                         ))
                                             .on_hover_text(
                                                 "Total market capitalization of the cryptocurrency. This \
-                                    is a good indication of the coin's popularity and adoption.",
+                                                is a good indication of the coin's popularity and adoption.",
                                             );
                                     },
                                 }

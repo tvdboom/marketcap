@@ -1,16 +1,15 @@
 use bevy::prelude::*;
 use chrono::{Datelike, Duration};
 
-use crate::core::constants::DATE_FORMAT;
+use crate::core::constants::{CURRENCY, DATE_FORMAT};
 use crate::core::derivatives::{DerivativeAction, DerivativeKind, OptionKind};
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::instruments::bonds::BondKind;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::OrderEv;
 use crate::core::player::Player;
 use crate::core::ui::state::UiState;
-use crate::utils::NameFromEnum;
+use crate::utils::{EnhFloat, NameFromEnum};
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
@@ -28,13 +27,20 @@ pub fn time_pass(
 
         // Daily operations =================================== >>
 
-        let ev = player.aum(&economy);
-        let (_, _, interest) = economy.bump(ev, &mut state, &mut message);
+        let aum = player.aum(&economy);
+        let (_, inflation, interest) = economy.bump(aum, &mut state, &mut message);
 
         player.cash.bump(interest);
-
-        let aum = player.aum(&economy);
         player.influence.bump(aum);
+
+        // Increase storage costs and dividends with inflation
+        for stock in &mut economy.stocks {
+            stock.dividend *= 1. + inflation / 100.0;
+        }
+
+        for commodity in &mut economy.commodities {
+            commodity.storage_cost *= 1. + inflation / 100.0;
+        }
 
         // Update bounds for trailing orders
         for order in player.pending_orders_mut() {
@@ -47,6 +53,25 @@ pub fn time_pass(
 
         let mut cash = player.cash.current();
 
+        // Check maturity of bonds
+        player.bonds.retain(|bond| {
+            if bond.maturity_date() == economy.date {
+                cash += bond.amount * bond.face_value;
+
+                message.write(MessageEv {
+                    message: format!(
+                        "{} {} bonds matured.",
+                        bond.amount,
+                        bond.issuer.to_name()
+                    ),
+                    level: MessageLevel::Info,
+                });
+                false
+            } else {
+                true
+            }
+        });
+        
         // Check margin call for margin loans
         player.instruments.retain_mut(|owned| {
             if let Some(loan) = &mut owned.loan {
@@ -98,8 +123,6 @@ pub fn time_pass(
 
         player.resolve_orders(&economy, &mut order_ev, &mut message);
 
-        let mut cash = player.cash.current();
-
         if economy.date.day() == 1 {
             // Monthly operations =================================== >>
 
@@ -117,58 +140,45 @@ pub fn time_pass(
             // Quarterly operations =================================== >>
 
             if economy.date.month() % 3 == 1 {
-                // Dividends are paid out
-                for owned in player.instruments.iter_mut() {
-                    let instrument = economy.get(&owned.kind);
-
-                    if instrument.dividend() > 0. {} // todo!
-                }
-
-                // Corporate bonds are issued
-                for bond in &mut economy
-                    .bonds
-                    .iter_mut()
-                    .filter(|b| b.kind() == BondKind::Corporate)
-                {
-                    bond.issue();
+                // Stock dividends are paid quarterly
+                let dividends = player.dividend_payment(&economy);
+                
+                if dividends > 0. {
+                    player.cash.amount += dividends;
+                
+                    message.write(MessageEv {
+                        message: format!(
+                            "You received {}{CURRENCY} on dividend payments.",
+                            dividends.clean(),
+                        ),
+                        level: MessageLevel::Info,
+                    });
                 }
             }
 
             // Bi-yearly operations =================================== >>
 
             if economy.date.month() % 6 == 1 {
-                // Bond's interest is paid
-                for owned in player.bonds() {
-                    // let bond = economy.get(&owned.instrument);
-                    // player.cash.amount += owned.interest * bond.face_value().iter().sum::<f32>();
-                }
-
-                // Government bonds are issued
-                for bond in &mut economy
-                    .bonds
-                    .iter_mut()
-                    .filter(|b| b.kind() == BondKind::Government)
-                {
-                    bond.issue();
-                }
-            }
-
-            // Yearly operations =================================== >>
-
-            if economy.date.month() == 1 {
-                // Corporate bonds are issued
-                for bond in &mut economy
-                    .bonds
-                    .iter_mut()
-                    .filter(|b| b.kind() == BondKind::Corporate)
-                {
-                    bond.issue();
+                // Bond's interest is paid twice a year
+                let coupons = player.coupon_payment(&economy);
+                
+                if coupons > 0. {
+                    player.cash.amount += coupons;
+                
+                    message.write(MessageEv {
+                        message: format!(
+                            "You received {}{CURRENCY} on coupon payments.",
+                            coupons.clean(),
+                        ),
+                        level: MessageLevel::Info,
+                    });
                 }
             }
 
             // Resolve debts ======================================= >>
 
             let mut has_debt = false;
+            let mut cash = player.cash.current();
 
             // Pay storage costs for commodities
             let storage_costs = player

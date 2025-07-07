@@ -83,7 +83,7 @@ impl OrderKind {
                 reduces the credit score.\n\n\
                 Note that buying and selling the same amount of futures don't 'cancel' each other \
                 out due to the different maturity dates. Futures in this game are hold-to-maturity \
-                only, meaning that they can't be traded before the maturity date."
+                only, meaning that they can't be traded."
             },
             OrderKind::Options => {
                 "Financial contracts that grant the right, but not the obligation, to buy or sell \
@@ -98,7 +98,7 @@ impl OrderKind {
                 strike price. If the necessary instruments aren't available, they are acquired at \
                 the current market price and the credit score is greatly reduced.\n\n\
                 In this game, all options are European-style and hold-to-maturity only — they can \
-                only be exercised at the maturity date and cannot be traded once purchased."
+                only be exercised at the maturity date and cannot be traded."
             },
         }
     }
@@ -280,6 +280,7 @@ pub fn execute_orders(
                         kind: order.instrument.clone(),
                         amount: order.amount,
                         loan: order.loan,
+                        interest: instrument.interest(),
                         warning: false,
                     });
                 }

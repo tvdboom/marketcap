@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use bevy::prelude::*;
+use chrono::Datelike;
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
@@ -10,7 +11,9 @@ use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
 use crate::core::factors::influence::Influence;
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::instruments::instrument::InstrumentKind;
+use crate::core::instruments::bonds::{Bond, BondIssuer};
+use crate::core::instruments::instrument::{Instrument, InstrumentKind};
+use crate::core::instruments::stocks::Company;
 use crate::core::loans::{MarginLoan, TermLoan};
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
@@ -21,6 +24,28 @@ pub struct OwnedInstrument {
     pub kind: InstrumentKind,
     pub amount: i32,
     pub loan: Option<MarginLoan>,
+    pub interest: f32,
+    pub warning: bool,
+}
+
+impl Default for OwnedInstrument {
+    fn default() -> Self {
+        OwnedInstrument {
+            kind: InstrumentKind::Stock(Company::Apple),
+            amount: 0,
+            loan: None,
+            interest: 0.,
+            warning: false,
+        }
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub struct OwnedBond {
+    pub issuer: BondIssuer,
+    pub amount: u32,
+    pub loan: Option<MarginLoan>,
+    pub interest: f32,
     pub warning: bool,
 }
 
@@ -61,8 +86,60 @@ impl Player {
             - self.margin_loan_debt()
     }
 
-    pub fn inflow(&self) -> f32 {
-        self.cash.accumulated_interest
+    pub fn dividend_payment(&self, economy: &GlobalEconomy) -> f32 {
+        self.stocks()
+            .iter()
+            .map(|owned| {
+                let instrument = economy.get(&owned.kind);
+                instrument.dividend() * owned.amount as f32
+            })
+            .sum()
+    }
+
+    pub fn coupon_payment(&self, economy: &GlobalEconomy) -> f32 {
+        // Multiply by 0.5 since coupon is paid out twice a year
+        self.bonds()
+            .iter()
+            .map(|owned| {
+                if let InstrumentKind::Bond(issuer) = &owned.kind {
+                    match issuer {
+                        BondIssuer::Government(country) => {
+                            let currency = economy
+                                .currencies
+                                .iter()
+                                .find(|c| c.country == *country)
+                                .unwrap();
+
+                            Bond::DEFAULT_GOVERNMENT * 0.5 * owned.interest / 100.
+                                * owned.amount as f32
+                                * currency.current()
+                        },
+                        BondIssuer::Corporate(_) => {
+                            Bond::DEFAULT_CORPORATE * 0.5 * owned.interest / 100.
+                                * owned.amount as f32
+                        },
+                    }
+                } else {
+                    0.
+                }
+            })
+            .sum::<f32>()
+    }
+
+    pub fn inflow(&self, economy: &GlobalEconomy) -> f32 {
+        let mut inflow = self.cash.accumulated_interest;
+
+        // Dividend is paid out quarterly, so inflow must be shown one month prior
+        if economy.date.month() % 3 == 1 {
+            inflow += self.dividend_payment(economy);
+        }
+
+        // Bonds are paid out semi-annually, so inflow must be shown one month prior
+        if economy.date.month() % 6 == 1 {
+            inflow += self.coupon_payment(economy);
+        }
+
+        inflow
     }
 
     pub fn storage_costs(&self, economy: &GlobalEconomy) -> f32 {
@@ -88,7 +165,7 @@ impl Player {
     }
 
     pub fn netflow(&self, economy: &GlobalEconomy) -> f32 {
-        self.inflow() - self.outflow(economy)
+        self.inflow(economy) - self.outflow(economy)
     }
 
     // Instruments ================================================= >>
@@ -313,8 +390,7 @@ impl Player {
                             self.instruments.push(OwnedInstrument {
                                 kind: derivative.instrument.clone(),
                                 amount: derivative.amount as i32,
-                                loan: None,
-                                warning: false,
+                                ..default()
                             });
                         }
 

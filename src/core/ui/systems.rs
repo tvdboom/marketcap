@@ -6,6 +6,7 @@ use bevy_egui::egui::{
     Align, CentralPanel, Color32, FontData, FontFamily, Frame, Layout, Margin, SidePanel,
     TopBottomPanel,
 };
+use chrono::Datelike;
 use strum::IntoEnumIterator;
 
 use crate::core::assets::WorldAssets;
@@ -201,12 +202,16 @@ pub fn top_panel(
                         each month, calculated as income minus debt repayments and expenses. \
                         It shows whether the player will gain or lose money this month.\n\n\
                         Cash interest: {}\n\
+                        Dividend payments: {}\n\
+                        Coupon payments: {}\n\
                         Storage costs: {}\n\
                         Term loan installments: {}\n\
                         Margin loan interest: {}\n\
                         -----------------------------\n\
                         Net flow: {}",
                         player.cash.accumulated_interest.signed(),
+                        (if economy.date.month() % 3 == 0 { player.dividend_payment(&economy) } else { 0. }).signed(),
+                        (if economy.date.month() % 6 == 0 { player.coupon_payment(&economy) } else { 0. }).signed(),
                         (-player.storage_costs(&economy)).signed(),
                         (-player.loan_installments()).signed(),
                         (-player.short_sell_interest()).signed(),

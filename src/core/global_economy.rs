@@ -1,15 +1,16 @@
 use std::time::Duration;
 
 use bevy::prelude::*;
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate};
 use serde::{Deserialize, Serialize};
 
 use crate::core::constants::DEFAULT_SPEED;
 use crate::core::countries::{Country, start_countries};
+use crate::core::factors::Factor;
 use crate::core::factors::economy::Economy;
 use crate::core::factors::inflation::Inflation;
 use crate::core::factors::interest::Interest;
-use crate::core::instruments::bonds::{Bond, start_bonds};
+use crate::core::instruments::bonds::{Bond, BondKind, start_bonds};
 use crate::core::instruments::commodities::{Commodity, start_commodities};
 use crate::core::instruments::crypto::{Crypto, start_cryptos};
 use crate::core::instruments::forex::{Currency, start_currencies};
@@ -104,6 +105,36 @@ impl GlobalEconomy {
             currency.bump(&self.countries, &self.commodities);
         }
 
+        if self.date.day() == 1 && self.date.month() % 6 == 1 {
+            for bond in self
+                .bonds
+                .iter_mut()
+                .filter(|b| b.kind() == BondKind::Government)
+            {
+                bond.issue(&self.currencies, self.interest.current());
+            }
+
+            message.write(MessageEv {
+                message: "New government bonds have been issued.".to_string(),
+                level: MessageLevel::Info,
+            });
+        }
+
+        if self.date.day() == 1 && self.date.month() == 1 {
+            for bond in self
+                .bonds
+                .iter_mut()
+                .filter(|b| b.kind() == BondKind::Corporate)
+            {
+                bond.issue(&self.currencies, self.interest.current());
+            }
+
+            message.write(MessageEv {
+                message: "New corporate bonds have been issued.".to_string(),
+                level: MessageLevel::Info,
+            });
+        }
+
         (economy, inflation, interest)
     }
 
@@ -133,7 +164,7 @@ impl GlobalEconomy {
 impl Default for GlobalEconomy {
     fn default() -> Self {
         Self {
-            date: NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
+            date: NaiveDate::from_ymd_opt(2024, 12, 31).unwrap(),
             clock: Timer::new(Duration::from_secs_f32(DEFAULT_SPEED), TimerMode::Repeating),
             economy: Economy::default(),
             inflation: Inflation::default(),

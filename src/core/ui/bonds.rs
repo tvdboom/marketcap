@@ -35,14 +35,15 @@ pub fn bonds_panel(
 
     ui.label(
         "Bonds are fixed-income securities that represent a loan made by an investor to a \
-        corporate or governmental borrower. When you purchase a bond, you are essentially \
-        lending money to the issuer in exchange for periodic interest payments and the \
-        return of the bond's face value when it matures.\n\n\
-        Use bonds as a way of securing a steady cash inflow to pay your debts. High-yield \
-        bonds offer higher interest than investment grade bonds, but have a higher chance \
-        of default, in which case you won't get the face value back. Bond interest payments \
-        are semi-annually. Government bonds are issued every six months, while corporate bonds \
-        are issued once a year.",
+        corporate or governmental borrower. When you purchase a bond, you are essentially lending \
+        money to the issuer in exchange for periodic interest payments and the return of the \
+        bond's face value when it matures.\n\n\
+        Use bonds as a way of securing a steady cash inflow to pay your debts. High-yield bonds \
+        offer higher interest than investment grade bonds, but have a higher chance of default. \
+        Bond interest payments are semi-annually and, in the case of government bonds, paid out \
+        in the national currency (exchange rates apply). Government bonds are issued every six \
+        months and corporate bonds are issued once a year.\n\n\
+        Bonds in this game are hold-to-maturity only, meaning that they can't be traded.",
     );
 
     ui.separator();
