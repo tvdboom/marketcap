@@ -24,8 +24,16 @@ pub enum TechnologyName {
 impl TechnologyName {
     pub fn description(&self) -> &str {
         match self {
-            TechnologyName::AlternativeLender => "Stock Analysis",
-            TechnologyName::MarginLoan => "Stock Analysis",
+            TechnologyName::AlternativeLender => {
+                "Enables the use of alternative lenders for term loans. Alternative lenders offer \
+                loans without taken into account the credit score, for usually higher interest \
+                rates than banks."
+            },
+            TechnologyName::MarginLoan => {
+                "Enables the use of margin loans, which allow you to borrow money to invest in \"
+                financial instruments, using the instruments self as collateral. This can greatly \
+                leverage your positions."
+            },
         }
     }
 }
@@ -43,7 +51,6 @@ pub struct Technology {
 pub struct Research {
     pub capacity: f32,
     pub technologies: Vec<Technology>,
-    pub warning: bool,
 }
 
 impl Research {
@@ -116,7 +123,6 @@ impl Default for Research {
                     dependency: Some(TechnologyName::AlternativeLender),
                 },
             ]),
-            warning: false,
         }
     }
 }

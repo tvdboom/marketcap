@@ -174,12 +174,12 @@ impl CustomUi for Ui {
                     } else if research.researching {
                         visuals.bg_fill
                     } else {
-                        visuals.bg_fill.gamma_multiply(0.3)
+                        visuals.bg_fill.gamma_multiply(0.7)
                     })
                     .stroke(visuals.bg_stroke)
                     .inner_margin(ui.spacing().menu_margin)
                     .show(ui, |ui| {
-                        ui.set_width(140.);
+                        ui.set_width(180.);
 
                         ui.vertical_centered(|ui| {
                             ui.add_space(5.);
@@ -190,9 +190,9 @@ impl CustomUi for Ui {
                             ui.add_space(20.);
 
                             ui.add(
-                                ProgressBar::new(research.progress as f32 / 100.0)
+                                ProgressBar::new(research.progress / 100.)
                                     .show_percentage()
-                                    .corner_radius(5.0),
+                                    .corner_radius(5.),
                             );
                         });
                     });
