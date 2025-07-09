@@ -1,12 +1,9 @@
-use std::time::Duration;
-
 use bevy::prelude::*;
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, Duration, NaiveDate};
 use serde::{Deserialize, Serialize};
 
-use crate::core::constants::DEFAULT_SPEED;
+use crate::core::constants::{DEFAULT_SPEED, START_DATE};
 use crate::core::countries::{Country, start_countries};
-use crate::core::factors::Factor;
 use crate::core::factors::economy::Economy;
 use crate::core::factors::inflation::Inflation;
 use crate::core::factors::interest::Interest;
@@ -105,19 +102,26 @@ impl GlobalEconomy {
             currency.bump(&self.countries, &self.commodities);
         }
 
+        for bond in &mut self.bonds {
+            bond.bump(&self.currencies);
+        }
+
         if self.date.day() == 1 && self.date.month() % 6 == 1 {
             for bond in self
                 .bonds
                 .iter_mut()
                 .filter(|b| b.kind() == BondKind::Government)
             {
-                bond.issue(&self.currencies, self.interest.current());
+                bond.issue(interest, &self.stocks, &self.currencies);
             }
 
-            message.write(MessageEv {
-                message: "New government bonds have been issued.".to_string(),
-                level: MessageLevel::Info,
-            });
+            if self.date != START_DATE + Duration::days(1) {
+                // Skip the first issue on the first day
+                message.write(MessageEv {
+                    message: "New government bonds have been issued.".to_string(),
+                    level: MessageLevel::Info,
+                });
+            }
         }
 
         if self.date.day() == 1 && self.date.month() == 1 {
@@ -126,13 +130,16 @@ impl GlobalEconomy {
                 .iter_mut()
                 .filter(|b| b.kind() == BondKind::Corporate)
             {
-                bond.issue(&self.currencies, self.interest.current());
+                bond.issue(interest, &self.stocks, &self.currencies);
             }
 
-            message.write(MessageEv {
-                message: "New corporate bonds have been issued.".to_string(),
-                level: MessageLevel::Info,
-            });
+            if self.date != START_DATE + Duration::days(1) {
+                // Skip the first issue on the first day
+                message.write(MessageEv {
+                    message: "New corporate bonds have been issued.".to_string(),
+                    level: MessageLevel::Info,
+                });
+            }
         }
 
         (economy, inflation, interest)
@@ -164,8 +171,11 @@ impl GlobalEconomy {
 impl Default for GlobalEconomy {
     fn default() -> Self {
         Self {
-            date: NaiveDate::from_ymd_opt(2024, 12, 31).unwrap(),
-            clock: Timer::new(Duration::from_secs_f32(DEFAULT_SPEED), TimerMode::Repeating),
+            date: START_DATE,
+            clock: Timer::new(
+                std::time::Duration::from_secs_f32(DEFAULT_SPEED),
+                TimerMode::Repeating,
+            ),
             economy: Economy::default(),
             inflation: Inflation::default(),
             interest: Interest::default(),

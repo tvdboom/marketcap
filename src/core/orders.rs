@@ -1,12 +1,12 @@
 use bevy::prelude::*;
-use chrono::NaiveDate;
+use chrono::{Duration, NaiveDate};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
 use crate::core::constants::NA;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::instrument::InstrumentKind;
-use crate::core::loans::MarginLoan;
+use crate::core::loans::{MarginLoan, Term};
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::player::{OwnedInstrument, Player};
 use crate::utils::NameFromEnum;
@@ -151,6 +151,12 @@ pub struct Order {
     /// Price at which the order is executed
     pub price: f32,
 
+    /// Interest rate for bonds
+    pub interest: f32,
+
+    /// Term for loans
+    pub term: Term,
+
     /// The limit price or trailing percentage on which the trade has been executed
     pub threshold: f32,
 
@@ -280,7 +286,8 @@ pub fn execute_orders(
                         kind: order.instrument.clone(),
                         amount: order.amount,
                         loan: order.loan,
-                        interest: instrument.interest(),
+                        maturity_date: economy.date + Duration::days(order.term.days() as i64),
+                        interest: order.interest,
                         warning: false,
                     });
                 }

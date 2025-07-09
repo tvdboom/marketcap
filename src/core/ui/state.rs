@@ -25,6 +25,7 @@ pub enum Tab {
     Crypto,
     Credit,
     Policies,
+    Research,
 }
 
 impl Tab {
@@ -38,6 +39,7 @@ impl Tab {
             Tab::Crypto => "💸",
             Tab::Credit => "💳",
             Tab::Policies => "📜",
+            Tab::Research => "🔬",
         }
     }
 }
@@ -145,9 +147,13 @@ impl OrderOptions {
         player: &Player,
     ) -> Vec<&'a OwnedInstrument> {
         data.sort_by(|a, b| {
-            let a_econ = economy.get(&a.kind);
-            let b_econ = economy.get(&b.kind);
-            Self::reorder(a_econ, b_econ, state, economy, player)
+            if state.order == Self::Maturity {
+                a.maturity_date.cmp(&b.maturity_date)
+            } else {
+                let a_econ = economy.get(&a.kind);
+                let b_econ = economy.get(&b.kind);
+                Self::reorder(a_econ, b_econ, state, economy, player)
+            }
         });
 
         if state.descending {
@@ -287,6 +293,8 @@ pub struct OrderByState {
 pub struct OverviewState {
     pub tab: OverviewTab,
     pub stocks: OrderByState,
+    pub bonds: OrderByState,
+    pub forex: OrderByState,
     pub commodities: OrderByState,
     pub crypto: OrderByState,
     pub pending_order: OrderByState,
@@ -302,6 +310,14 @@ impl Default for OverviewState {
         Self {
             tab: OverviewTab::default(),
             stocks: OrderByState {
+                order: OrderOptions::OwnedValue,
+                descending: true,
+            },
+            bonds: OrderByState {
+                order: OrderOptions::Maturity,
+                descending: true,
+            },
+            forex: OrderByState {
                 order: OrderOptions::OwnedValue,
                 descending: true,
             },
@@ -386,6 +402,7 @@ pub struct CreditState {
 pub struct ModalInfo {
     pub tab: OrderKind,
     pub amount: u32,
+    pub bond_term: Term,
     pub cds: bool,
     pub limit_stop: f32,
     pub trailing_stop: u32,

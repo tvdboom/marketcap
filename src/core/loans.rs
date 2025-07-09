@@ -105,6 +105,14 @@ pub enum Term {
 }
 
 impl Term {
+    pub fn days(&self) -> u32 {
+        match self {
+            Term::OneYear => 365,
+            Term::ThreeYears => 3 * 365,
+            Term::FiveYears => 5 * 365,
+        }
+    }
+
     pub fn years(&self) -> u32 {
         match self {
             Term::OneYear => 1,

@@ -20,7 +20,7 @@ use crate::core::instruments::crypto::CryptoName;
 use crate::core::instruments::forex::CurrencyName;
 use crate::core::instruments::instrument::InstrumentKind;
 use crate::core::instruments::stocks::Company;
-use crate::core::loans::MarginLoan;
+use crate::core::loans::{MarginLoan, Term};
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
 use crate::core::player::Player;
@@ -58,6 +58,14 @@ pub fn trade_modal(
     let amount = state.modal_info.amount;
     let limit_price = state.modal_info.limit_stop;
     let trailing_stop = state.modal_info.trailing_stop;
+
+    let bond_interest = instrument.interest()
+        * (1. + (state.modal_info.bond_term.years() - 1) as f32 / 10.)
+        * if state.modal_info.cds {
+            1. - 0.5 * instrument.quality().value()
+        } else {
+            1.0
+        };
     let storage_costs = (amount * 30) as f32 * instrument.storage_cost();
 
     let derivatives = player
@@ -451,14 +459,33 @@ pub fn trade_modal(
 
                         if matches!(kind, InstrumentKind::Bond(_)) {
                             ui.horizontal(|ui| {
-                                ui.label("Credit default swap:");
+                                for term in Term::iter() {
+                                    ui.selectable_value(
+                                        &mut state.modal_info.bond_term,
+                                        term.clone(),
+                                        RichText::new(term.to_name()).small(),
+                                    ).on_hover_text(
+                                        "Time before the maturity of the bond. Longer terms \
+                                        means higher interest rates since it also increases the \
+                                        risk of default."
+                                    );
+                                }
+                            });
 
+                            ui.horizontal(|ui| {
+                                ui.label("Credit default swap:");
                                 ui.add(toggle(&mut state.modal_info.cds));
                             }).response.on_hover_text(
                                 "A credit default swap (CDS) is a financial derivative \
                                 that allows an investor to 'swap' or transfer the credit \
-                                risk of a bond to another party. It ensures bond payments \
-                                are always paid, even when the issuer defaults."
+                                risk of a bond to another party. It ensures coupon payments \
+                                and the return of the face value are always paid, even when \
+                                the issuer defaults (for a decrease in interest)."
+                            );
+                            
+                            ui.label(format!("Interest: {bond_interest:.1}%",)).on_hover_text(
+                                "Interest rate of the bond. The buyer receives this \
+                                percentage of the face value each year.",
                             );
                         }
 
@@ -487,7 +514,7 @@ pub fn trade_modal(
 
                         // Add spacing for equal height of modal
                         match tab {
-                            OrderKind::MarketOrder => {
+                            OrderKind::MarketOrder if !matches!(instrument.kind(), InstrumentKind::Bond(_)) => {
                                 ui.label("");
                                 ui.label("");
                             },
@@ -652,7 +679,7 @@ pub fn trade_modal(
                         }
                     },
                     |ui| {
-                        if tab != OrderKind::ShortSell {
+                        if tab != OrderKind::ShortSell && !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
                             ui.add_enabled_ui(
                                 total_price > 0.
                                     && (tab.is_derivative() || (owned > 0 && !state.modal_info.loan))
@@ -841,6 +868,8 @@ pub fn trade_modal(
                     } else {
                         storage_costs
                     },
+                interest: bond_interest,
+                term: state.modal_info.bond_term.clone(),
                 threshold: if tab == OrderKind::LimitOrder {
                     limit_price
                 } else {

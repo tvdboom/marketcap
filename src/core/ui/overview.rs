@@ -44,6 +44,20 @@ pub fn overview_panel(
                 player,
             );
 
+            let bonds = OrderOptions::sort_owned_instrument(
+                player.bonds(),
+                &state.overview.bonds,
+                economy,
+                player,
+            );
+
+            let forex = OrderOptions::sort_owned_instrument(
+                player.forex(),
+                &state.overview.forex,
+                economy,
+                player,
+            );
+
             let commodities = OrderOptions::sort_owned_instrument(
                 player.commodities(),
                 &state.overview.commodities,
@@ -58,7 +72,12 @@ pub fn overview_panel(
                 player,
             );
 
-            if stocks.is_empty() && commodities.is_empty() && crypto.is_empty() {
+            if stocks.is_empty()
+                && bonds.is_empty()
+                && forex.is_empty()
+                && commodities.is_empty()
+                && crypto.is_empty()
+            {
                 ui.add_space(window.height() * 0.02);
 
                 ui.label("No assets owned.");
@@ -80,6 +99,42 @@ pub fn overview_panel(
 
                 instrument_table(ui, state, &economy, stocks);
                 ui.small("Click on a row to trade that stock.");
+            }
+
+            if !bonds.is_empty() {
+                ui.add_combobox(
+                    "Bonds",
+                    [
+                        OrderOptions::Name,
+                        OrderOptions::Maturity,
+                        OrderOptions::OwnedAmount,
+                        OrderOptions::OwnedValue,
+                    ]
+                    .into(),
+                    &mut state.overview.bonds,
+                    window,
+                );
+
+                instrument_table(ui, state, &economy, bonds);
+                ui.small("Click on a row to trade that bond.");
+            }
+
+            if !forex.is_empty() {
+                ui.add_combobox(
+                    "Forex",
+                    [
+                        OrderOptions::Name,
+                        OrderOptions::Price,
+                        OrderOptions::OwnedAmount,
+                        OrderOptions::OwnedValue,
+                    ]
+                    .into(),
+                    &mut state.overview.bonds,
+                    window,
+                );
+
+                instrument_table(ui, state, &economy, forex);
+                ui.small("Click on a row to trade that currency.");
             }
 
             if !commodities.is_empty() {
@@ -303,7 +358,16 @@ pub fn instrument_table(
     economy: &GlobalEconomy,
     instruments: Vec<&OwnedInstrument>,
 ) {
-    let mut columns = vec!["Name", "Market price", "Owned", "Value"];
+    let mut columns = vec![
+        "Name",
+        if matches!(instruments.first().unwrap().kind, InstrumentKind::Bond(_)) {
+            "Maturity"
+        } else {
+            "Market price"
+        },
+        "Owned",
+        "Value",
+    ];
 
     if matches!(
         instruments.first().unwrap().kind,
@@ -333,7 +397,12 @@ pub fn instrument_table(
 
                         let mut content = vec![
                             instrument.name(),
-                            format!("{}{CURRENCY}", instrument.current().clean()),
+                            if matches!(instruments.first().unwrap().kind, InstrumentKind::Bond(_))
+                            {
+                                owned.maturity_date.format(DATE_FORMAT).to_string()
+                            } else {
+                                format!("{}{CURRENCY}", instrument.current().clean())
+                            },
                             format!("{} {}", owned.amount, instrument.unit()),
                             format!(
                                 "{}{CURRENCY}",

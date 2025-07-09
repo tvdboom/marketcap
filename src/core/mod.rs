@@ -13,6 +13,7 @@ mod orders;
 mod pause;
 mod persistence;
 mod player;
+mod research;
 mod resources;
 mod sectors;
 mod states;

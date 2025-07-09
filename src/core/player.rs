@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-
 use bevy::prelude::*;
-use chrono::Datelike;
+use chrono::{Datelike, NaiveDate};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 use crate::core::derivatives::{Derivative, DerivativeKind};
 use crate::core::factors::Factor;
@@ -17,6 +16,7 @@ use crate::core::instruments::stocks::Company;
 use crate::core::loans::{MarginLoan, TermLoan};
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
+use crate::core::research::{Research, TechnologyName};
 use crate::utils::NameFromEnum;
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -24,6 +24,7 @@ pub struct OwnedInstrument {
     pub kind: InstrumentKind,
     pub amount: i32,
     pub loan: Option<MarginLoan>,
+    pub maturity_date: NaiveDate,
     pub interest: f32,
     pub warning: bool,
 }
@@ -34,19 +35,11 @@ impl Default for OwnedInstrument {
             kind: InstrumentKind::Stock(Company::Apple),
             amount: 0,
             loan: None,
+            maturity_date: NaiveDate::from_ymd_opt(2200, 1, 1).unwrap(),
             interest: 0.,
             warning: false,
         }
     }
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-pub struct OwnedBond {
-    pub issuer: BondIssuer,
-    pub amount: u32,
-    pub loan: Option<MarginLoan>,
-    pub interest: f32,
-    pub warning: bool,
 }
 
 #[derive(Resource, Clone, Default, Serialize, Deserialize)]
@@ -59,6 +52,7 @@ pub struct Player {
     pub derivatives: Vec<Derivative>,
     pub instruments: Vec<OwnedInstrument>,
     pub favourites: HashMap<u8, InstrumentKind>,
+    pub research: Research,
 }
 
 impl Player {
@@ -110,12 +104,12 @@ impl Player {
                                 .find(|c| c.country == *country)
                                 .unwrap();
 
-                            Bond::DEFAULT_GOVERNMENT * 0.5 * owned.interest / 100.
+                            Bond::FACE_VALUE_GOVERNMENT * 0.5 * owned.interest / 100.
                                 * owned.amount as f32
                                 * currency.current()
                         },
                         BondIssuer::Corporate(_) => {
-                            Bond::DEFAULT_CORPORATE * 0.5 * owned.interest / 100.
+                            Bond::FACE_VALUE_CORPORATE * 0.5 * owned.interest / 100.
                                 * owned.amount as f32
                         },
                     }
@@ -161,11 +155,20 @@ impl Player {
     }
 
     pub fn outflow(&self, economy: &GlobalEconomy) -> f32 {
-        self.storage_costs(economy) + self.loan_installments() + self.short_sell_interest()
+        self.storage_costs(economy)
+            + self.loan_installments()
+            + self.short_sell_interest()
+            + self.research.costs()
     }
 
     pub fn netflow(&self, economy: &GlobalEconomy) -> f32 {
         self.inflow(economy) - self.outflow(economy)
+    }
+
+    // Research ==================================================== >>
+
+    pub fn has_technology(&self, name: &TechnologyName) -> bool {
+        self.research.has_technology(name)
     }
 
     // Instruments ================================================= >>
@@ -188,6 +191,13 @@ impl Player {
             .collect::<Vec<_>>()
     }
 
+    pub fn forex(&self) -> Vec<&OwnedInstrument> {
+        self.instruments
+            .iter()
+            .filter(|o| matches!(o.kind, InstrumentKind::Forex(_)))
+            .collect::<Vec<_>>()
+    }
+
     pub fn commodities(&self) -> Vec<&OwnedInstrument> {
         self.instruments
             .iter()
@@ -203,11 +213,19 @@ impl Player {
     }
 
     pub fn get(&mut self, kind: &InstrumentKind) -> Option<&OwnedInstrument> {
-        self.instruments.iter().find(|c| c.kind == *kind)
+        if matches!(kind, InstrumentKind::Bond(_)) {
+            None // Bonds are not equivalent to each other so don't return any
+        } else {
+            self.instruments.iter().find(|c| c.kind == *kind)
+        }
     }
 
     pub fn get_mut(&mut self, kind: &InstrumentKind) -> Option<&mut OwnedInstrument> {
-        self.instruments.iter_mut().find(|c| c.kind == *kind)
+        if matches!(kind, InstrumentKind::Bond(_)) {
+            None // Bonds are not equivalent to each other so don't return any
+        } else {
+            self.instruments.iter_mut().find(|c| c.kind == *kind)
+        }
     }
 
     pub fn get_owned(&self, instrument: &InstrumentKind) -> i32 {

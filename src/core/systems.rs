@@ -5,6 +5,8 @@ use crate::core::constants::{CURRENCY, DATE_FORMAT};
 use crate::core::derivatives::{DerivativeAction, DerivativeKind, OptionKind};
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
+use crate::core::instruments::bonds::{Bond, BondIssuer};
+use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::OrderEv;
 use crate::core::player::Player;
@@ -26,6 +28,9 @@ pub fn time_pass(
         economy.date = economy.date.succ_opt().unwrap();
 
         // Daily operations =================================== >>
+
+        player.research.advance(&mut message);
+        player.cash.amount -= player.research.costs();
 
         let aum = player.aum(&economy);
         let (_, inflation, interest) = economy.bump(aum, &mut state, &mut message);
@@ -53,25 +58,44 @@ pub fn time_pass(
 
         let mut cash = player.cash.current();
 
-        // Check maturity of bonds
-        player.bonds.retain(|bond| {
-            if bond.maturity_date() == economy.date {
-                cash += bond.amount * bond.face_value;
+        // Check the maturity of bonds
+        player.instruments.retain(|owned| {
+            if let InstrumentKind::Bond(issuer) = owned.kind {
+                if owned.maturity_date == economy.date {
+                    // Bond matured, pay out face value
+                    match issuer {
+                        BondIssuer::Government(country) => {
+                            let currency = economy
+                                .currencies
+                                .iter()
+                                .find(|c| c.country == country)
+                                .unwrap();
 
-                message.write(MessageEv {
-                    message: format!(
-                        "{} {} bonds matured.",
-                        bond.amount,
-                        bond.issuer.to_name()
-                    ),
-                    level: MessageLevel::Info,
-                });
-                false
-            } else {
-                true
+                            cash += Bond::FACE_VALUE_GOVERNMENT
+                                * owned.amount as f32
+                                * currency.current();
+                        },
+                        BondIssuer::Corporate(_) => {
+                            cash += Bond::FACE_VALUE_CORPORATE * owned.amount as f32;
+                        },
+                    }
+
+                    message.write(MessageEv {
+                        message: format!(
+                            "Maturity reached for {} {}. Face value returned.",
+                            owned.amount,
+                            owned.kind.lowername(),
+                        ),
+                        level: MessageLevel::Info,
+                    });
+
+                    return false;
+                }
             }
+
+            true
         });
-        
+
         // Check margin call for margin loans
         player.instruments.retain_mut(|owned| {
             if let Some(loan) = &mut owned.loan {
@@ -142,10 +166,10 @@ pub fn time_pass(
             if economy.date.month() % 3 == 1 {
                 // Stock dividends are paid quarterly
                 let dividends = player.dividend_payment(&economy);
-                
+
                 if dividends > 0. {
                     player.cash.amount += dividends;
-                
+
                     message.write(MessageEv {
                         message: format!(
                             "You received {}{CURRENCY} on dividend payments.",
@@ -161,10 +185,10 @@ pub fn time_pass(
             if economy.date.month() % 6 == 1 {
                 // Bond's interest is paid twice a year
                 let coupons = player.coupon_payment(&economy);
-                
+
                 if coupons > 0. {
                     player.cash.amount += coupons;
-                
+
                     message.write(MessageEv {
                         message: format!(
                             "You received {}{CURRENCY} on coupon payments.",

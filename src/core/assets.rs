@@ -57,6 +57,7 @@ impl FromWorld for WorldAssets {
             ("interest", assets.load("images/icons/interest.png")),
             ("logo", assets.load("images/icons/logo.png")),
             ("netflow", assets.load("images/icons/netflow.png")),
+            ("research", assets.load("images/icons/research.png")),
             ("time", assets.load("images/icons/time.png")),
             ("time-paused", assets.load("images/icons/time-paused.png")),
         ]);

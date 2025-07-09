@@ -24,6 +24,7 @@ use crate::core::ui::credit::credit_panel;
 use crate::core::ui::crypto::crypto_panel;
 use crate::core::ui::forex::forex_panel;
 use crate::core::ui::overview::overview_panel;
+use crate::core::ui::research::research_panel;
 use crate::core::ui::state::{Tab, UiState};
 use crate::core::ui::stocks::stock_panel;
 use crate::core::ui::utils::CustomUi;
@@ -207,6 +208,7 @@ pub fn top_panel(
                         Storage costs: {}\n\
                         Term loan installments: {}\n\
                         Margin loan interest: {}\n\
+                        Research costs: {}\n\
                         -----------------------------\n\
                         Net flow: {}",
                         player.cash.accumulated_interest.signed(),
@@ -215,6 +217,7 @@ pub fn top_panel(
                         (-player.storage_costs(&economy)).signed(),
                         (-player.loan_installments()).signed(),
                         (-player.short_sell_interest()).signed(),
+                        (-player.research.costs()).signed(),
                         player.netflow(&economy).signed(),
                     ),
                     None,
@@ -368,6 +371,7 @@ pub fn central_panel(
             Tab::Policies => {
                 ui.heading("Policies");
             },
+            Tab::Research => research_panel(ui, &mut player, &mut message, &images, &window),
         });
 }
 

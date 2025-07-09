@@ -5,12 +5,13 @@ use chrono::{Datelike, Duration};
 use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
 use itertools::Itertools;
 
-use crate::core::constants::{CURRENCY, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
+use crate::core::constants::{CURRENCY, CUSTOM_GREEN, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondIssuer;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::orders::{Command, Order};
 use crate::core::player::Player;
+use crate::core::research::Technology;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderByState, OrderOptions};
 use crate::utils::{DQueue, EnhFloat, NameFromEnum, create_guid, get_ratio};
@@ -61,6 +62,7 @@ pub trait CustomUi {
         state: &mut OrderByState,
         window: &Window,
     );
+    fn add_research(&mut self, research: &Technology) -> Response;
     fn add_plot(&mut self, data: &DQueue<f32>, orders: Option<Vec<&Order>>);
     fn add_factor(
         &mut self,
@@ -155,6 +157,50 @@ impl CustomUi for Ui {
                 }
             },
         );
+    }
+
+    fn add_research(&mut self, research: &Technology) -> Response {
+        self.scope_builder(
+            UiBuilder::new()
+                .id_salt(research.name.to_name())
+                .sense(Sense::click()),
+            |ui| {
+                let response = ui.response();
+                let visuals = ui.style().interact(&response);
+
+                Frame::canvas(ui.style())
+                    .fill(if research.progress == 100. {
+                        CUSTOM_GREEN
+                    } else if research.researching {
+                        visuals.bg_fill
+                    } else {
+                        visuals.bg_fill.gamma_multiply(0.3)
+                    })
+                    .stroke(visuals.bg_stroke)
+                    .inner_margin(ui.spacing().menu_margin)
+                    .show(ui, |ui| {
+                        ui.set_width(140.);
+
+                        ui.vertical_centered(|ui| {
+                            ui.add_space(5.);
+                            Label::new(RichText::new(research.name.to_name()).strong())
+                                .selectable(false)
+                                .ui(ui);
+
+                            ui.add_space(20.);
+
+                            ui.add(
+                                ProgressBar::new(research.progress as f32 / 100.0)
+                                    .show_percentage()
+                                    .corner_radius(5.0),
+                            );
+                        });
+                    });
+            },
+        )
+        .response
+        .on_hover_text(research.name.description())
+        .on_hover_cursor(CursorIcon::PointingHand)
     }
 
     fn add_plot(&mut self, data: &DQueue<f32>, orders: Option<Vec<&Order>>) {
@@ -300,13 +346,27 @@ impl CustomUi for Ui {
                                 ui.horizontal(|ui| {
                                     ui.label(format!(
                                         "{}: {}{CURRENCY}{}",
-                                        if matches!(instrument.kind(), InstrumentKind::Forex(_)) {
-                                            "Exchange rate"
-                                        } else {
-                                            "Price"
+                                        match instrument.kind() {
+                                            InstrumentKind::Bond(_) => "Face value",
+                                            InstrumentKind::Forex(_) => "Exchange rate",
+                                            _ => "Price"
                                         },
                                         instrument.current().clean(),
-                                        instrument.per_unit()
+                                        if let InstrumentKind::Bond(BondIssuer::Government(country)) = instrument.kind() {
+                                            let currency = economy
+                                                .currencies
+                                                .iter()
+                                                .find(|c| c.country == country)
+                                                .unwrap();
+
+                                            if currency.name != CURRENCY {
+                                                format!(" (10.000{})", currency.symbol())
+                                            } else {
+                                                String::new()
+                                            }
+                                        } else {
+                                            instrument.per_unit()
+                                        }
                                     ));
 
                                     if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {

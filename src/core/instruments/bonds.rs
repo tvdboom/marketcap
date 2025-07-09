@@ -1,11 +1,10 @@
-use chrono::{Duration, NaiveDate};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
 use crate::core::countries::CountryName;
 use crate::core::instruments::forex::Currency;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
-use crate::core::instruments::stocks::Company;
+use crate::core::instruments::stocks::{Company, Stock};
 use crate::utils::{DQueue, NameFromEnum};
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
@@ -49,15 +48,15 @@ impl BondQuality {
 
     pub fn value(&self) -> f32 {
         match self {
-            BondQuality::AAA => 0.0,
-            BondQuality::AA => 0.1,
-            BondQuality::A => 0.2,
-            BondQuality::BBB => 0.3,
-            BondQuality::BB => 0.4,
-            BondQuality::B => 0.5,
-            BondQuality::CCC => 0.6,
-            BondQuality::CC => 0.7,
-            BondQuality::C => 0.8,
+            BondQuality::AAA => 0.2,
+            BondQuality::AA => 0.3,
+            BondQuality::A => 0.4,
+            BondQuality::BBB => 0.5,
+            BondQuality::BB => 0.6,
+            BondQuality::B => 0.7,
+            BondQuality::CCC => 0.8,
+            BondQuality::CC => 0.9,
+            BondQuality::C => 1.0,
         }
     }
 }
@@ -110,8 +109,8 @@ pub struct Bond {
 }
 
 impl Bond {
-    pub const DEFAULT_GOVERNMENT: f32 = 10000.;
-    pub const DEFAULT_CORPORATE: f32 = 1000.;
+    pub const FACE_VALUE_GOVERNMENT: f32 = 10000.;
+    pub const FACE_VALUE_CORPORATE: f32 = 1000.;
 
     pub fn kind(&self) -> BondKind {
         match self.issuer {
@@ -120,30 +119,34 @@ impl Bond {
         }
     }
 
-    pub fn maturity_date(&self) -> NaiveDate {
-        self.start_date
-            .checked_add_signed(Duration::days(self.term.days() as i64))
-            .unwrap()
-    }
-    
-    /// Issue a new bond, recalculating face value and interest
-    pub fn issue(&mut self, currencies: &Vec<Currency>, interest: f32) {
-        let (face_value, interest) = match self.issuer {
+    pub fn bump(&mut self, currencies: &Vec<Currency>) {
+        self.prices.push(match self.issuer {
             BondIssuer::Government(country) => {
                 let currency = currencies.iter().find(|c| c.country == country).unwrap();
-                (
-                    currency.current() * Self::DEFAULT_GOVERNMENT,
-                    interest * (1. + self.quality.value()),
-                )
+                Self::FACE_VALUE_GOVERNMENT * currency.current()
             },
-            BondIssuer::Corporate(_) => (
-                Self::DEFAULT_CORPORATE,
-                interest * (1. + self.quality.value()),
-            ),
-        };
+            BondIssuer::Corporate(_) => Self::FACE_VALUE_CORPORATE,
+        });
+    }
 
-        self.prices.push(face_value);
-        self.interest = interest;
+    /// Issue a new bond = recalculating interest
+    pub fn issue(&mut self, interest: f32, stocks: &Vec<Stock>, currencies: &Vec<Currency>) {
+        self.interest = match self.issuer {
+            BondIssuer::Government(country) => {
+                let currency = currencies.iter().find(|c| c.country == country).unwrap();
+                interest
+                    * (1.
+                        + self.quality.value()
+                        + (currency.base_value - currency.current()) / currency.base_value)
+            },
+            BondIssuer::Corporate(name) => {
+                let stock = stocks.iter().find(|s| s.issuer == name).unwrap();
+                interest
+                    * (1.
+                        + self.quality.value()
+                        + (stock.base_price - stock.current()) / stock.base_price)
+            },
+        };
     }
 }
 
@@ -189,163 +192,163 @@ pub fn start_bonds() -> Vec<Bond> {
         Bond {
             issuer: BondIssuer::Government(CountryName::Australia),
             quality: BondQuality::AA,
-            prices: DQueue::from([Bond::DEFAULT_GOVERNMENT]),
+            prices: DQueue::from([Bond::FACE_VALUE_GOVERNMENT]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Brazil),
             quality: BondQuality::BBB,
-            prices: DQueue::from([Bond::DEFAULT_GOVERNMENT]),
+            prices: DQueue::from([Bond::FACE_VALUE_GOVERNMENT]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Canada),
             quality: BondQuality::AAA,
-            prices: DQueue::from([Bond::DEFAULT_GOVERNMENT]),
+            prices: DQueue::from([Bond::FACE_VALUE_GOVERNMENT]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::China),
             quality: BondQuality::A,
-            prices: DQueue::from([Bond::DEFAULT_GOVERNMENT]),
+            prices: DQueue::from([Bond::FACE_VALUE_GOVERNMENT]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::EU),
             quality: BondQuality::AAA,
-            prices: DQueue::from([Bond::DEFAULT_GOVERNMENT]),
+            prices: DQueue::from([Bond::FACE_VALUE_GOVERNMENT]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Japan),
             quality: BondQuality::AAA,
-            prices: DQueue::from([Bond::DEFAULT_GOVERNMENT]),
+            prices: DQueue::from([Bond::FACE_VALUE_GOVERNMENT]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Russia),
             quality: BondQuality::CCC,
-            prices: DQueue::from([Bond::DEFAULT_GOVERNMENT]),
+            prices: DQueue::from([Bond::FACE_VALUE_GOVERNMENT]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::SaudiArabia),
             quality: BondQuality::BBB,
-            prices: DQueue::from([Bond::DEFAULT_GOVERNMENT]),
+            prices: DQueue::from([Bond::FACE_VALUE_GOVERNMENT]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::SouthAfrica),
             quality: BondQuality::CC,
-            prices: DQueue::from([Bond::DEFAULT_GOVERNMENT]),
+            prices: DQueue::from([Bond::FACE_VALUE_GOVERNMENT]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Ukraine),
             quality: BondQuality::CC,
-            prices: DQueue::from([Bond::DEFAULT_GOVERNMENT]),
+            prices: DQueue::from([Bond::FACE_VALUE_GOVERNMENT]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::USA),
             quality: BondQuality::AAA,
-            prices: DQueue::from([Bond::DEFAULT_GOVERNMENT]),
+            prices: DQueue::from([Bond::FACE_VALUE_GOVERNMENT]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Government(CountryName::Venezuela),
             quality: BondQuality::C,
-            prices: DQueue::from([Bond::DEFAULT_GOVERNMENT]),
+            prices: DQueue::from([Bond::FACE_VALUE_GOVERNMENT]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Apple),
             quality: BondQuality::AAA,
-            prices: DQueue::from([Bond::DEFAULT_CORPORATE]),
+            prices: DQueue::from([Bond::FACE_VALUE_CORPORATE]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Boeing),
             quality: BondQuality::A,
-            prices: DQueue::from([Bond::DEFAULT_CORPORATE]),
+            prices: DQueue::from([Bond::FACE_VALUE_CORPORATE]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::GoldmanSachs),
             quality: BondQuality::AA,
-            prices: DQueue::from([Bond::DEFAULT_CORPORATE]),
+            prices: DQueue::from([Bond::FACE_VALUE_CORPORATE]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Inditex),
             quality: BondQuality::A,
-            prices: DQueue::from([Bond::DEFAULT_CORPORATE]),
+            prices: DQueue::from([Bond::FACE_VALUE_CORPORATE]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::LockheedMartin),
             quality: BondQuality::B,
-            prices: DQueue::from([Bond::DEFAULT_CORPORATE]),
+            prices: DQueue::from([Bond::FACE_VALUE_CORPORATE]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::LVMH),
             quality: BondQuality::A,
-            prices: DQueue::from([Bond::DEFAULT_CORPORATE]),
+            prices: DQueue::from([Bond::FACE_VALUE_CORPORATE]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Maersk),
             quality: BondQuality::BBB,
-            prices: DQueue::from([Bond::DEFAULT_CORPORATE]),
+            prices: DQueue::from([Bond::FACE_VALUE_CORPORATE]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Moderna),
             quality: BondQuality::BB,
-            prices: DQueue::from([Bond::DEFAULT_CORPORATE]),
+            prices: DQueue::from([Bond::FACE_VALUE_CORPORATE]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Nestle),
             quality: BondQuality::AAA,
-            prices: DQueue::from([Bond::DEFAULT_CORPORATE]),
+            prices: DQueue::from([Bond::FACE_VALUE_CORPORATE]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Nvidia),
             quality: BondQuality::B,
-            prices: DQueue::from([Bond::DEFAULT_CORPORATE]),
+            prices: DQueue::from([Bond::FACE_VALUE_CORPORATE]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Pfizer),
             quality: BondQuality::A,
-            prices: DQueue::from([Bond::DEFAULT_CORPORATE]),
+            prices: DQueue::from([Bond::FACE_VALUE_CORPORATE]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::RioTinto),
             quality: BondQuality::BB,
-            prices: DQueue::from([Bond::DEFAULT_CORPORATE]),
+            prices: DQueue::from([Bond::FACE_VALUE_CORPORATE]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Shell),
             quality: BondQuality::AAA,
-            prices: DQueue::from([Bond::DEFAULT_CORPORATE]),
+            prices: DQueue::from([Bond::FACE_VALUE_CORPORATE]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Toyota),
             quality: BondQuality::AAA,
-            prices: DQueue::from([Bond::DEFAULT_CORPORATE]),
+            prices: DQueue::from([Bond::FACE_VALUE_CORPORATE]),
             interest: 0.,
         },
         Bond {
             issuer: BondIssuer::Corporate(Company::Unilever),
             quality: BondQuality::A,
-            prices: DQueue::from([Bond::DEFAULT_CORPORATE]),
+            prices: DQueue::from([Bond::FACE_VALUE_CORPORATE]),
             interest: 0.,
         },
     ]

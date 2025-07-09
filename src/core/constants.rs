@@ -1,6 +1,6 @@
-use bevy_egui::egui::Color32;
-
 use crate::core::instruments::forex::CurrencyName;
+use bevy_egui::egui::Color32;
+use chrono::NaiveDate;
 
 /// Window
 pub const HEIGHT: f32 = 900.;
@@ -11,6 +11,7 @@ pub const DEFAULT_SPEED: f32 = 1.;
 pub const GAME_SPEED_STEP: f32 = 0.5;
 pub const MAX_GAME_SPEED: f32 = 10.;
 pub const MESSAGE_DURATION: u64 = 4; // Seconds that messages are shown
+pub const START_DATE: NaiveDate = NaiveDate::from_ymd_opt(2024, 12, 31).unwrap();
 
 /// Colors
 pub const CUSTOM_GREEN: Color32 = Color32::from_rgb(79, 170, 102);

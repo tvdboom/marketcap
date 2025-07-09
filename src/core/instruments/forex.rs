@@ -1,12 +1,12 @@
 use std::fmt::Display;
 
-use serde::{Deserialize, Serialize};
-use strum_macros::EnumIter;
-
+use crate::core::constants::CURRENCY;
 use crate::core::countries::{Country, CountryName};
 use crate::core::instruments::commodities::Commodity;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::utils::{DQueue, NameFromEnum};
+use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
 
 #[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum CurrencyName {
@@ -83,6 +83,10 @@ pub struct Currency {
 
 impl Currency {
     pub fn bump(&mut self, countries: &Vec<Country>, commodities: &Vec<Commodity>) -> f32 {
+        if self.name == CURRENCY {
+            return self.current(); // The base currency doesn't change
+        }
+
         let country = countries.iter().find(|c| c.name == self.country).unwrap();
         let mut new_value = self.current()
             + (1.

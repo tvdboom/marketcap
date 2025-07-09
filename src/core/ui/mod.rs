@@ -6,6 +6,7 @@ pub mod forex;
 pub mod menu;
 pub mod modal;
 mod overview;
+mod research;
 pub mod state;
 mod stocks;
 pub mod systems;

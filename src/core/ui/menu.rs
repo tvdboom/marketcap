@@ -68,6 +68,8 @@ pub fn in_game_menu(
                     ui.label("Theme");
 
                     ui.horizontal(|ui| {
+                        ui.add_space(window.width() * 0.06);
+
                         for label in Theme::iter() {
                             ui.selectable_value(
                                 &mut game_settings.theme,
@@ -82,13 +84,15 @@ pub fn in_game_menu(
                     ui.label("Game speed");
 
                     ui.horizontal(|ui| {
+                        ui.add_space(window.width() * 0.06);
+
                         let speed = game_settings.speed;
                         ui.spacing_mut().slider_width = (window.width() * 0.1).min(250.);
                         ui.add(
                             Slider::new(&mut game_settings.speed, GAME_SPEED_STEP..=MAX_GAME_SPEED)
                                 .show_value(false)
                                 .step_by(GAME_SPEED_STEP as f64)
-                                .text(format!("{:.1}x", speed)),
+                                .text(format!("{speed:.1}x")),
                         );
                     });
 
@@ -97,6 +101,7 @@ pub fn in_game_menu(
                     ui.label("Audio");
 
                     ui.horizontal(|ui| {
+                        ui.add_space(window.width() * 0.01);
                         for label in AudioSetting::iter() {
                             ui.selectable_value(
                                 &mut game_settings.audio,
