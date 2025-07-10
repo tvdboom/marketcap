@@ -4,6 +4,8 @@ use strum_macros::EnumIter;
 
 use crate::core::factors::economy::Economy;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
+use crate::core::player::Player;
+use crate::core::research::TechName;
 use crate::utils::{DQueue, NameFromEnum};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -198,8 +200,14 @@ impl Instrument for Commodity {
         &self.prices
     }
 
-    fn storage_cost(&self) -> f32 {
-        self.storage_cost / 100. * self.base_price
+    fn storage_cost(&self, player: &Player) -> f32 {
+        self.storage_cost / 100.
+            * self.base_price
+            * if player.has_tech(&TechName::ReducedStorage) {
+                0.8
+            } else {
+                1.
+            }
     }
 
     fn volatility(&self) -> f32 {

@@ -11,6 +11,8 @@ use crate::core::instruments::crypto::CryptoName;
 use crate::core::instruments::forex::CurrencyName;
 use crate::core::instruments::stocks::{Company, ESGRating};
 use crate::core::orders::OrderKind;
+use crate::core::player::Player;
+use crate::core::research::TechName;
 use crate::core::sectors::SectorName;
 use crate::utils::{DQueue, NameFromEnum, norm_cdf};
 
@@ -44,26 +46,19 @@ impl InstrumentKind {
         }
     }
 
-    pub fn order_options(&self) -> Vec<OrderKind> {
+    pub fn order_options(&self, player: &Player) -> Vec<OrderKind> {
         match self {
             InstrumentKind::Bond(_) => vec![OrderKind::MarketOrder],
-            InstrumentKind::Forex(_) => vec![
-                OrderKind::MarketOrder,
-                OrderKind::LimitOrder,
-                OrderKind::TrailingOrder,
-            ],
-            InstrumentKind::Commodity(_) => vec![
-                OrderKind::MarketOrder,
-                OrderKind::LimitOrder,
-                OrderKind::TrailingOrder,
-                OrderKind::ShortSell,
-            ],
-            InstrumentKind::Crypto(_) => vec![
-                OrderKind::MarketOrder,
-                OrderKind::LimitOrder,
-                OrderKind::TrailingOrder,
-            ],
-            _ => OrderKind::iter().collect(),
+            _ => OrderKind::iter()
+                .filter(|o| match o {
+                    OrderKind::MarketOrder => true,
+                    OrderKind::LimitOrder => player.has_tech(&TechName::LimitOrder),
+                    OrderKind::TrailingOrder => player.has_tech(&TechName::TrailingOrder),
+                    OrderKind::ShortSell => player.has_tech(&TechName::ShortSelling),
+                    OrderKind::Futures => player.has_tech(&TechName::Futures),
+                    OrderKind::Options => player.has_tech(&TechName::Options),
+                })
+                .collect(),
         }
     }
 }
@@ -84,10 +79,12 @@ pub trait Instrument {
         *self.all().back().unwrap()
     }
 
-    fn future_price(&self, interest: f32, years: f32) -> f32 {
+    fn future_price(&self, interest: f32, years: f32, player: &Player) -> f32 {
         self.current()
             * E.powf(
-                (interest / 100. + self.storage_cost() / 100. * 365. + self.volatility() / 100.)
+                (interest / 100.
+                    + self.storage_cost(player) / 100. * 365.
+                    + self.volatility() / 100.)
                     * years,
             )
     }
@@ -153,7 +150,8 @@ pub trait Instrument {
     }
 
     /// Costs of holding this instrument per unit per day
-    fn storage_cost(&self) -> f32 {
+    #[allow(unused_variables)]
+    fn storage_cost(&self, player: &Player) -> f32 {
         0.
     }
     fn volatility(&self) -> f32 {

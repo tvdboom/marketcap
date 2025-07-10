@@ -37,12 +37,18 @@ pub enum BondQuality {
 }
 
 impl BondQuality {
+    pub fn is_high_yield(&self) -> bool {
+        matches!(
+            self,
+            BondQuality::B | BondQuality::CCC | BondQuality::CC | BondQuality::C
+        )
+    }
+
     pub fn description(&self) -> &str {
-        match self {
-            BondQuality::B | BondQuality::CCC | BondQuality::CC | BondQuality::C => {
-                "High yield (junk) bond. Offers higher interest due to the increased risk of default."
-            },
-            _ => "Investment grade bond. Low risk of default.",
+        if self.is_high_yield() {
+            "High yield (junk) bond. Offers higher interest due to the increased risk of default."
+        } else {
+            "Investment grade bond. Low risk of default."
         }
     }
 

@@ -51,13 +51,17 @@ impl Economy {
         let mut value = (self.current() + fluctuation).clamp(Self::MIN, Self::MAX);
 
         // Small gain or loss depending on last month's traded volume
-        // If the traded volume was 30% of the total AUM, the effect is 0%
         if !self.last_traded_volume.is_nan() {
-            value *= 1. + ((self.last_traded_volume / aum) - 0.3) / 75.;
+            value *= 1. + ((self.last_traded_volume / aum) - 0.3) / 150.;
         }
 
         self.values.push(value);
         value
+    }
+
+    pub fn reset_traded_volume(&mut self) {
+        self.last_traded_volume = self.last_traded_volume / 2. + self.current_traded_volume;
+        self.current_traded_volume = 0.;
     }
 }
 

@@ -9,6 +9,7 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::loans::{LoanKind, LoanProvider, Term, TermLoan};
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::player::Player;
+use crate::core::research::TechName;
 use crate::core::ui::state::{CreditTab, OverviewTab, Tab, UiState};
 use crate::core::ui::utils::toggle;
 use crate::utils::{EnhFloat, NameFromEnum, create_guid, first_day_in_two_months};
@@ -23,11 +24,13 @@ pub fn credit_panel(
 ) {
     ui.horizontal(|ui| {
         for tab in CreditTab::iter() {
-            ui.selectable_value(
-                &mut state.credit.tab,
-                tab,
-                format!("{}  {}", tab.emoji(), tab.to_name()),
-            );
+            if tab != CreditTab::IncreaseCollateral || player.has_tech(&TechName::MarginLoan) {
+                ui.selectable_value(
+                    &mut state.credit.tab,
+                    tab,
+                    format!("{}  {}", tab.emoji(), tab.to_name()),
+                );
+            }
         }
     });
 
@@ -73,18 +76,20 @@ pub fn credit_panel(
             ui.horizontal(|ui| {
                 ui.vertical(|ui| {
                     ui.set_width(ui.available_width() * 0.35);
-                    
-                    ui.label("Provider");
-                    ui.horizontal(|ui| {
-                        for item in LoanProvider::iter() {
-                            ui.selectable_value(
-                                &mut state.credit.provider,
-                                item,
-                                item.to_name(),
-                            )
-                                .on_hover_text(item.description());
-                        }
-                    });
+
+                    if player.has_tech(&TechName::AlternativeLender) {
+                        ui.label("Provider");
+                        ui.horizontal(|ui| {
+                            for item in LoanProvider::iter() {
+                                ui.selectable_value(
+                                    &mut state.credit.provider,
+                                    item,
+                                    item.to_name(),
+                                )
+                                    .on_hover_text(item.description());
+                            }
+                        });
+                    }
 
                     ui.label("Principal");
                     let max_principal = state

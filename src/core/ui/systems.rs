@@ -16,6 +16,7 @@ use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::messages::MessageEv;
 use crate::core::player::Player;
+use crate::core::research::TechName;
 use crate::core::resources::ImageIds;
 use crate::core::states::GameState;
 use crate::core::ui::bonds::bonds_panel;
@@ -313,7 +314,12 @@ pub fn top_panel(
         });
 }
 
-pub fn left_panel(mut contexts: EguiContexts, mut state: ResMut<UiState>, window: Single<&Window>) {
+pub fn left_panel(
+    mut contexts: EguiContexts,
+    player: Res<Player>,
+    mut state: ResMut<UiState>,
+    window: Single<&Window>,
+) {
     SidePanel::left("left_panel")
         .exact_width(window.width().min(1.2 * WIDTH) * LEFT_LABEL_FRAC)
         .show_separator_line(false)
@@ -322,7 +328,12 @@ pub fn left_panel(mut contexts: EguiContexts, mut state: ResMut<UiState>, window
             ui.with_layout(Layout::top_down_justified(Align::Min), |ui| {
                 ui.add_space(window.height() * 0.14);
 
-                for tab in Tab::iter() {
+                for tab in Tab::iter().filter(|t| match t {
+                    Tab::Forex => player.has_tech(&TechName::ForeignExchange),
+                    Tab::Commodities => player.has_tech(&TechName::Commodities),
+                    Tab::Crypto => player.has_tech(&TechName::Cryptocurrencies),
+                    _ => true,
+                }) {
                     ui.selectable_value(
                         &mut state.tab,
                         tab,

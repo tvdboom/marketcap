@@ -11,6 +11,7 @@ use crate::core::loans::TermLoan;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderKind, OrderStatus};
 use crate::core::player::{OwnedInstrument, Player};
+use crate::core::research::TechName;
 use crate::core::ui::state::{CreditTab, ModalInfo, OrderOptions, OverviewTab, Tab, UiState};
 use crate::core::ui::utils::{CustomUi, toggle};
 use crate::utils::{EnhFloat, NameFromEnum};
@@ -25,11 +26,13 @@ pub fn overview_panel(
 ) {
     ui.horizontal(|ui| {
         for tab in OverviewTab::iter() {
-            ui.selectable_value(
-                &mut state.overview.tab,
-                tab,
-                format!("{}  {}", tab.emoji(), tab.to_name()),
-            );
+            if tab != OverviewTab::Derivatives || player.has_tech(&TechName::Futures) {
+                ui.selectable_value(
+                    &mut state.overview.tab,
+                    tab,
+                    format!("{}  {}", tab.emoji(), tab.to_name()),
+                );
+            }
         }
     });
 
@@ -97,7 +100,7 @@ pub fn overview_panel(
                     window,
                 );
 
-                instrument_table(ui, state, &economy, stocks);
+                instrument_table(ui, state, &economy, &player, stocks);
                 ui.small("Click on a row to trade that stock.");
             }
 
@@ -115,7 +118,7 @@ pub fn overview_panel(
                     window,
                 );
 
-                instrument_table(ui, state, &economy, bonds);
+                instrument_table(ui, state, &economy, &player, bonds);
                 ui.small("Click on a row to trade that bond.");
             }
 
@@ -133,7 +136,7 @@ pub fn overview_panel(
                     window,
                 );
 
-                instrument_table(ui, state, &economy, forex);
+                instrument_table(ui, state, &economy, &player, forex);
                 ui.small("Click on a row to trade that currency.");
             }
 
@@ -151,7 +154,7 @@ pub fn overview_panel(
                     window,
                 );
 
-                instrument_table(ui, state, &economy, commodities);
+                instrument_table(ui, state, &economy, &player, commodities);
                 ui.small("Click on a row to trade that commodity.");
             }
 
@@ -169,7 +172,7 @@ pub fn overview_panel(
                     window,
                 );
 
-                instrument_table(ui, state, &economy, crypto);
+                instrument_table(ui, state, &economy, &player, crypto);
                 ui.small("Click on a row to trade that crypto.");
             }
         },
@@ -356,6 +359,7 @@ pub fn instrument_table(
     ui: &mut Ui,
     state: &mut UiState,
     economy: &GlobalEconomy,
+    player: &Player,
     instruments: Vec<&OwnedInstrument>,
 ) {
     let mut columns = vec![
@@ -416,8 +420,8 @@ pub fn instrument_table(
                         ) {
                             content.push(format!(
                                 "{}{CURRENCY}/month",
-                                (30. * owned.amount as f32 * instrument.storage_cost()).max(0.)
-                                    as u32
+                                (30. * owned.amount as f32 * instrument.storage_cost(player))
+                                    .max(0.) as u32
                             ));
                         }
 

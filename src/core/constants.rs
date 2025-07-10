@@ -1,6 +1,7 @@
-use crate::core::instruments::forex::CurrencyName;
 use bevy_egui::egui::Color32;
 use chrono::NaiveDate;
+
+use crate::core::instruments::forex::CurrencyName;
 
 /// Window
 pub const HEIGHT: f32 = 900.;

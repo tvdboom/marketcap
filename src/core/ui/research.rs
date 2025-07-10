@@ -1,13 +1,14 @@
-use crate::core::messages::{MessageEv, MessageLevel};
-use crate::core::player::Player;
-use crate::core::research::ResearchField;
-use crate::core::resources::ImageIds;
-use crate::core::ui::utils::CustomUi;
-use crate::utils::{NameFromEnum, get_ratio};
 use bevy::prelude::{EventWriter, Window};
 use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::{Align, Image, Layout, Pos2, ScrollArea, Sense, Slider, TextStyle, Ui};
 use strum::IntoEnumIterator;
+
+use crate::core::messages::{MessageEv, MessageLevel};
+use crate::core::player::Player;
+use crate::core::research::{ResearchField, TechName};
+use crate::core::resources::ImageIds;
+use crate::core::ui::utils::CustomUi;
+use crate::utils::{NameFromEnum, get_ratio};
 
 pub fn research_panel(
     ui: &mut Ui,
@@ -16,7 +17,11 @@ pub fn research_panel(
     images: &ImageIds,
     window: &Window,
 ) {
-    let max_capacity = 200.;
+    let max_capacity = if player.has_tech(&TechName::ImprovedResearch) {
+        300.
+    } else {
+        200.
+    };
 
     ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
         ui.horizontal(|ui| {
@@ -28,6 +33,7 @@ pub fn research_panel(
                 player.research.capacity = max_capacity;
             }
 
+            ui.spacing_mut().slider_width = window.width() * 0.17;
             ui.add(
                 Slider::new(&mut player.research.capacity, 0.0..=max_capacity)
                     .show_value(false)
@@ -61,7 +67,7 @@ pub fn research_panel(
                 ui.add_space(20.);
                 ui.label(category.to_name());
             });
-            ui.add_space(15.);
+            ui.add_space(5.);
 
             let mut rects = Vec::new();
             ui.horizontal(|ui| {
@@ -69,15 +75,15 @@ pub fn research_panel(
                     ui.add_space(20.);
 
                     let response = ui.add_enabled_ui(
-                        research.progress < 100.
-                            && research
-                                .dependency
-                                .as_ref()
-                                .map_or(true, |d| complete.has_technology(d)),
+                        research
+                            .dependencies
+                            .as_ref()
+                            .map_or(true, |v| v.iter().all(|d| complete.has_technology(d))),
                         |ui| {
-                            let block = ui.add_research(research);
+                            let block = ui.add_technology(research);
 
-                            if block.clicked() && !research.researching {
+                            if block.clicked() && !research.researching && research.progress < 100.
+                            {
                                 research.researching = true;
 
                                 message.write(MessageEv {
@@ -104,6 +110,8 @@ pub fn research_panel(
                     painter.arrow(start, end - start, ui.visuals().widgets.inactive.fg_stroke);
                 }
             });
+
+            ui.add_space(25.);
         }
     });
 }

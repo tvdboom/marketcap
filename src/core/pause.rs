@@ -5,6 +5,7 @@ use bevy::prelude::*;
 use crate::core::constants::{GAME_SPEED_STEP, MAX_GAME_SPEED};
 use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
+use crate::core::player::Player;
 use crate::core::states::GameState;
 
 pub fn toggle_pause_keyboard(
@@ -13,6 +14,7 @@ pub fn toggle_pause_keyboard(
     mut next_game_state: ResMut<NextState<GameState>>,
     mut game_settings: ResMut<GameSettings>,
     mut economy: ResMut<GlobalEconomy>,
+    mut player: ResMut<Player>,
 ) {
     if keyboard.just_pressed(KeyCode::Space) {
         match game_state.get() {
@@ -45,12 +47,22 @@ pub fn toggle_pause_keyboard(
             next_game_state.set(GameState::Running);
         }
 
-        // Hack to control global economy
-        if keyboard.just_pressed(KeyCode::ArrowUp) {
-            *economy.economy.values.back_mut().unwrap() += 10.0;
-        }
-        if keyboard.just_pressed(KeyCode::ArrowDown) {
-            *economy.economy.values.back_mut().unwrap() -= 10.0;
+        if keyboard.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftLeft]) {
+            // Hack to control global economy
+            if keyboard.just_pressed(KeyCode::ArrowUp) {
+                *economy.economy.values.back_mut().unwrap() += 10.0;
+            }
+            if keyboard.just_pressed(KeyCode::ArrowDown) {
+                *economy.economy.values.back_mut().unwrap() -= 10.0;
+            }
+
+            // Hack to unlock all technologies
+            if keyboard.just_pressed(KeyCode::KeyT) {
+                for tech in player.research.technologies.iter_mut() {
+                    tech.progress = 100.;
+                    tech.researching = false;
+                }
+            }
         }
     }
 }

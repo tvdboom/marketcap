@@ -1,12 +1,13 @@
 use std::fmt::Display;
 
+use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
+
 use crate::core::constants::CURRENCY;
 use crate::core::countries::{Country, CountryName};
 use crate::core::instruments::commodities::Commodity;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::utils::{DQueue, NameFromEnum};
-use serde::{Deserialize, Serialize};
-use strum_macros::EnumIter;
 
 #[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum CurrencyName {

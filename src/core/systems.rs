@@ -10,6 +10,7 @@ use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::OrderEv;
 use crate::core::player::Player;
+use crate::core::research::TechName;
 use crate::core::ui::state::UiState;
 use crate::utils::{EnhFloat, NameFromEnum};
 
@@ -150,9 +151,7 @@ pub fn time_pass(
         if economy.date.day() == 1 {
             // Monthly operations =================================== >>
 
-            // Trading volume is reset
-            economy.economy.last_traded_volume = economy.economy.current_traded_volume;
-            economy.economy.current_traded_volume = 0.;
+            economy.economy.reset_traded_volume();
 
             // Central bank calculates/pushes next interest rate
             let inflation = economy.inflation.current();
@@ -208,7 +207,7 @@ pub fn time_pass(
             let storage_costs = player
                 .instruments
                 .iter()
-                .map(|o| o.amount as f32 * economy.get(&o.kind).storage_cost())
+                .map(|o| o.amount as f32 * economy.get(&o.kind).storage_cost(&player))
                 .sum::<f32>();
 
             if storage_costs > 0. {
@@ -227,9 +226,11 @@ pub fn time_pass(
 
             if has_debt {
                 if cash >= 0. {
-                    player.credit_score.increase();
+                    let has_tech = player.has_tech(&TechName::TrustworthyBorrower);
+                    player.credit_score.increase(has_tech);
                 } else {
-                    player.credit_score.decrease();
+                    let has_tech = player.has_tech(&TechName::SecureBased);
+                    player.credit_score.decrease(has_tech);
                 }
             }
 

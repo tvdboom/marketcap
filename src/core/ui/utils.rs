@@ -62,7 +62,7 @@ pub trait CustomUi {
         state: &mut OrderByState,
         window: &Window,
     );
-    fn add_research(&mut self, research: &Technology) -> Response;
+    fn add_technology(&mut self, research: &Technology) -> Response;
     fn add_plot(&mut self, data: &DQueue<f32>, orders: Option<Vec<&Order>>);
     fn add_factor(
         &mut self,
@@ -159,19 +159,19 @@ impl CustomUi for Ui {
         );
     }
 
-    fn add_research(&mut self, research: &Technology) -> Response {
+    fn add_technology(&mut self, technology: &Technology) -> Response {
         self.scope_builder(
             UiBuilder::new()
-                .id_salt(research.name.to_name())
+                .id_salt(technology.name.to_name())
                 .sense(Sense::click()),
             |ui| {
                 let response = ui.response();
                 let visuals = ui.style().interact(&response);
 
                 Frame::canvas(ui.style())
-                    .fill(if research.progress == 100. {
+                    .fill(if technology.progress == 100. {
                         CUSTOM_GREEN
-                    } else if research.researching {
+                    } else if technology.researching {
                         visuals.bg_fill
                     } else {
                         visuals.bg_fill.gamma_multiply(0.7)
@@ -183,14 +183,14 @@ impl CustomUi for Ui {
 
                         ui.vertical_centered(|ui| {
                             ui.add_space(5.);
-                            Label::new(RichText::new(research.name.to_name()).strong())
+                            Label::new(RichText::new(technology.name.to_name()).strong())
                                 .selectable(false)
                                 .ui(ui);
 
                             ui.add_space(20.);
 
                             ui.add(
-                                ProgressBar::new(research.progress / 100.)
+                                ProgressBar::new(technology.progress / 100.)
                                     .show_percentage()
                                     .corner_radius(5.),
                             );
@@ -199,7 +199,19 @@ impl CustomUi for Ui {
             },
         )
         .response
-        .on_hover_text(research.name.description())
+        .on_hover_text(technology.name.description())
+        .on_disabled_hover_text(format!(
+            "{}{}",
+            technology.name.description(),
+            if let Some(deps) = &technology.dependencies {
+                format!(
+                    "\n\nDependencies: {}.",
+                    deps.iter().map(|d| d.to_name()).join(", ")
+                )
+            } else {
+                String::new()
+            }
+        ))
         .on_hover_cursor(CursorIcon::PointingHand)
     }
 
@@ -432,7 +444,7 @@ impl CustomUi for Ui {
                                     InstrumentKind::Commodity(name) => {
                                         ui.label(format!(
                                             "Storage costs: {:.0}{CURRENCY}{}/month",
-                                            instrument.storage_cost() * 30.,
+                                            instrument.storage_cost(player) * 30.,
                                             instrument.per_unit(),
                                         ))
                                             .on_hover_text(

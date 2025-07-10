@@ -24,6 +24,7 @@ use crate::core::loans::{MarginLoan, Term};
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
 use crate::core::player::Player;
+use crate::core::research::TechName;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OverviewTab, Tab, UiState};
 use crate::core::ui::utils::{CustomUi, toggle};
@@ -66,7 +67,7 @@ pub fn trade_modal(
         } else {
             1.0
         };
-    let storage_costs = (amount * 30) as f32 * instrument.storage_cost();
+    let storage_costs = (amount * 30) as f32 * instrument.storage_cost(&player);
 
     let derivatives = player
         .derivatives
@@ -87,6 +88,7 @@ pub fn trade_modal(
         instrument.future_price(
             economy.interest.current(),
             state.modal_info.derivative_term.years(),
+            &player,
         )
     } else {
         instrument.current() * (1. + state.modal_info.strike_percentage as f32 / 100.)
@@ -140,10 +142,24 @@ pub fn trade_modal(
                             InstrumentKind::Bond(issuer) => {
                                 match issuer {
                                     BondIssuer::Government(_) => {
-                                        CountryName::iter().map(|c| (InstrumentKind::Bond(BondIssuer::Government(c)), c.to_name())).collect()
+                                        CountryName::iter().filter_map(|c| {
+                                            let instrument = InstrumentKind::Bond(BondIssuer::Government(c));
+                                            let bond = economy.get(&instrument);
+
+                                            (!bond.quality().is_high_yield() || player.has_tech(&TechName::HighYield)).then_some(
+                                                (instrument, c.to_name())
+                                            )
+                                        }).collect()
                                     },
                                     BondIssuer::Corporate(_) => {
-                                        Company::iter().map(|c| (InstrumentKind::Bond(BondIssuer::Corporate(c)), c.to_name())).collect()
+                                        Company::iter().filter_map(|c| {
+                                            let instrument = InstrumentKind::Bond(BondIssuer::Corporate(c));
+                                            let bond = economy.get(&instrument);
+
+                                            (!bond.quality().is_high_yield() || player.has_tech(&TechName::HighYield)).then_some(
+                                                (instrument, c.to_name())
+                                            )
+                                        }).collect()
                                     },
                                 }
                             },
@@ -186,7 +202,7 @@ pub fn trade_modal(
             ui.vertical(|ui| {
                 ScrollArea::horizontal().show(ui, |ui| {
                     ui.horizontal(|ui| {
-                        for tab in kind.order_options() {
+                        for tab in kind.order_options(&player) {
                             ui.selectable_value(
                                 &mut state.modal_info.tab,
                                 tab,
@@ -472,17 +488,19 @@ pub fn trade_modal(
                                 }
                             });
 
-                            ui.horizontal(|ui| {
-                                ui.label("Credit default swap:");
-                                ui.add(toggle(&mut state.modal_info.cds));
-                            }).response.on_hover_text(
-                                "A credit default swap (CDS) is a financial derivative \
-                                that allows an investor to 'swap' or transfer the credit \
-                                risk of a bond to another party. It ensures coupon payments \
-                                and the return of the face value are always paid, even when \
-                                the issuer defaults (for a decrease in interest)."
-                            );
-                            
+                            if player.has_tech(&TechName::CreditDefaultSwap) {
+                                ui.horizontal(|ui| {
+                                    ui.label("Credit default swap:");
+                                    ui.add(toggle(&mut state.modal_info.cds));
+                                }).response.on_hover_text(
+                                    "A credit default swap (CDS) is a financial derivative \
+                                    that allows an investor to 'swap' or transfer the credit \
+                                    risk of a bond to another party. It ensures coupon payments \
+                                    and the return of the face value are always paid, even when \
+                                    the issuer defaults (for a decrease in interest)."
+                                );
+                            }
+
                             ui.label(format!("Interest: {bond_interest:.1}%",)).on_hover_text(
                                 "Interest rate of the bond. The buyer receives this \
                                 percentage of the face value each year.",
@@ -527,7 +545,7 @@ pub fn trade_modal(
                         }
                     });
 
-                    if !matches!(instrument.kind(), InstrumentKind::Bond(_)) && !tab.is_derivative() {
+                    if !matches!(instrument.kind(), InstrumentKind::Bond(_)) && !tab.is_derivative() && player.has_tech(&TechName::MarginLoan) {
                         ui.add_space(window.height() * 0.01);
                         ui.add(Separator::default().vertical());
 

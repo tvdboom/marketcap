@@ -1,8 +1,9 @@
+use std::collections::HashMap;
+
 use bevy::prelude::*;
 use chrono::{Datelike, NaiveDate};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 
 use crate::core::derivatives::{Derivative, DerivativeKind};
 use crate::core::factors::Factor;
@@ -16,7 +17,7 @@ use crate::core::instruments::stocks::Company;
 use crate::core::loans::{MarginLoan, TermLoan};
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
-use crate::core::research::{Research, TechnologyName};
+use crate::core::research::{Research, TechName};
 use crate::utils::NameFromEnum;
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -139,7 +140,7 @@ impl Player {
     pub fn storage_costs(&self, economy: &GlobalEconomy) -> f32 {
         self.instruments
             .iter()
-            .map(|o| (o.amount as f32 * economy.get(&o.kind).storage_cost()).max(0.))
+            .map(|o| (o.amount as f32 * economy.get(&o.kind).storage_cost(&self)).max(0.))
             .sum()
     }
 
@@ -167,7 +168,7 @@ impl Player {
 
     // Research ==================================================== >>
 
-    pub fn has_technology(&self, name: &TechnologyName) -> bool {
+    pub fn has_tech(&self, name: &TechName) -> bool {
         self.research.has_technology(name)
     }
 
@@ -298,7 +299,7 @@ impl Player {
                 - if order.command == Command::Buy {
                     0.
                 } else {
-                    instrument.storage_cost() * 30.
+                    instrument.storage_cost(&self) * 30.
                 })
                 * order.amount as f32;
 
@@ -393,7 +394,8 @@ impl Player {
                         if derivative.kind == DerivativeKind::Option {
                             self.cash.amount -= total_price;
                             if self.cash.amount < 0. {
-                                self.credit_score.decrease();
+                                self.credit_score
+                                    .decrease(self.research.has_technology(&TechName::SecureBased));
                                 message.write(MessageEv {
                                     message: "Forced buy to cover option. Credit score reduced."
                                         .to_string(),
@@ -451,7 +453,9 @@ impl Player {
                             // Buy the remaining amount at market price
                             self.cash.amount -=
                                 economy.get_price(&derivative.instrument) * remaining as f32;
-                            self.credit_score.decrease();
+                            self.credit_score.decrease(
+                                self.research.has_technology(&TechName::TrustworthyBorrower),
+                            );
 
                             message.write(MessageEv {
                                 message: format!(

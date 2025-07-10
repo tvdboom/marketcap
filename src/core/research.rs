@@ -1,50 +1,136 @@
-use crate::core::messages::{MessageEv, MessageLevel};
-use crate::utils::NameFromEnum;
 use bevy::prelude::EventWriter;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
+use crate::core::messages::{MessageEv, MessageLevel};
+use crate::utils::NameFromEnum;
+
 #[derive(EnumIter, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ResearchField {
+    Trading,
     Stocks,
     Bonds,
-    Forex,
-    Commodities,
-    Crypto,
+    AlternativeInvestments,
     Credit,
-    Policies,
+    Strategy,
 }
 
 #[derive(EnumIter, Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub enum TechnologyName {
-    AlternativeLender,
+pub enum TechName {
+    // Trading
+    LimitOrder,
+    TrailingOrder,
+    ShortSelling,
+    Futures,
+    Options,
+
+    // Stocks
+
+    // Bonds
+    CorporateBonds,
+    HighYield,
+    CreditDefaultSwap,
+
+    // Alternative Investments
+    ForeignExchange,
+    Commodities,
+    ReducedStorage,
+    Cryptocurrencies,
+
+    // Credit
     MarginLoan,
+    TrustworthyBorrower,
+    AlternativeLender,
+    SecureBased,
+
+    // Strategy
+    ImprovedResearch,
 }
 
-impl TechnologyName {
+impl TechName {
     pub fn description(&self) -> &str {
         match self {
-            TechnologyName::AlternativeLender => {
-                "Enables the use of alternative lenders for term loans. Alternative lenders offer \
-                loans without taken into account the credit score, for usually higher interest \
-                rates than banks."
+            TechName::LimitOrder => {
+                "Enables the use of limit orders, which allow you to set a maximum price at which \
+                you are willing to buy or a minimum price at which you are willing to sell a \
+                financial instrument."
             },
-            TechnologyName::MarginLoan => {
+            TechName::TrailingOrder => {
+                "Enables the use of trailing orders, which allow you to set a stop-loss order that \
+                follows the market price by a certain percentage."
+            },
+            TechName::ShortSelling => {
+                "Enables the use of short selling, which allows you to borrow and sell a financial \
+                instrument with the expectation that its price will fall, allowing you to buy it \
+                back at a lower price."
+            },
+            TechName::Futures => {
+                "Enables the use of futures contracts, which are agreements to buy or sell a \
+                financial instrument at a predetermined price at a specified time in the future. \
+                This can be used for hedging or speculation."
+            },
+            TechName::Options => {
+                "Enables the use of options contracts, which give you the right, but not the \
+                obligation, to buy or sell a financial instrument at a predetermined price before \
+                a specified date. This can be used for hedging or speculation."
+            },
+            TechName::CorporateBonds => {
+                "Enables the trading of corporate bonds, which are debt securities issued by \
+                corporations to raise capital. They typically offer higher yields than government \
+                bonds."
+            },
+            TechName::HighYield => {
+                "Enables the trading of high-yield bonds, which are bonds with lower credit \
+                ratings (thus higher chance of default), but also higher interest rates."
+            },
+            TechName::CreditDefaultSwap => {
+                "Enables the use of credit default swaps, which are financial derivatives that \
+                allow an investor to hedge against a bond issuer defaulting."
+            },
+            TechName::ForeignExchange => {
+                "Enables the trading of foreign exchange (forex), which is the market for buying \
+                and selling currencies. This allows you to profit from changes in exchange rates."
+            },
+            TechName::Commodities => {
+                "Enables the trading of commodities, which are basic goods used in commerce that \
+                are interchangeable with other goods of the same type. Examples include gold, \
+                silver, oil, and agricultural products."
+            },
+            TechName::ReducedStorage => {
+                "Reduces the cost of storing commodities by 20%, increasing profitability."
+            },
+            TechName::Cryptocurrencies => {
+                "Enables the trading of cryptocurrencies, which are digital currencies based on \
+                blockchain technology. Cryptos are very risky investments but can offer huge returns."
+            },
+            TechName::MarginLoan => {
                 "Enables the use of margin loans, which allow you to borrow money to invest in \"
                 financial instruments, using the instruments self as collateral. This can greatly \
                 leverage your positions."
             },
+            TechName::TrustworthyBorrower => {
+                "the credit score increases twice as fast when debt obligations are met in time."
+            },
+            TechName::AlternativeLender => {
+                "Enables the use of alternative lenders for term loans. Alternative lenders offer \
+                loans without taken into account the credit score, for usually higher interest \
+                rates than banks."
+            },
+            TechName::SecureBased => {
+                "The credit score decreases half as fast when debt obligations are not met in time."
+            },
+            TechName::ImprovedResearch => "Increases the maximum research capacity by 100.",
         }
     }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Technology {
-    pub name: TechnologyName,
+    pub name: TechName,
     pub field: ResearchField,
     pub progress: f32,
     pub researching: bool,
-    pub dependency: Option<TechnologyName>,
+    pub dependencies: Option<Vec<TechName>>,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -63,7 +149,7 @@ impl Research {
             .collect()
     }
 
-    pub fn has_technology(&self, name: &TechnologyName) -> bool {
+    pub fn has_technology(&self, name: &TechName) -> bool {
         self.technologies
             .iter()
             .find(|t| t.name == *name)
@@ -109,18 +195,123 @@ impl Default for Research {
             capacity: 100.,
             technologies: Vec::from([
                 Technology {
-                    name: TechnologyName::AlternativeLender,
-                    field: ResearchField::Credit,
+                    name: TechName::LimitOrder,
+                    field: ResearchField::Trading,
                     progress: 0.,
                     researching: false,
-                    dependency: None,
+                    dependencies: None,
                 },
                 Technology {
-                    name: TechnologyName::MarginLoan,
+                    name: TechName::TrailingOrder,
+                    field: ResearchField::Trading,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: Some(vec![TechName::LimitOrder]),
+                },
+                Technology {
+                    name: TechName::ShortSelling,
+                    field: ResearchField::Trading,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: Some(vec![TechName::TrailingOrder, TechName::MarginLoan]),
+                },
+                Technology {
+                    name: TechName::Futures,
+                    field: ResearchField::Trading,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: Some(vec![TechName::ShortSelling]),
+                },
+                Technology {
+                    name: TechName::Options,
+                    field: ResearchField::Trading,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: Some(vec![TechName::Futures]),
+                },
+                Technology {
+                    name: TechName::CorporateBonds,
+                    field: ResearchField::Bonds,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: None,
+                },
+                Technology {
+                    name: TechName::HighYield,
+                    field: ResearchField::Bonds,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: Some(vec![TechName::CorporateBonds]),
+                },
+                Technology {
+                    name: TechName::CreditDefaultSwap,
+                    field: ResearchField::Bonds,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: Some(vec![TechName::HighYield]),
+                },
+                Technology {
+                    name: TechName::ForeignExchange,
+                    field: ResearchField::AlternativeInvestments,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: None,
+                },
+                Technology {
+                    name: TechName::Commodities,
+                    field: ResearchField::AlternativeInvestments,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: Some(vec![TechName::ForeignExchange]),
+                },
+                Technology {
+                    name: TechName::ReducedStorage,
+                    field: ResearchField::AlternativeInvestments,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: Some(vec![TechName::Commodities]),
+                },
+                Technology {
+                    name: TechName::Cryptocurrencies,
+                    field: ResearchField::AlternativeInvestments,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: Some(vec![TechName::ReducedStorage]),
+                },
+                Technology {
+                    name: TechName::MarginLoan,
                     field: ResearchField::Credit,
                     progress: 0.,
                     researching: false,
-                    dependency: Some(TechnologyName::AlternativeLender),
+                    dependencies: None,
+                },
+                Technology {
+                    name: TechName::TrustworthyBorrower,
+                    field: ResearchField::Credit,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: Some(vec![TechName::MarginLoan]),
+                },
+                Technology {
+                    name: TechName::AlternativeLender,
+                    field: ResearchField::Credit,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: Some(vec![TechName::TrustworthyBorrower]),
+                },
+                Technology {
+                    name: TechName::SecureBased,
+                    field: ResearchField::Credit,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: Some(vec![TechName::AlternativeLender]),
+                },
+                Technology {
+                    name: TechName::ImprovedResearch,
+                    field: ResearchField::Strategy,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: None,
                 },
             ]),
         }

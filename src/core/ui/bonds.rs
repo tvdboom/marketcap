@@ -6,6 +6,7 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondKind;
 use crate::core::instruments::instrument::Instrument;
 use crate::core::player::Player;
+use crate::core::research::TechName;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderOptions, UiState};
 use crate::core::ui::utils::CustomUi;
@@ -21,11 +22,13 @@ pub fn bonds_panel(
 ) {
     ui.horizontal(|ui| {
         for tab in BondKind::iter() {
-            ui.selectable_value(
-                &mut state.bonds.tab,
-                tab,
-                format!("{}  {}", tab.emoji(), tab.to_name()),
-            );
+            if tab != BondKind::Corporate || player.has_tech(&TechName::CorporateBonds) {
+                ui.selectable_value(
+                    &mut state.bonds.tab,
+                    tab,
+                    format!("{}  {}", tab.emoji(), tab.to_name()),
+                );
+            }
         }
     });
 
@@ -74,7 +77,10 @@ pub fn bonds_panel(
         let instruments = economy
             .bonds
             .iter()
-            .filter(|c| c.kind() == state.bonds.tab)
+            .filter(|b| {
+                b.kind() == state.bonds.tab
+                    && (!b.quality().is_high_yield() || player.has_tech(&TechName::HighYield))
+            })
             .map(|c| c as &dyn Instrument)
             .collect::<Vec<_>>();
 
