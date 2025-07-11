@@ -33,7 +33,7 @@ use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::{AppState, GameState};
 use crate::core::systems::time_pass;
-use crate::core::ui::menu::{in_game_menu, toggle_menu_keyboard};
+use crate::core::ui::menu::{end_game_menu, in_game_menu, toggle_menu_keyboard};
 use crate::core::ui::modal::trade_modal;
 use crate::core::ui::state::UiState;
 use crate::core::ui::systems::{
@@ -97,6 +97,7 @@ impl Plugin for GamePlugin {
                     left_panel,
                     central_panel,
                     in_game_menu,
+                    end_game_menu.run_if(in_state(GameState::GameOver)),
                     trade_modal,
                 )
                     .chain()
@@ -107,8 +108,8 @@ impl Plugin for GamePlugin {
             .add_systems(
                 Update,
                 (
-                    (time_pass, execute_orders).in_set(InRunningGameSet),
-                    toggle_pause_keyboard.in_set(InRunningOrPausedGameSet),
+                    time_pass.in_set(InRunningGameSet),
+                    (execute_orders, toggle_pause_keyboard).in_set(InRunningOrPausedGameSet),
                     toggle_menu_keyboard.in_set(InGameSet),
                     check_keys.in_set(InRunningGameSet),
                 ),

@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
 use crate::core::countries::CountryName;
+use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::forex::Currency;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::instruments::stocks::{Company, Stock};
@@ -65,9 +66,13 @@ impl BondQuality {
             BondQuality::C => 1.0,
         }
     }
+
+    pub fn default_chance(&self) -> f32 {
+        1. - (-0.3 * self.value()).exp()
+    }
 }
 
-#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum BondIssuer {
     Government(CountryName),
     Corporate(Company),
@@ -95,6 +100,31 @@ impl BondIssuer {
         match self {
             BondIssuer::Government(country) => country.description(),
             BondIssuer::Corporate(company) => company.description(),
+        }
+    }
+
+    pub fn coupon_payment(&self, interest: f32, cds: bool, economy: &GlobalEconomy) -> f32 {
+        // Multiply by 0.5 since coupon is paid out twice a year
+        match self {
+            BondIssuer::Government(country) => {
+                let currency = economy
+                    .currencies
+                    .iter()
+                    .find(|c| c.country == *country)
+                    .unwrap();
+
+                Bond::FACE_VALUE_GOVERNMENT * 0.5 * interest / 100. * currency.current()
+            },
+            BondIssuer::Corporate(name) => {
+                let stock = economy.stocks.iter().find(|s| s.issuer == *name).unwrap();
+
+                // Very bad-performing stocks default on coupon payment
+                if !cds && stock.current() < stock.base_price * 0.75 {
+                    0.
+                } else {
+                    Bond::FACE_VALUE_CORPORATE * 0.5 * interest / 100.
+                }
+            },
         }
     }
 }

@@ -11,7 +11,7 @@ use crate::core::instruments::bonds::BondIssuer;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::orders::{Command, Order};
 use crate::core::player::Player;
-use crate::core::research::Technology;
+use crate::core::research::{TechName, Technology};
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderByState, OrderOptions};
 use crate::utils::{DQueue, EnhFloat, NameFromEnum, create_guid, get_ratio};
@@ -410,12 +410,15 @@ impl CustomUi for Ui {
                                                 prices.",
                                             );
 
-                                        ui.label(format!("ESG: {}", instrument.esg().to_name()))
-                                            .on_hover_text(format!(
-                                                "ESG ratings evaluate a company's performance in three key \
-                                                areas: Environmental, Social, and Governance. These scores \
-                                                help investors assess how responsibly a company operates \
-                                                beyond financial metrics. Score {}: {}", instrument.esg().to_name(), instrument.esg().description()));
+                                        if player.has_tech(&TechName::ESG) {
+                                            ui.label(format!("ESG: {}", instrument.esg().to_name()))
+                                                .on_hover_text(format!(
+                                                    "ESG ratings evaluate a company's performance in three key \
+                                                    areas: Environmental, Social, and Governance. These scores \
+                                                    help investors assess how responsibly a company operates \
+                                                    beyond financial metrics. Score {}: {}", instrument.esg().to_name(), instrument.esg().description())
+                                                );
+                                        }
                                     },
                                     InstrumentKind::Bond(issuer) => {
                                         ui.label(format!("Quality: {}", instrument.quality().to_name()))

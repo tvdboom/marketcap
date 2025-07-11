@@ -51,9 +51,15 @@ pub fn toggle_pause_keyboard(
             // Hack to control global economy
             if keyboard.just_pressed(KeyCode::ArrowUp) {
                 *economy.economy.values.back_mut().unwrap() += 10.0;
-            }
-            if keyboard.just_pressed(KeyCode::ArrowDown) {
+            } else if keyboard.just_pressed(KeyCode::ArrowDown) {
                 *economy.economy.values.back_mut().unwrap() -= 10.0;
+            }
+
+            // Hack to control cash
+            if keyboard.just_pressed(KeyCode::KeyC) {
+                player.cash.amount += 1000.;
+            } else if keyboard.just_pressed(KeyCode::KeyX) {
+                player.cash.amount -= 1000.;
             }
 
             // Hack to unlock all technologies

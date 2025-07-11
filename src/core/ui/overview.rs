@@ -14,7 +14,7 @@ use crate::core::player::{OwnedInstrument, Player};
 use crate::core::research::TechName;
 use crate::core::ui::state::{CreditTab, ModalInfo, OrderOptions, OverviewTab, Tab, UiState};
 use crate::core::ui::utils::{CustomUi, toggle};
-use crate::utils::{EnhFloat, NameFromEnum};
+use crate::utils::{EnhFloat, NameFromEnum, create_guid};
 
 pub fn overview_panel(
     ui: &mut Ui,
@@ -385,6 +385,7 @@ pub fn instrument_table(
         .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
         .show(ui, |ui| {
             TableBuilder::new(ui)
+                .id_salt(create_guid())
                 .striped(false)
                 .sense(Sense::click())
                 .columns(Column::remainder(), columns.len())

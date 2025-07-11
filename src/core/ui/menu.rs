@@ -148,10 +148,30 @@ pub fn in_game_menu(
     }
 }
 
+pub fn end_game_menu(
+    mut contexts: EguiContexts,
+    mut game_settings: ResMut<GameSettings>,
+    mut economy: ResMut<GlobalEconomy>,
+    game_state: Res<State<GameState>>,
+    mut save_game_ev: EventWriter<SaveGameEv>,
+    mut next_app_state: ResMut<NextState<AppState>>,
+    mut next_game_state: ResMut<NextState<GameState>>,
+    audio: Res<Audio>,
+    window: Single<&Window>,
+) {
+    Modal::new(Id::new("game_over")).show(contexts.ctx_mut(), |ui| {
+        ui.set_width((window.width() * 0.25).min(450.));
+
+        ui.add_space(window.height() * 0.02);
+
+    });
+}
+
 pub fn toggle_menu_keyboard(
     keyboard: Res<ButtonInput<KeyCode>>,
     mut state: ResMut<UiState>,
     game_state: Res<State<GameState>>,
+    mut next_app_state: ResMut<NextState<AppState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
 ) {
     if keyboard.just_pressed(KeyCode::Escape) {
@@ -165,6 +185,10 @@ pub fn toggle_menu_keyboard(
             },
             GameState::InGameMenu => next_game_state.set(GameState::Running),
             GameState::Settings => next_game_state.set(GameState::InGameMenu),
+            GameState::GameOver => {
+                next_game_state.set(GameState::Running);
+                next_app_state.set(AppState::MainMenu);
+            },
         }
     }
 }

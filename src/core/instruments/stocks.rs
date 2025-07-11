@@ -8,7 +8,7 @@ use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::sectors::{Sector, SectorName};
 use crate::utils::{DQueue, NameFromEnum};
 
-#[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Copy, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum Company {
     Apple,
     Boeing,
@@ -219,8 +219,12 @@ impl Instrument for Stock {
     }
 
     fn dividend(&self) -> f32 {
-        // Good performing stocks pay out a higher dividend
-        self.dividend * (1. + (self.current() - self.base_price) / self.base_price)
+        if self.current() < self.base_price * 0.5 {
+            0. // Bad-performing stocks pay no dividend
+        } else {
+            // Good performing stocks pay out a higher dividend
+            self.dividend * (1. + (self.current() - self.base_price) / self.base_price)
+        }
     }
 
     fn esg(&self) -> ESGRating {

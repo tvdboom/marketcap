@@ -14,6 +14,8 @@ use crate::core::instruments::forex::{Currency, start_currencies};
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::instruments::stocks::{Stock, start_stocks};
 use crate::core::messages::{MessageEv, MessageLevel};
+use crate::core::player::Player;
+use crate::core::research::TechName;
 use crate::core::sectors::{Sector, start_sectors};
 use crate::core::ui::state::UiState;
 
@@ -62,6 +64,7 @@ impl GlobalEconomy {
         &mut self,
         aum: f32,
         state: &mut UiState,
+        player: &Player,
         message: &mut EventWriter<MessageEv>,
     ) -> (f32, f32, f32) {
         let economy = self.economy.bump(aum);
@@ -84,13 +87,20 @@ impl GlobalEconomy {
                     state.modal = None;
                 }
 
-                message.write(MessageEv {
-                    message: format!(
-                        "The cryptocurrency {} has become worthless and cannot be traded anymore.",
-                        crypto.name()
-                    ),
-                    level: MessageLevel::Warning,
-                });
+                if player.has_tech(&TechName::Cryptocurrencies) {
+                    // Short selling this crypto returns maximum profit
+                    if player.get_owned(&InstrumentKind::Crypto(crypto.name)) < 0 {
+                        player.cash.amount += player.get_owned(&InstrumentKind::Crypto(crypto.name)) * price;
+                    }
+
+                    message.write(MessageEv {
+                        message: format!(
+                            "The cryptocurrency {} has become worthless and cannot be traded anymore.",
+                            crypto.name()
+                        ),
+                        level: MessageLevel::Warning,
+                    });
+                }
             }
         }
 

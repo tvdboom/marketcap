@@ -4,6 +4,7 @@ use bevy_egui::egui::{ScrollArea, Ui};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::instrument::Instrument;
 use crate::core::player::Player;
+use crate::core::research::TechName;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderOptions, UiState};
 use crate::core::ui::utils::CustomUi;
@@ -47,17 +48,19 @@ pub fn crypto_panel(
         let instruments = economy
             .cryptos
             .iter()
-            .map(|c| c as &dyn Instrument)
+            .filter_map(|c| {
+                (c.current() > 0.
+                    && (c.market_cap > 5.0e9 || player.has_tech(&TechName::ObscureCoins)))
+                .then_some(c as &dyn Instrument)
+            })
             .collect::<Vec<_>>();
 
         for inst in OrderOptions::sort_instrument(instruments, &state.cryptos, economy, player) {
-            ui.add_enabled_ui(inst.current() > 0., |ui| {
-                let response = ui.add_instrument(inst, economy, player, images, window);
+            let response = ui.add_instrument(inst, economy, player, images, window);
 
-                if response.clicked() {
-                    state.modal = Some(inst.kind());
-                }
-            });
+            if response.clicked() {
+                state.modal = Some(inst.kind());
+            }
         }
     });
 }

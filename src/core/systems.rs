@@ -1,18 +1,21 @@
-use bevy::prelude::*;
-use chrono::{Datelike, Duration};
-
 use crate::core::constants::{CURRENCY, DATE_FORMAT};
 use crate::core::derivatives::{DerivativeAction, DerivativeKind, OptionKind};
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::{Bond, BondIssuer};
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
+use crate::core::instruments::stocks::Company;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::OrderEv;
 use crate::core::player::Player;
 use crate::core::research::TechName;
 use crate::core::ui::state::UiState;
 use crate::utils::{EnhFloat, NameFromEnum};
+use bevy::prelude::*;
+use chrono::{Datelike, Duration};
+use rand::{Rng, rng};
+use std::collections::HashMap;
+use crate::core::states::GameState;
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
@@ -20,9 +23,15 @@ pub fn time_pass(
     mut state: ResMut<UiState>,
     mut order_ev: EventWriter<OrderEv>,
     mut message: EventWriter<MessageEv>,
+    mut next_game_state: ResMut<NextState<GameState>>,
     time: Res<Time>,
 ) {
     economy.clock.tick(time.delta());
+
+    if player.aum(&economy) < 0. {
+        next_game_state.set(GameState::GameOver);
+        return;
+    }
 
     if economy.clock.just_finished() {
         // Advance 1 day
@@ -34,7 +43,7 @@ pub fn time_pass(
         player.cash.amount -= player.research.costs();
 
         let aum = player.aum(&economy);
-        let (_, inflation, interest) = economy.bump(aum, &mut state, &mut message);
+        let (_, inflation, interest) = economy.bump(aum, &mut state, &player, &mut message);
 
         player.cash.bump(interest);
         player.influence.bump(aum);
@@ -162,17 +171,51 @@ pub fn time_pass(
 
             // Quarterly operations =================================== >>
 
+            // Stock dividends are paid quarterly
             if economy.date.month() % 3 == 1 {
-                // Stock dividends are paid quarterly
-                let dividends = player.dividend_payment(&economy);
+                // Calculate the exact dividends
+                let dividends: HashMap<Company, f32> = economy
+                    .stocks
+                    .iter()
+                    .map(|stock| {
+                        (
+                            stock.issuer,
+                            stock.dividend() * (1. + rng().random_range(-0.2..0.2)),
+                        )
+                    })
+                    .collect();
 
-                if dividends > 0. {
-                    player.cash.amount += dividends;
+                let total_dividends = player
+                    .stocks()
+                    .iter()
+                    .map(|owned| {
+                        if let InstrumentKind::Stock(company) = &owned.kind {
+                            let dividend = dividends.get(&company).unwrap();
+
+                            if *dividend == 0. {
+                                message.write(MessageEv {
+                                    message: format!(
+                                        "Company {} is not paying out any dividend.",
+                                        company.to_name(),
+                                    ),
+                                    level: MessageLevel::Warning,
+                                });
+                            }
+
+                            dividend * owned.amount as f32
+                        } else {
+                            return 0.;
+                        }
+                    })
+                    .sum::<f32>();
+
+                if total_dividends > 0. {
+                    player.cash.amount += total_dividends;
 
                     message.write(MessageEv {
                         message: format!(
                             "You received {}{CURRENCY} on dividend payments.",
-                            dividends.clean(),
+                            total_dividends.clean(),
                         ),
                         level: MessageLevel::Info,
                     });
@@ -181,17 +224,53 @@ pub fn time_pass(
 
             // Bi-yearly operations =================================== >>
 
+            // Bond's interests are paid twice a year
             if economy.date.month() % 6 == 1 {
-                // Bond's interest is paid twice a year
-                let coupons = player.coupon_payment(&economy);
+                // Calculate which bonds default this round
+                let defaults: HashMap<BondIssuer, bool> = economy
+                    .bonds
+                    .iter()
+                    .map(|b| {
+                        (
+                            b.issuer.clone(),
+                            rng().random::<f32>() < b.quality().default_chance(),
+                        )
+                    })
+                    .collect();
 
-                if coupons > 0. {
-                    player.cash.amount += coupons;
+                let total_coupons = player
+                    .bonds()
+                    .iter()
+                    .map(|owned| {
+                        if let InstrumentKind::Bond(issuer) = &owned.kind {
+                            // If the bond has CDS, it never defaults
+                            if !owned.cds && *defaults.get(&issuer).unwrap() {
+                                message.write(MessageEv {
+                                    message: format!(
+                                        "Bond issuer {} is defaulting on its coupon payment.",
+                                        issuer.to_name(),
+                                    ),
+                                    level: MessageLevel::Warning,
+                                });
+
+                                0.
+                            } else {
+                                issuer.coupon_payment(owned.interest, owned.cds, &economy)
+                                    * owned.amount as f32
+                            }
+                        } else {
+                            0.
+                        }
+                    })
+                    .sum::<f32>();
+
+                if total_coupons > 0. {
+                    player.cash.amount += total_coupons;
 
                     message.write(MessageEv {
                         message: format!(
                             "You received {}{CURRENCY} on coupon payments.",
-                            coupons.clean(),
+                            total_coupons.clean(),
                         ),
                         level: MessageLevel::Info,
                     });

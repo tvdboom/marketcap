@@ -39,7 +39,7 @@ impl MarketKind {
     }
 }
 
-#[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Copy, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum CountryName {
     Australia,
     Brazil,

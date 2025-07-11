@@ -14,4 +14,5 @@ pub enum GameState {
     Paused,
     InGameMenu,
     Settings,
+    GameOver,
 }

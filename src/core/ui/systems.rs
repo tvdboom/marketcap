@@ -202,7 +202,9 @@ pub fn top_panel(
                     format!(
                         "The net flow represents the total financial movement at the end of \
                         each month, calculated as income minus debt repayments and expenses. \
-                        It shows whether the player will gain or lose money this month.\n\n\
+                        It shows whether the player will gain or lose money this month. Note \
+                        that dividend and coupon payments are an approximation. The real values \
+                        may vary.\n\n\
                         Cash interest: {}\n\
                         Dividend payments: {}\n\
                         Coupon payments: {}\n\
@@ -213,8 +215,8 @@ pub fn top_panel(
                         -----------------------------\n\
                         Net flow: {}",
                         player.cash.accumulated_interest.signed(),
-                        (if economy.date.month() % 3 == 0 { player.dividend_payment(&economy) } else { 0. }).signed(),
-                        (if economy.date.month() % 6 == 0 { player.coupon_payment(&economy) } else { 0. }).signed(),
+                        (if economy.date.month() % 3 == 0 { player.approx_dividends(&economy) } else { 0. }).signed(),
+                        (if economy.date.month() % 6 == 0 { player.approx_coupons(&economy) } else { 0. }).signed(),
                         (-player.storage_costs(&economy)).signed(),
                         (-player.loan_installments()).signed(),
                         (-player.short_sell_interest()).signed(),

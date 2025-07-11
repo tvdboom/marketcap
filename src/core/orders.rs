@@ -154,6 +154,9 @@ pub struct Order {
     /// Interest rate for bonds
     pub interest: f32,
 
+    /// Whether a credit default swap (CDS) was taken
+    pub cds: bool,
+
     /// Term for loans
     pub term: Term,
 
@@ -288,6 +291,7 @@ pub fn execute_orders(
                         loan: order.loan,
                         maturity_date: economy.date + Duration::days(order.term.days() as i64),
                         interest: order.interest,
+                        cds: order.cds,
                         warning: false,
                     });
                 }

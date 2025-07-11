@@ -25,6 +25,7 @@ pub enum TechName {
     Options,
 
     // Stocks
+    ESG,
 
     // Bonds
     CorporateBonds,
@@ -36,6 +37,7 @@ pub enum TechName {
     Commodities,
     ReducedStorage,
     Cryptocurrencies,
+    ObscureCoins,
 
     // Credit
     MarginLoan,
@@ -74,6 +76,10 @@ impl TechName {
                 obligation, to buy or sell a financial instrument at a predetermined price before \
                 a specified date. This can be used for hedging or speculation."
             },
+            TechName::ESG => {
+                "Enables the ESG (Environmental, Social, and Governance) information on stocks \
+                ESG scores have a direct impact on stock prices."
+            },
             TechName::CorporateBonds => {
                 "Enables the trading of corporate bonds, which are debt securities issued by \
                 corporations to raise capital. They typically offer higher yields than government \
@@ -103,8 +109,13 @@ impl TechName {
                 "Enables the trading of cryptocurrencies, which are digital currencies based on \
                 blockchain technology. Cryptos are very risky investments but can offer huge returns."
             },
+            TechName::ObscureCoins => {
+                "Enables the trading of obscure coins, which are lesser-known cryptocurrencies \
+                that can be highly volatile and speculative. They can offer high returns on short \
+                term but also come with incredible risks."
+            },
             TechName::MarginLoan => {
-                "Enables the use of margin loans, which allow you to borrow money to invest in \"
+                "Enables the use of margin loans, which allow you to borrow money to invest in \
                 financial instruments, using the instruments self as collateral. This can greatly \
                 leverage your positions."
             },
@@ -230,6 +241,13 @@ impl Default for Research {
                     dependencies: Some(vec![TechName::Futures]),
                 },
                 Technology {
+                    name: TechName::ESG,
+                    field: ResearchField::Stocks,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: None,
+                },
+                Technology {
                     name: TechName::CorporateBonds,
                     field: ResearchField::Bonds,
                     progress: 0.,
@@ -277,6 +295,13 @@ impl Default for Research {
                     progress: 0.,
                     researching: false,
                     dependencies: Some(vec![TechName::ReducedStorage]),
+                },
+                Technology {
+                    name: TechName::ObscureCoins,
+                    field: ResearchField::AlternativeInvestments,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: Some(vec![TechName::Cryptocurrencies]),
                 },
                 Technology {
                     name: TechName::MarginLoan,

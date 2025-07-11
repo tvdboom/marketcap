@@ -165,7 +165,10 @@ pub fn trade_modal(
                             },
                             InstrumentKind::Forex(_) => CurrencyName::iter().map(|c| (InstrumentKind::Forex(c), c.to_name())).collect(),
                             InstrumentKind::Commodity(_) => CommodityName::iter().map(|c| (InstrumentKind::Commodity(c), c.to_name())).collect(),
-                            InstrumentKind::Crypto(_) => CryptoName::iter().map(|c| (InstrumentKind::Crypto(c), c.to_name())).collect(),
+                            InstrumentKind::Crypto(_) => CryptoName::iter().filter_map(|c| {
+                                let instrument = economy.get(&InstrumentKind::Crypto(c));
+                                (instrument.current() > 0. && (instrument.market_cap() > 5.0e9 || player.has_tech(&TechName::ObscureCoins))).then_some((InstrumentKind::Crypto(c), c.to_name()))
+                            }).collect(),
                         };
         
                         for (instr, name) in items {
@@ -887,6 +890,7 @@ pub fn trade_modal(
                         storage_costs
                     },
                 interest: bond_interest,
+                cds: state.modal_info.cds,
                 term: state.modal_info.bond_term.clone(),
                 threshold: if tab == OrderKind::LimitOrder {
                     limit_price

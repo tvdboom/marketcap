@@ -11,8 +11,7 @@ use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
 use crate::core::factors::influence::Influence;
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::instruments::bonds::{Bond, BondIssuer};
-use crate::core::instruments::instrument::{Instrument, InstrumentKind};
+use crate::core::instruments::instrument::InstrumentKind;
 use crate::core::instruments::stocks::Company;
 use crate::core::loans::{MarginLoan, TermLoan};
 use crate::core::messages::{MessageEv, MessageLevel};
@@ -27,6 +26,7 @@ pub struct OwnedInstrument {
     pub loan: Option<MarginLoan>,
     pub maturity_date: NaiveDate,
     pub interest: f32,
+    pub cds: bool,
     pub warning: bool,
 }
 
@@ -38,6 +38,7 @@ impl Default for OwnedInstrument {
             loan: None,
             maturity_date: NaiveDate::from_ymd_opt(2200, 1, 1).unwrap(),
             interest: 0.,
+            cds: false,
             warning: false,
         }
     }
@@ -81,7 +82,7 @@ impl Player {
             - self.margin_loan_debt()
     }
 
-    pub fn dividend_payment(&self, economy: &GlobalEconomy) -> f32 {
+    pub fn approx_dividends(&self, economy: &GlobalEconomy) -> f32 {
         self.stocks()
             .iter()
             .map(|owned| {
@@ -91,29 +92,12 @@ impl Player {
             .sum()
     }
 
-    pub fn coupon_payment(&self, economy: &GlobalEconomy) -> f32 {
-        // Multiply by 0.5 since coupon is paid out twice a year
+    pub fn approx_coupons(&self, economy: &GlobalEconomy) -> f32 {
         self.bonds()
             .iter()
             .map(|owned| {
                 if let InstrumentKind::Bond(issuer) = &owned.kind {
-                    match issuer {
-                        BondIssuer::Government(country) => {
-                            let currency = economy
-                                .currencies
-                                .iter()
-                                .find(|c| c.country == *country)
-                                .unwrap();
-
-                            Bond::FACE_VALUE_GOVERNMENT * 0.5 * owned.interest / 100.
-                                * owned.amount as f32
-                                * currency.current()
-                        },
-                        BondIssuer::Corporate(_) => {
-                            Bond::FACE_VALUE_CORPORATE * 0.5 * owned.interest / 100.
-                                * owned.amount as f32
-                        },
-                    }
+                    issuer.coupon_payment(owned.interest, owned.cds, economy) * owned.amount as f32
                 } else {
                     0.
                 }
@@ -126,12 +110,12 @@ impl Player {
 
         // Dividend is paid out quarterly, so inflow must be shown one month prior
         if economy.date.month() % 3 == 1 {
-            inflow += self.dividend_payment(economy);
+            inflow += self.approx_dividends(economy);
         }
 
         // Bonds are paid out semi-annually, so inflow must be shown one month prior
         if economy.date.month() % 6 == 1 {
-            inflow += self.coupon_payment(economy);
+            inflow += self.approx_coupons(economy);
         }
 
         inflow

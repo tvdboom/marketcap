@@ -8,13 +8,19 @@ use crate::utils::{DQueue, NameFromEnum};
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum CryptoName {
     #[default]
+    Avalanche,
     Bitcoin,
+    BNB,
     Cardano,
+    Celestia,
+    Chainlink,
     Dogecoin,
     Ethereum,
     Litecoin,
     Pepe,
+    Polkadot,
     Solana,
+    Stacks,
     Toncoin,
     Tron,
     Uniswap,
@@ -68,16 +74,39 @@ impl Instrument for Crypto {
 
     fn description(&self) -> &str {
         match self.name {
+            CryptoName::Avalanche => {
+                "Avalanche is a decentralized platform launched in 2020, designed for building \
+                scalable and secure blockchain applications. It features a unique consensus \
+                mechanism called Avalanche consensus, which allows for high throughput and low \
+                latency."
+            },
             CryptoName::Bitcoin => {
                 "Bitcoin is a digital currency launched in 2009 by an unknown person using the \
                 name Satoshi Nakamoto. Bitcoin has a fixed supply of 21 million coins, with new \
                 coins created through a process called mining, where participants solve \
                 computational puzzles to validate transactions and secure the network."
             },
+            CryptoName::BNB => {
+                "BNB (Binance Coin) is the native cryptocurrency of the Binance exchange, \
+                launched in 2017. Initially created as a utility token for discounted trading \
+                fees, BNB has expanded its use cases to include transaction fees on the Binance \
+                Smart Chain, token sales on Binance Launchpad, and more."
+            },
             CryptoName::Cardano => {
                 "Cardano is a proof-of-stake blockchain platform launched in 2017 by Charles \
                 Hoskinson, a co-founder of Ethereum. It emphasizes academic research, formal \
                 methods, and peer-reviewed development."
+            },
+            CryptoName::Celestia => {
+                "Celestia is a modular blockchain network designed to provide scalability and \
+                flexibility for decentralized applications. It separates consensus and data \
+                availability from execution, allowing developers to build custom blockchains \
+                without the overhead of a full stack."
+            },
+            CryptoName::Chainlink => {
+                "Chainlink is a decentralized oracle network launched in 2017, designed to \
+                connect smart contracts with real-world data. It enables blockchains to securely \
+                interact with external data sources, APIs, and payment systems."
             },
             CryptoName::Dogecoin => {
                 "Dogecoin is a cryptocurrency launched in 2013 as a lighthearted meme-based \
@@ -101,10 +130,20 @@ impl Instrument for Crypto {
                 the Pepe the Frog meme. It is often used for community-driven projects and \
                 speculative trading."
             },
+            CryptoName::Polkadot => {
+                "Polkadot is a multi-chain blockchain platform launched in 2020 by Dr. Gavin Wood, \
+                co-founder of Ethereum. It enables different blockchains to interoperate and share \
+                information, allowing for a more connected and scalable ecosystem."
+            },
             CryptoName::Solana => {
                 "Solana is a high-performance blockchain platform launched in 2020, known for \
                 its fast transaction speeds and low fees. It uses a unique consensus mechanism \
                 called Proof of History (PoH) to achieve high throughput."
+            },
+            CryptoName::Stacks => {
+                "Stacks is a layer-1 blockchain solution that brings smart contracts and \
+                decentralized applications to Bitcoin. It enables developers to build on Bitcoin's \
+                security while leveraging its existing infrastructure."
             },
             CryptoName::Toncoin => {
                 "Toncoin is the native cryptocurrency of the TON blockchain, originally \
@@ -144,11 +183,25 @@ impl Instrument for Crypto {
 pub fn start_cryptos() -> Vec<Crypto> {
     vec![
         Crypto {
+            name: CryptoName::Avalanche,
+            base_price: 16.5,
+            prices: DQueue::from([16.5]),
+            volatility: 6.2,
+            market_cap: 5.7e9,
+        },
+        Crypto {
             name: CryptoName::Bitcoin,
             base_price: 100000.,
             prices: DQueue::from([100000.]),
             volatility: 4.1,
             market_cap: 1.9e12,
+        },
+        Crypto {
+            name: CryptoName::BNB,
+            base_price: 220.,
+            prices: DQueue::from([220.]),
+            volatility: 6.5,
+            market_cap: 34.2e9,
         },
         Crypto {
             name: CryptoName::Cardano,
@@ -158,11 +211,25 @@ pub fn start_cryptos() -> Vec<Crypto> {
             market_cap: 19.7e9,
         },
         Crypto {
+            name: CryptoName::Celestia,
+            base_price: 2.5,
+            prices: DQueue::from([2.5]),
+            volatility: 8.1,
+            market_cap: 1.2e9,
+        },
+        Crypto {
+            name: CryptoName::Chainlink,
+            base_price: 7.5,
+            prices: DQueue::from([7.5]),
+            volatility: 6.9,
+            market_cap: 3.8e9,
+        },
+        Crypto {
             name: CryptoName::Dogecoin,
             base_price: 0.18,
             prices: DQueue::from([0.18]),
             volatility: 7.8,
-            market_cap: 24.4e9,
+            market_cap: 4.4e9,
         },
         Crypto {
             name: CryptoName::Ethereum,
@@ -186,11 +253,25 @@ pub fn start_cryptos() -> Vec<Crypto> {
             market_cap: 4.7e9,
         },
         Crypto {
+            name: CryptoName::Polkadot,
+            base_price: 5.2,
+            prices: DQueue::from([5.2]),
+            volatility: 7.4,
+            market_cap: 4.3e9,
+        },
+        Crypto {
             name: CryptoName::Solana,
             base_price: 125.,
             prices: DQueue::from([125.]),
             volatility: 5.8,
             market_cap: 76.2e9,
+        },
+        Crypto {
+            name: CryptoName::Stacks,
+            base_price: 0.75,
+            prices: DQueue::from([0.75]),
+            volatility: 10.3,
+            market_cap: 1.1e9,
         },
         Crypto {
             name: CryptoName::Toncoin,
