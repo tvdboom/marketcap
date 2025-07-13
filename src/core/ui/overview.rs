@@ -433,7 +433,7 @@ pub fn instrument_table(
                                 });
                             }
 
-                            if row.response().clicked() {
+                            if row.response().clicked() && instrument.current() > 0. {
                                 state.modal = Some(owned.kind.clone());
                             }
                         });

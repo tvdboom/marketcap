@@ -1,4 +1,4 @@
-use crate::core::constants::{CURRENCY, DATE_FORMAT};
+use crate::core::constants::{CURRENCY, DATE_FORMAT, VICTORY_AMOUNT};
 use crate::core::derivatives::{DerivativeAction, DerivativeKind, OptionKind};
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
@@ -9,13 +9,13 @@ use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::OrderEv;
 use crate::core::player::Player;
 use crate::core::research::TechName;
+use crate::core::states::GameState;
 use crate::core::ui::state::UiState;
 use crate::utils::{EnhFloat, NameFromEnum};
 use bevy::prelude::*;
 use chrono::{Datelike, Duration};
 use rand::{Rng, rng};
 use std::collections::HashMap;
-use crate::core::states::GameState;
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
@@ -28,8 +28,9 @@ pub fn time_pass(
 ) {
     economy.clock.tick(time.delta());
 
-    if player.aum(&economy) < 0. {
-        next_game_state.set(GameState::GameOver);
+    let aum = player.aum(&economy);
+    if aum <= 0. || (aum >= VICTORY_AMOUNT && !player.has_continued) {
+        next_game_state.set(GameState::GameEnd);
         return;
     }
 
@@ -43,7 +44,8 @@ pub fn time_pass(
         player.cash.amount -= player.research.costs();
 
         let aum = player.aum(&economy);
-        let (_, inflation, interest) = economy.bump(aum, &mut state, &player, &mut message);
+        let (_, inflation, interest) =
+            economy.bump(aum, &mut state, &mut player, &mut order_ev, &mut message);
 
         player.cash.bump(interest);
         player.influence.bump(aum);

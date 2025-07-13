@@ -2,7 +2,8 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
-use bevy_egui::egui::{Id, Modal, Separator, Slider};
+use bevy_egui::egui::load::SizedTexture;
+use bevy_egui::egui::{Align, Id, Layout, Modal, Separator, Slider};
 use bevy_kira_audio::AudioControl;
 use bevy_kira_audio::prelude::Audio;
 use strum::IntoEnumIterator;
@@ -11,6 +12,8 @@ use crate::core::constants::{GAME_SPEED_STEP, MAX_GAME_SPEED};
 use crate::core::game_settings::{AudioSetting, GameSettings, Theme};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::persistence::SaveGameEv;
+use crate::core::player::Player;
+use crate::core::resources::ImageIds;
 use crate::core::states::{AppState, GameState};
 use crate::core::ui::state::UiState;
 use crate::core::ui::utils::CustomUi;
@@ -149,21 +152,48 @@ pub fn in_game_menu(
 }
 
 pub fn end_game_menu(
+    mut commands: Commands,
     mut contexts: EguiContexts,
-    mut game_settings: ResMut<GameSettings>,
-    mut economy: ResMut<GlobalEconomy>,
-    game_state: Res<State<GameState>>,
-    mut save_game_ev: EventWriter<SaveGameEv>,
-    mut next_app_state: ResMut<NextState<AppState>>,
+    economy: Res<GlobalEconomy>,
+    mut player: ResMut<Player>,
     mut next_game_state: ResMut<NextState<GameState>>,
-    audio: Res<Audio>,
+    mut next_app_state: ResMut<NextState<AppState>>,
+    images: Res<ImageIds>,
     window: Single<&Window>,
 ) {
-    Modal::new(Id::new("game_over")).show(contexts.ctx_mut(), |ui| {
-        ui.set_width((window.width() * 0.25).min(450.));
+    let defeat = player.aum(&economy) <= 0.;
+    Modal::new(Id::new("end_game")).show(contexts.ctx_mut(), |ui| {
+        ui.set_width((window.width() * 0.7).max(450.));
+        ui.set_height((window.height() * 0.7).max(900.));
 
-        ui.add_space(window.height() * 0.02);
+        ui.add(bevy_egui::egui::Image::new(SizedTexture::new(
+            images.get(if defeat { "game-over" } else { "victory" }),
+            [ui.available_width(), ui.available_height()],
+        )));
 
+        ui.horizontal(|ui| {
+            if !defeat {
+                if ui.add_modal_button("Continue", &window).clicked() {
+                    player.has_continued = true;
+                    next_game_state.set(GameState::Running);
+                }
+            }
+
+            ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                ui.horizontal(|ui| {
+                    if ui.add_modal_button("Exit to main menu", &window).clicked() {
+                        next_game_state.set(GameState::Running);
+                        next_app_state.set(AppState::MainMenu);
+                    }
+
+                    if ui.add_modal_button("New game", &window).clicked() {
+                        commands.insert_resource(GlobalEconomy::default());
+                        commands.insert_resource(Player::default());
+                        commands.insert_resource(UiState::default());
+                    }
+                });
+            });
+        });
     });
 }
 
@@ -185,7 +215,7 @@ pub fn toggle_menu_keyboard(
             },
             GameState::InGameMenu => next_game_state.set(GameState::Running),
             GameState::Settings => next_game_state.set(GameState::InGameMenu),
-            GameState::GameOver => {
+            GameState::GameEnd => {
                 next_game_state.set(GameState::Running);
                 next_app_state.set(AppState::MainMenu);
             },

@@ -55,6 +55,9 @@ pub struct Player {
     pub instruments: Vec<OwnedInstrument>,
     pub favourites: HashMap<u8, InstrumentKind>,
     pub research: Research,
+
+    /// Whether the player has continued the game after winning
+    pub has_continued: bool,
 }
 
 impl Player {

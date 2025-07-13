@@ -97,7 +97,7 @@ impl Plugin for GamePlugin {
                     left_panel,
                     central_panel,
                     in_game_menu,
-                    end_game_menu.run_if(in_state(GameState::GameOver)),
+                    end_game_menu.run_if(in_state(GameState::GameEnd)),
                     trade_modal,
                 )
                     .chain()

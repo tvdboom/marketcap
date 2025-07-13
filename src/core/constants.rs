@@ -12,6 +12,7 @@ pub const DEFAULT_SPEED: f32 = 1.;
 pub const GAME_SPEED_STEP: f32 = 0.5;
 pub const MAX_GAME_SPEED: f32 = 10.;
 pub const MESSAGE_DURATION: u64 = 4; // Seconds that messages are shown
+pub const VICTORY_AMOUNT: f32 = 1e12;
 pub const START_DATE: NaiveDate = NaiveDate::from_ymd_opt(2024, 12, 31).unwrap();
 
 /// Colors

@@ -13,11 +13,14 @@ use crate::core::instruments::crypto::{Crypto, start_cryptos};
 use crate::core::instruments::forex::{Currency, start_currencies};
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::instruments::stocks::{Stock, start_stocks};
+use crate::core::loans::Term;
 use crate::core::messages::{MessageEv, MessageLevel};
+use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
 use crate::core::player::Player;
 use crate::core::research::TechName;
 use crate::core::sectors::{Sector, start_sectors};
 use crate::core::ui::state::UiState;
+use crate::utils::create_guid;
 
 #[derive(Resource, Clone, Serialize, Deserialize)]
 pub struct GlobalEconomy {
@@ -64,7 +67,8 @@ impl GlobalEconomy {
         &mut self,
         aum: f32,
         state: &mut UiState,
-        player: &Player,
+        player: &mut Player,
+        order_ev: &mut EventWriter<OrderEv>,
         message: &mut EventWriter<MessageEv>,
     ) -> (f32, f32, f32) {
         let economy = self.economy.bump(aum);
@@ -81,16 +85,40 @@ impl GlobalEconomy {
 
         for crypto in &mut self.cryptos {
             let price = crypto.current();
+
             crypto.bump(inflation);
+
             if price != 0. && crypto.current() == 0. {
-                if state.modal == Some(InstrumentKind::Crypto(crypto.name)) {
+                let instrument = InstrumentKind::Crypto(crypto.name);
+                if state.modal == Some(instrument) {
                     state.modal = None;
                 }
 
                 if player.has_tech(&TechName::Cryptocurrencies) {
-                    // Short selling this crypto returns maximum profit
-                    if player.get_owned(&InstrumentKind::Crypto(crypto.name)) < 0 {
-                        player.cash.amount += player.get_owned(&InstrumentKind::Crypto(crypto.name)) * price;
+                    // Close short selling position, returning maximum profit
+                    let amount = player.get_owned(&instrument);
+                    if amount < 0 {
+                        let id = create_guid();
+                        player.orders.push(Order {
+                            id: id.clone(),
+                            created: self.date,
+                            instrument,
+                            command: Command::Buy,
+                            kind: OrderKind::MarketOrder,
+                            amount,
+                            price: 0.,
+                            interest: 0.,
+                            cds: false,
+                            term: Term::default(),
+                            threshold: 0.,
+                            bound: 0.,
+                            lower_bound: false,
+                            loan: None,
+                            processed: self.date,
+                            status: OrderStatus::Executed,
+                        });
+
+                        order_ev.write(OrderEv { id, price: 0. });
                     }
 
                     message.write(MessageEv {

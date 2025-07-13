@@ -57,7 +57,7 @@ pub fn toggle_pause_keyboard(
 
             // Hack to control cash
             if keyboard.just_pressed(KeyCode::KeyC) {
-                player.cash.amount += 1000.;
+                player.cash.amount *= 1000.;
             } else if keyboard.just_pressed(KeyCode::KeyX) {
                 player.cash.amount -= 1000.;
             }
