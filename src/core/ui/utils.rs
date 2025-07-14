@@ -1,10 +1,3 @@
-use bevy::prelude::Window;
-use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::*;
-use chrono::{Datelike, Duration};
-use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
-use itertools::Itertools;
-use strum::IntoEnumIterator;
 use crate::core::constants::{
     CURRENCY, CUSTOM_GREEN, DATE_FORMAT, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH,
 };
@@ -17,6 +10,13 @@ use crate::core::research::{TechName, Technology};
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderByState, OrderOptions, PlotRange};
 use crate::utils::{DQueue, EnhFloat, NameFromEnum, create_guid, get_ratio};
+use bevy::prelude::Window;
+use bevy_egui::egui::load::SizedTexture;
+use bevy_egui::egui::*;
+use chrono::{Datelike, Duration};
+use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
+use itertools::Itertools;
+use strum::IntoEnumIterator;
 
 /// Custom IOS style toggle for UI
 pub fn toggle(on: &mut bool) -> impl Widget + '_ {
@@ -280,7 +280,9 @@ impl CustomUi for Ui {
                             .map(|(i, _)| {
                                 [
                                     (start + i) as f64,
-                                    if order.created <= init_date + Duration::days((start + i) as i64) {
+                                    if order.created
+                                        <= init_date + Duration::days((start + i) as i64)
+                                    {
                                         order.limit_price() as f64
                                     } else {
                                         f64::NAN

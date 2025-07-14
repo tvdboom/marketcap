@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 
 use bevy::prelude::*;
-use chrono::{NaiveDate, Datelike};
+use chrono::{Datelike, NaiveDate};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;

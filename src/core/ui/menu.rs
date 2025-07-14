@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::{
-    Align, CentralPanel, Color32, Frame, Id, Layout, Modal, Separator, Slider, Ui,
+    Align, CentralPanel, Color32, Frame, Id, Layout, Modal, Separator, Slider, Ui, Image
 };
 use bevy_kira_audio::AudioControl;
 use bevy_kira_audio::prelude::Audio;
@@ -111,11 +111,10 @@ pub fn main_menu(
     audio: Res<Audio>,
     window: Single<&Window>,
 ) {
-    CentralPanel::default().show(contexts.ctx_mut(), |ui| {
-        ui.add(bevy_egui::egui::Image::new(SizedTexture::new(
-            images.get("cover"),
-            [window.width(), window.height()],
-        )))
+    CentralPanel::default()
+        .frame(Frame::default().inner_margin(0.))
+        .show(contexts.ctx_mut(), |ui| {
+        ui.add(Image::new(SizedTexture::new(images.get("cover"), ui.available_size())));
     });
 
     Modal::new(Id::new("main_menu"))
@@ -259,7 +258,7 @@ pub fn end_game_menu(
         ui.set_width((window.width() * 0.75).max(WIDTH * 0.75));
         ui.set_height((window.height() * 0.7).max(HEIGHT * 0.7));
 
-        ui.add(bevy_egui::egui::Image::new(SizedTexture::new(
+        ui.add(Image::new(SizedTexture::new(
             images.get(if defeat { "game-over" } else { "victory" }),
             [ui.available_width(), ui.available_height()],
         )));
