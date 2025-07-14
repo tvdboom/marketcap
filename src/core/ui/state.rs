@@ -1,6 +1,7 @@
 use std::cmp::Ordering;
 
 use bevy::prelude::*;
+use chrono::{NaiveDate, Datelike};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
@@ -283,10 +284,57 @@ impl OrderOptions {
     }
 }
 
+#[derive(EnumIter, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub enum PlotRange {
+    OneMonth,
+    ThreeMonths,
+    #[default]
+    SixMonths,
+    NineMonths,
+    YTD,
+    Year,
+    Max,
+}
+
+impl PlotRange {
+    pub fn display(&self) -> &str {
+        match self {
+            PlotRange::OneMonth => "1M",
+            PlotRange::ThreeMonths => "3M",
+            PlotRange::SixMonths => "6M",
+            PlotRange::NineMonths => "9M",
+            PlotRange::YTD => "YTD",
+            PlotRange::Year => "1Y",
+            PlotRange::Max => "MAX",
+        }
+    }
+
+    pub fn days(&self, today: &NaiveDate) -> u32 {
+        match self {
+            PlotRange::OneMonth => 30,
+            PlotRange::ThreeMonths => 90,
+            PlotRange::SixMonths => 180,
+            PlotRange::NineMonths => 270,
+            PlotRange::YTD => {
+                let start = NaiveDate::from_ymd_opt(today.year(), 1, 1).unwrap();
+                (*today - start).num_days() as u32
+            },
+            PlotRange::Year => 365,
+            PlotRange::Max => u32::MAX,
+        }
+    }
+}
+
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct OrderByState {
     pub order: OrderOptions,
     pub descending: bool,
+}
+
+#[derive(Clone, Default, Serialize, Deserialize)]
+pub struct InstrumentState {
+    pub order: OrderByState,
+    pub plot_range: PlotRange,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -417,11 +465,11 @@ pub struct ModalInfo {
 pub struct UiState {
     pub tab: Tab,
     pub overview: OverviewState,
-    pub stocks: OrderByState,
+    pub stocks: InstrumentState,
     pub bonds: BondState,
-    pub forex: OrderByState,
-    pub commodities: OrderByState,
-    pub cryptos: OrderByState,
+    pub forex: InstrumentState,
+    pub commodities: InstrumentState,
+    pub cryptos: InstrumentState,
     pub credit: CreditState,
     pub modal: Option<InstrumentKind>,
     pub modal_info: ModalInfo,

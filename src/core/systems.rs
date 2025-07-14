@@ -1,3 +1,9 @@
+use std::collections::HashMap;
+
+use bevy::prelude::*;
+use chrono::{Datelike, Duration};
+use rand::{Rng, rng};
+
 use crate::core::constants::{CURRENCY, DATE_FORMAT, VICTORY_AMOUNT};
 use crate::core::derivatives::{DerivativeAction, DerivativeKind, OptionKind};
 use crate::core::factors::Factor;
@@ -12,10 +18,6 @@ use crate::core::research::TechName;
 use crate::core::states::GameState;
 use crate::core::ui::state::UiState;
 use crate::utils::{EnhFloat, NameFromEnum};
-use bevy::prelude::*;
-use chrono::{Datelike, Duration};
-use rand::{Rng, rng};
-use std::collections::HashMap;
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
@@ -48,15 +50,17 @@ pub fn time_pass(
             economy.bump(aum, &mut state, &mut player, &mut order_ev, &mut message);
 
         player.cash.bump(interest);
-        player.influence.bump(aum);
+
+        let has_tech = player.has_tech(&TechName::BackdoorPolitics);
+        player.influence.bump(aum, has_tech);
 
         // Increase storage costs and dividends with inflation
         for stock in &mut economy.stocks {
-            stock.dividend *= 1. + inflation / 100.0;
+            stock.dividend *= 1. + inflation / 100. / 365.;
         }
 
         for commodity in &mut economy.commodities {
-            commodity.storage_cost *= 1. + inflation / 100.0;
+            commodity.storage_cost *= 1. + inflation / 100. / 365.;
         }
 
         // Update bounds for trailing orders

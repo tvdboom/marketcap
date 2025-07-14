@@ -41,7 +41,7 @@ pub fn stock_panel(
                 OrderOptions::Volatility,
             ]
             .into(),
-            &mut state.stocks,
+            &mut state.stocks.order,
             window,
         );
 
@@ -51,8 +51,16 @@ pub fn stock_panel(
             .map(|c| c as &dyn Instrument)
             .collect::<Vec<_>>();
 
-        for inst in OrderOptions::sort_instrument(instruments, &state.stocks, economy, player) {
-            let response = ui.add_instrument(inst, economy, player, images, window);
+        for inst in OrderOptions::sort_instrument(instruments, &state.stocks.order, economy, player)
+        {
+            let response = ui.add_instrument(
+                inst,
+                economy,
+                player,
+                Some(&mut state.stocks.plot_range),
+                images,
+                window,
+            );
 
             if response.clicked() {
                 state.modal = Some(inst.kind());

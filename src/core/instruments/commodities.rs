@@ -131,7 +131,7 @@ impl Instrument for Commodity {
             CommodityName::Copper => {
                 "A versatile metal known for its high conductivity, durability and corrosion \
                 resistance. Copper is widely used in electrical wiring and construction. Its \
-                a volatile commodity that greatly influences multiple sectors like technology,\
+                a volatile commodity that greatly influences multiple sectors like technology, \
                 military and transportation."
             },
             CommodityName::Corn => {

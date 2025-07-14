@@ -41,7 +41,7 @@ pub fn commodities_panel(
                 OrderOptions::Volatility,
             ]
             .into(),
-            &mut state.commodities,
+            &mut state.commodities.order,
             window,
         );
 
@@ -51,9 +51,17 @@ pub fn commodities_panel(
             .map(|c| c as &dyn Instrument)
             .collect::<Vec<_>>();
 
-        for inst in OrderOptions::sort_instrument(instruments, &state.commodities, economy, player)
+        for inst in
+            OrderOptions::sort_instrument(instruments, &state.commodities.order, economy, player)
         {
-            let response = ui.add_instrument(inst, economy, player, images, window);
+            let response = ui.add_instrument(
+                inst,
+                economy,
+                player,
+                Some(&mut state.commodities.plot_range),
+                images,
+                window,
+            );
 
             if response.clicked() {
                 state.modal = Some(inst.kind());

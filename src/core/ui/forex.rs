@@ -39,7 +39,7 @@ pub fn forex_panel(
                 OrderOptions::Price,
             ]
             .into(),
-            &mut state.forex,
+            &mut state.forex.order,
             window,
         );
 
@@ -50,8 +50,16 @@ pub fn forex_panel(
             .map(|c| c as &dyn Instrument)
             .collect::<Vec<_>>();
 
-        for inst in OrderOptions::sort_instrument(instruments, &state.forex, economy, player) {
-            let response = ui.add_instrument(inst, economy, player, images, window);
+        for inst in OrderOptions::sort_instrument(instruments, &state.forex.order, economy, player)
+        {
+            let response = ui.add_instrument(
+                inst,
+                economy,
+                player,
+                Some(&mut state.forex.plot_range),
+                images,
+                window,
+            );
 
             if response.clicked() {
                 state.modal = Some(inst.kind());

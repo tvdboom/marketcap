@@ -47,7 +47,7 @@ pub fn toggle_pause_keyboard(
             next_game_state.set(GameState::Running);
         }
 
-        if keyboard.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftLeft]) {
+        if keyboard.any_pressed([KeyCode::ShiftLeft, KeyCode::ShiftRight]) {
             // Hack to control global economy
             if keyboard.just_pressed(KeyCode::ArrowUp) {
                 *economy.economy.values.back_mut().unwrap() += 10.0;
@@ -56,9 +56,9 @@ pub fn toggle_pause_keyboard(
             }
 
             // Hack to control cash
-            if keyboard.just_pressed(KeyCode::KeyC) {
+            if keyboard.just_pressed(KeyCode::KeyV) {
                 player.cash.amount *= 1000.;
-            } else if keyboard.just_pressed(KeyCode::KeyX) {
+            } else if keyboard.just_pressed(KeyCode::KeyC) {
                 player.cash.amount -= 1000.;
             }
 

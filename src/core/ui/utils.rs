@@ -4,8 +4,10 @@ use bevy_egui::egui::*;
 use chrono::{Datelike, Duration};
 use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
 use itertools::Itertools;
-
-use crate::core::constants::{CURRENCY, CUSTOM_GREEN, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH};
+use strum::IntoEnumIterator;
+use crate::core::constants::{
+    CURRENCY, CUSTOM_GREEN, DATE_FORMAT, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH,
+};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondIssuer;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
@@ -13,7 +15,7 @@ use crate::core::orders::{Command, Order};
 use crate::core::player::Player;
 use crate::core::research::{TechName, Technology};
 use crate::core::resources::ImageIds;
-use crate::core::ui::state::{OrderByState, OrderOptions};
+use crate::core::ui::state::{OrderByState, OrderOptions, PlotRange};
 use crate::utils::{DQueue, EnhFloat, NameFromEnum, create_guid, get_ratio};
 
 /// Custom IOS style toggle for UI
@@ -63,7 +65,7 @@ pub trait CustomUi {
         window: &Window,
     );
     fn add_technology(&mut self, research: &Technology) -> Response;
-    fn add_plot(&mut self, data: &DQueue<f32>, orders: Option<Vec<&Order>>);
+    fn add_plot(&mut self, data: &DQueue<f32>, range: &PlotRange, orders: Option<Vec<&Order>>);
     fn add_factor(
         &mut self,
         name: impl Into<RichText>,
@@ -79,6 +81,7 @@ pub trait CustomUi {
         instrument: &dyn Instrument,
         economy: &GlobalEconomy,
         player: &Player,
+        state: Option<&mut PlotRange>,
         images: &ImageIds,
         window: &Window,
     ) -> Response;
@@ -215,10 +218,11 @@ impl CustomUi for Ui {
         .on_hover_cursor(CursorIcon::PointingHand)
     }
 
-    fn add_plot(&mut self, data: &DQueue<f32>, orders: Option<Vec<&Order>>) {
-        let date = GlobalEconomy::default().date;
+    fn add_plot(&mut self, data: &DQueue<f32>, range: &PlotRange, orders: Option<Vec<&Order>>) {
+        let init_date = GlobalEconomy::default().date;
+        let today = init_date + Duration::days(data.len() as i64);
 
-        let start = data.len().saturating_sub(190); // 6 months approx.
+        let start = data.len().saturating_sub(range.days(&today) as usize);
         let points: PlotPoints = data
             .iter()
             .skip(start)
@@ -233,7 +237,7 @@ impl CustomUi for Ui {
             .x_grid_spacer(|grid| {
                 (grid.bounds.0 as i64..grid.bounds.1 as i64)
                     .map(|x| {
-                        let d = date + Duration::days(x);
+                        let d = init_date + Duration::days(x);
                         GridMark {
                             value: x as f64,
                             step_size: if d.day() == 1 { 30. } else { 0. },
@@ -242,12 +246,24 @@ impl CustomUi for Ui {
                     .collect()
             })
             .custom_x_axes(vec![AxisHints::new_x().formatter(|mark, _| {
-                let d = date + Duration::days(mark.value as i64);
+                let d = init_date + Duration::days(mark.value as i64);
                 format!("{:02}-{}", d.month(), d.year())
             })])
             .custom_y_axes(vec![
                 AxisHints::new_x().formatter(|mark, _| (mark.value as f32).format()),
             ])
+            .label_formatter(|name, point| {
+                if !name.is_empty() {
+                    let d = init_date + Duration::days(point.x as i64);
+                    format!(
+                        "price: {}{CURRENCY}\ndate: {}",
+                        (point.y as f32).clean(),
+                        d.format(DATE_FORMAT)
+                    )
+                } else {
+                    "".to_owned()
+                }
+            })
             .show(self, |plot_ui| {
                 plot_ui.line(
                     Line::new("price", points)
@@ -264,7 +280,7 @@ impl CustomUi for Ui {
                             .map(|(i, _)| {
                                 [
                                     (start + i) as f64,
-                                    if order.created <= date + Duration::days((start + i) as i64) {
+                                    if order.created <= init_date + Duration::days((start + i) as i64) {
                                         order.limit_price() as f64
                                     } else {
                                         f64::NAN
@@ -313,7 +329,7 @@ impl CustomUi for Ui {
             ui.label(description);
             if let Some(values) = plot {
                 ui.add_space(window.height() * 0.01);
-                ui.add_plot(values, None);
+                ui.add_plot(values, &PlotRange::default(), None);
             }
         })
     }
@@ -323,6 +339,7 @@ impl CustomUi for Ui {
         instrument: &dyn Instrument,
         economy: &GlobalEconomy,
         player: &Player,
+        state: Option<&mut PlotRange>,
         images: &ImageIds,
         window: &Window,
     ) -> Response {
@@ -504,10 +521,22 @@ impl CustomUi for Ui {
                         });
                     });
 
-                    if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
+                    if let Some(state) = state {
                         ui.add_space(window.width() * 0.01);
+
                         ui.vertical(|ui| {
-                            ui.add_plot(instrument.all(), Some(player.pending_orders().into_iter().filter(|o| o.instrument == instrument.kind()).collect()));
+                            let orders = player.pending_orders().into_iter().filter(|o| o.instrument == instrument.kind()).collect();
+                            ui.add_plot(instrument.all(), state, Some(orders));
+
+                            ui.horizontal(|ui| {
+                                for tab in PlotRange::iter() {
+                                    ui.selectable_value(
+                                        state,
+                                        tab.clone(),
+                                        RichText::new(tab.display()).small(),
+                                    );
+                                }
+                            });
                         });
                     }
                 })

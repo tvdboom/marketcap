@@ -53,9 +53,14 @@ impl Crypto {
             self.base_price *= 1. + inflation / 100. / 365.;
 
             let volatility = self.base_price * self.volatility / 100.;
-            (self.current() * (1. + inflation / 100. / 365.)
-                + rng().random_range(-volatility..volatility))
-            .max(0.)
+            let mut new_price = self.current() * (1. + inflation / 100. / 365.)
+                + rng().random_range(-volatility..volatility);
+
+            // Adjust price to tend slightly towards the base price
+            let deviation = (new_price - self.base_price) / self.base_price;
+            new_price *= 1. + -deviation * deviation.abs() / 15.;
+
+            new_price.max(0.)
         };
 
         self.prices.push(new_price);

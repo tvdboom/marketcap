@@ -157,7 +157,7 @@ pub struct DQueue<T> {
 }
 
 impl<T> DQueue<T> {
-    const CAPACITY: usize = 365; // Default capacity of 1 year
+    const CAPACITY: usize = 365 * 2; // Default capacity of 2 years
 
     pub fn from<I: IntoIterator<Item = T>>(iter: I) -> Self {
         Self {

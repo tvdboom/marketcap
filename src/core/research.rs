@@ -47,6 +47,7 @@ pub enum TechName {
 
     // Strategy
     ImprovedResearch,
+    BackdoorPolitics,
 }
 
 impl TechName {
@@ -131,6 +132,7 @@ impl TechName {
                 "The credit score decreases half as fast when debt obligations are not met in time."
             },
             TechName::ImprovedResearch => "Increases the maximum research capacity by 100.",
+            TechName::BackdoorPolitics => "Increases the amount of influence gained.",
         }
     }
 }
@@ -337,6 +339,13 @@ impl Default for Research {
                     progress: 0.,
                     researching: false,
                     dependencies: None,
+                },
+                Technology {
+                    name: TechName::BackdoorPolitics,
+                    field: ResearchField::Strategy,
+                    progress: 0.,
+                    researching: false,
+                    dependencies: Some(vec![TechName::ImprovedResearch]),
                 },
             ]),
         }

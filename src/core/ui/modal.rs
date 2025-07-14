@@ -26,7 +26,7 @@ use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
 use crate::core::player::Player;
 use crate::core::research::TechName;
 use crate::core::resources::ImageIds;
-use crate::core::ui::state::{OverviewTab, Tab, UiState};
+use crate::core::ui::state::{OverviewTab, PlotRange, Tab, UiState};
 use crate::core::ui::utils::{CustomUi, toggle};
 use crate::utils::{EnhFloat, NameFromEnum, create_guid};
 
@@ -197,7 +197,9 @@ pub fn trade_modal(
 
                     if !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
                         ui.add_space(window.height() * 0.01);
-                        ui.add_plot(instrument.all(), Some(player.pending_orders().into_iter().filter(|o| o.instrument == kind).collect()));
+                        
+                        let orders = player.pending_orders().into_iter().filter(|o| o.instrument == kind).collect();
+                        ui.add_plot(instrument.all(), &PlotRange::default(), Some(orders));
                     }
                 });
             });

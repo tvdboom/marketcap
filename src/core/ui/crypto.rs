@@ -41,7 +41,7 @@ pub fn crypto_panel(
                 OrderOptions::Volatility,
             ]
             .into(),
-            &mut state.cryptos,
+            &mut state.cryptos.order,
             window,
         );
 
@@ -49,18 +49,28 @@ pub fn crypto_panel(
             .cryptos
             .iter()
             .filter_map(|c| {
-                (c.current() > 0.
-                    && (c.market_cap > 5.0e9 || player.has_tech(&TechName::ObscureCoins)))
-                .then_some(c as &dyn Instrument)
+                (c.market_cap > 5.0e9 || player.has_tech(&TechName::ObscureCoins))
+                    .then_some(c as &dyn Instrument)
             })
             .collect::<Vec<_>>();
 
-        for inst in OrderOptions::sort_instrument(instruments, &state.cryptos, economy, player) {
-            let response = ui.add_instrument(inst, economy, player, images, window);
+        for inst in
+            OrderOptions::sort_instrument(instruments, &state.cryptos.order, economy, player)
+        {
+            ui.add_enabled_ui(inst.current() > 0., |ui| {
+                let response = ui.add_instrument(
+                    inst,
+                    economy,
+                    player,
+                    Some(&mut state.cryptos.plot_range),
+                    images,
+                    window,
+                );
 
-            if response.clicked() {
-                state.modal = Some(inst.kind());
-            }
+                if response.clicked() {
+                    state.modal = Some(inst.kind());
+                }
+            });
         }
     });
 }
