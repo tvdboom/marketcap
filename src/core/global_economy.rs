@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::constants::{DEFAULT_SPEED, START_DATE};
 use crate::core::countries::{Country, start_countries};
+use crate::core::events::EconomicEvent;
 use crate::core::factors::economy::Economy;
 use crate::core::factors::inflation::Inflation;
 use crate::core::factors::interest::Interest;
@@ -59,6 +60,9 @@ pub struct GlobalEconomy {
 
     /// Information about all cryptocurrencies
     pub cryptos: Vec<Crypto>,
+
+    /// Currently active events
+    pub events: Vec<EconomicEvent>,
 }
 
 impl GlobalEconomy {
@@ -224,6 +228,7 @@ impl Default for GlobalEconomy {
             commodities: start_commodities(),
             currencies: start_currencies(),
             cryptos: start_cryptos(),
+            events: Vec::new(),
         }
     }
 }

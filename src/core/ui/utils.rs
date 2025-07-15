@@ -13,7 +13,7 @@ use crate::utils::{DQueue, EnhFloat, NameFromEnum, create_guid, get_ratio};
 use bevy::prelude::Window;
 use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::*;
-use chrono::{Datelike, Duration};
+use chrono::{Datelike, Duration, NaiveDate};
 use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
 use itertools::Itertools;
 use strum::IntoEnumIterator;
@@ -65,7 +65,13 @@ pub trait CustomUi {
         window: &Window,
     );
     fn add_technology(&mut self, research: &Technology) -> Response;
-    fn add_plot(&mut self, data: &DQueue<f32>, range: &PlotRange, orders: Option<Vec<&Order>>);
+    fn add_plot(
+        &mut self,
+        data: &DQueue<f32>,
+        today: NaiveDate,
+        range: &PlotRange,
+        orders: Option<Vec<&Order>>,
+    );
     fn add_factor(
         &mut self,
         name: impl Into<RichText>,
@@ -74,6 +80,7 @@ pub trait CustomUi {
         texture_id: TextureId,
         description: String,
         plot: Option<&DQueue<f32>>,
+        today: NaiveDate,
         window: &Window,
     ) -> Response;
     fn add_instrument(
@@ -218,16 +225,22 @@ impl CustomUi for Ui {
         .on_hover_cursor(CursorIcon::PointingHand)
     }
 
-    fn add_plot(&mut self, data: &DQueue<f32>, range: &PlotRange, orders: Option<Vec<&Order>>) {
-        let init_date = GlobalEconomy::default().date;
-        let today = init_date + Duration::days(data.len() as i64);
+    fn add_plot(
+        &mut self,
+        data: &DQueue<f32>,
+        today: NaiveDate,
+        range: &PlotRange,
+        orders: Option<Vec<&Order>>,
+    ) {
+        let days = (range.days(&today) as usize).min(data.len());
+        let start = data.len() - days;
+        let init_date = today - Duration::days(days as i64);
 
-        let start = data.len().saturating_sub(range.days(&today) as usize);
         let points: PlotPoints = data
             .iter()
             .skip(start)
             .enumerate()
-            .map(|(i, &v)| [(start + i) as f64, v as f64])
+            .map(|(i, &v)| [i as f64, v as f64])
             .collect();
 
         Plot::new(create_guid())
@@ -240,7 +253,15 @@ impl CustomUi for Ui {
                         let d = init_date + Duration::days(x);
                         GridMark {
                             value: x as f64,
-                            step_size: if d.day() == 1 { 30. } else { 0. },
+                            step_size: if d.day() == 1
+                                && (days <= 180
+                                    || (days > 180 && days <= 365 && d.month() % 2 == 0)
+                                    || (days > 365 && d.month() % 3 == 0))
+                            {
+                                300.
+                            } else {
+                                0.
+                            },
                         }
                     })
                     .collect()
@@ -279,10 +300,8 @@ impl CustomUi for Ui {
                             .enumerate()
                             .map(|(i, _)| {
                                 [
-                                    (start + i) as f64,
-                                    if order.created
-                                        <= init_date + Duration::days((start + i) as i64)
-                                    {
+                                    i as f64,
+                                    if order.created <= init_date + Duration::days(i as i64) {
                                         order.limit_price() as f64
                                     } else {
                                         f64::NAN
@@ -313,6 +332,7 @@ impl CustomUi for Ui {
         texture_id: TextureId,
         description: String,
         plot: Option<&DQueue<f32>>,
+        today: NaiveDate,
         window: &Window,
     ) -> Response {
         self.horizontal_centered(|ui| {
@@ -331,7 +351,7 @@ impl CustomUi for Ui {
             ui.label(description);
             if let Some(values) = plot {
                 ui.add_space(window.height() * 0.01);
-                ui.add_plot(values, &PlotRange::default(), None);
+                ui.add_plot(values, today, &PlotRange::default(), None);
             }
         })
     }
@@ -528,7 +548,7 @@ impl CustomUi for Ui {
 
                         ui.vertical(|ui| {
                             let orders = player.pending_orders().into_iter().filter(|o| o.instrument == instrument.kind()).collect();
-                            ui.add_plot(instrument.all(), state, Some(orders));
+                            ui.add_plot(instrument.all(), economy.date, state, Some(orders));
 
                             ui.horizontal(|ui| {
                                 for tab in PlotRange::iter() {
@@ -536,7 +556,7 @@ impl CustomUi for Ui {
                                         state,
                                         tab.clone(),
                                         RichText::new(tab.display()).small(),
-                                    );
+                                    ).on_hover_text(tab.description());
                                 }
                             });
                         });

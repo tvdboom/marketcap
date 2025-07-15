@@ -3,6 +3,7 @@ mod audio;
 pub mod constants;
 mod countries;
 mod derivatives;
+mod events;
 pub mod factors;
 mod game_settings;
 mod global_economy;
@@ -33,6 +34,7 @@ use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::{AppState, GameState};
 use crate::core::systems::time_pass;
+use crate::core::ui::events::event_modal;
 use crate::core::ui::menu::{
     end_game_menu, in_game_menu, in_game_menu_keyboard, main_menu, main_menu_keyboard,
 };
@@ -103,6 +105,7 @@ impl Plugin for GamePlugin {
                     top_panel,
                     left_panel,
                     central_panel,
+                    event_modal,
                     in_game_menu,
                     end_game_menu.run_if(in_state(GameState::GameEnd)),
                     trade_modal,

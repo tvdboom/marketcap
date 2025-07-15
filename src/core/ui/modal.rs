@@ -199,7 +199,7 @@ pub fn trade_modal(
                         ui.add_space(window.height() * 0.01);
                         
                         let orders = player.pending_orders().into_iter().filter(|o| o.instrument == kind).collect();
-                        ui.add_plot(instrument.all(), &PlotRange::default(), Some(orders));
+                        ui.add_plot(instrument.all(), economy.date, &PlotRange::default(), Some(orders));
                     }
                 });
             });

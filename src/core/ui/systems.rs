@@ -168,6 +168,7 @@ pub fn top_panel(
                         player.aum(&economy) as i32,
                     ),
                     None,
+                    economy.date,
                     &window,
                 );
 
@@ -184,6 +185,7 @@ pub fn top_panel(
                     images.get(player.cash.image()),
                     player.cash.description(),
                     None,
+                    economy.date,
                     &window,
                 );
 
@@ -224,6 +226,7 @@ pub fn top_panel(
                         player.netflow(&economy).signed(),
                     ),
                     None,
+                    economy.date,
                     &window,
                 );
 
@@ -240,6 +243,7 @@ pub fn top_panel(
                     images.get(player.credit_score.image()),
                     player.credit_score.description(),
                     None,
+                    economy.date,
                     &window,
                 );
 
@@ -255,6 +259,7 @@ pub fn top_panel(
                     images.get(player.influence.image()),
                     player.influence.description(),
                     None,
+                    economy.date,
                     &window,
                 );
 
@@ -267,6 +272,7 @@ pub fn top_panel(
                     images.get(economy.economy.image()),
                     economy.economy.description(),
                     Some(&economy.economy.values),
+                    economy.date,
                     &window,
                 );
 
@@ -279,6 +285,7 @@ pub fn top_panel(
                     images.get(economy.inflation.image()),
                     economy.inflation.description(),
                     Some(&economy.inflation.0),
+                    economy.date,
                     &window,
                 );
 
@@ -291,6 +298,7 @@ pub fn top_panel(
                     images.get(economy.interest.image()),
                     economy.interest.description(),
                     Some(&economy.interest.rate),
+                    economy.date,
                     &window,
                 );
 
@@ -310,6 +318,7 @@ pub fn top_panel(
                     Use the space key to pause/unpause the time."
                         .to_string(),
                     None,
+                    economy.date,
                     &window,
                 );
             });

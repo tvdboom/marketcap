@@ -3,9 +3,7 @@ use std::time::Duration;
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::{
-    Align, CentralPanel, Color32, Frame, Id, Layout, Modal, Separator, Slider, Ui, Image
-};
+use bevy_egui::egui::{Align, CentralPanel, Color32, Frame, Id, Image, Layout, Modal, RichText, Separator, Slider, Ui, UiBuilder};
 use bevy_kira_audio::AudioControl;
 use bevy_kira_audio::prelude::Audio;
 use strum::IntoEnumIterator;
@@ -19,6 +17,7 @@ use crate::core::resources::ImageIds;
 use crate::core::states::{AppState, GameState};
 use crate::core::ui::state::UiState;
 use crate::core::ui::utils::CustomUi;
+use crate::TITLE;
 use crate::utils::NameFromEnum;
 
 fn load_settings(ui: &mut Ui, game_settings: &mut GameSettings, window: &Window) {
@@ -114,8 +113,18 @@ pub fn main_menu(
     CentralPanel::default()
         .frame(Frame::default().inner_margin(0.))
         .show(contexts.ctx_mut(), |ui| {
-        ui.add(Image::new(SizedTexture::new(images.get("cover"), ui.available_size())));
-    });
+            let response = ui.add(Image::new(SizedTexture::new(
+                images.get("cover"),
+                ui.available_size(),
+            )));
+
+            ui.allocate_new_ui(UiBuilder::new().max_rect(response.rect), |ui| {
+                ui.add_space(window.height() * 0.02);
+                ui.vertical_centered(|ui| {
+                    ui.label(RichText::new(TITLE).size(window.width() * 0.1));
+                });
+            });
+        });
 
     Modal::new(Id::new("main_menu"))
         .backdrop_color(Color32::TRANSPARENT)
@@ -254,40 +263,52 @@ pub fn end_game_menu(
     window: Single<&Window>,
 ) {
     let defeat = player.aum(&economy) <= 0.;
-    Modal::new(Id::new("end_game")).show(contexts.ctx_mut(), |ui| {
-        ui.set_width((window.width() * 0.75).max(WIDTH * 0.75));
-        ui.set_height((window.height() * 0.7).max(HEIGHT * 0.7));
+    Modal::new(Id::new("end_game"))
+        .frame(Frame::default().inner_margin(0.))
+        .show(contexts.ctx_mut(), |ui| {
+            ui.set_width((window.width() * 0.75).max(WIDTH * 0.75));
+            ui.set_height((window.height() * 0.7).max(HEIGHT * 0.7));
 
-        ui.add(Image::new(SizedTexture::new(
-            images.get(if defeat { "game-over" } else { "victory" }),
-            [ui.available_width(), ui.available_height()],
-        )));
+            let response = ui.add(Image::new(SizedTexture::new(
+                images.get(if defeat { "game-over" } else { "victory" }),
+                ui.available_size(),
+            )));
 
-        ui.horizontal(|ui| {
-            if !defeat {
-                if ui.add_modal_button("Continue", &window).clicked() {
-                    player.has_continued = true;
-                    next_game_state.set(GameState::Running);
-                }
-            }
+            ui.allocate_new_ui(UiBuilder::new().max_rect(response.rect), |ui| {
+                ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
+                    ui.add_space(window.height() * 0.05);
 
-            ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
-                ui.horizontal(|ui| {
-                    if ui.add_modal_button("Exit to main menu", &window).clicked() {
-                        next_game_state.set(GameState::Running);
-                        next_app_state.set(AppState::MainMenu);
-                    }
+                    ui.horizontal(|ui| {
+                        if !defeat {
+                            ui.add_space(window.width() * 0.02);
 
-                    if ui.add_modal_button("New game", &window).clicked() {
-                        commands.insert_resource(GlobalEconomy::default());
-                        commands.insert_resource(Player::default());
-                        commands.insert_resource(UiState::default());
-                        next_game_state.set(GameState::Running);
-                    }
+                            if ui.add_modal_button("Continue", &window).clicked() {
+                                player.has_continued = true;
+                                next_game_state.set(GameState::Running);
+                            }
+                        }
+
+                        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                            ui.horizontal(|ui| {
+                                ui.add_space(window.width() * 0.02);
+
+                                if ui.add_modal_button("Exit to main menu", &window).clicked() {
+                                    next_game_state.set(GameState::Running);
+                                    next_app_state.set(AppState::MainMenu);
+                                }
+
+                                if ui.add_modal_button("New game", &window).clicked() {
+                                    commands.insert_resource(GlobalEconomy::default());
+                                    commands.insert_resource(Player::default());
+                                    commands.insert_resource(UiState::default());
+                                    next_game_state.set(GameState::Running);
+                                }
+                            });
+                        });
+                    });
                 });
             });
         });
-    });
 }
 
 pub fn main_menu_keyboard(

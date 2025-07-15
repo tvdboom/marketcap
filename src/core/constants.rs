@@ -27,5 +27,6 @@ pub const CURRENCY: CurrencyName = CurrencyName::EUR; // Default currency for th
 pub const LINE_WIDTH: f32 = 2.5;
 pub const LINE_COLOR: Color32 = Color32::LIGHT_BLUE;
 
-/// Credit
+/// Game
+pub const DAYS_PER_EVENT: f32 = 30.; // Average number of days between events
 pub const LOAN_STEP: u32 = 1_000;

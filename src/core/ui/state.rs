@@ -7,13 +7,14 @@ use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
 use crate::core::derivatives::{Derivative, DerivativeTerm};
+use crate::core::events::EventName;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondKind;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::loans::{LoanKind, LoanProvider, Term, TermLoan};
 use crate::core::orders::{Order, OrderKind};
 use crate::core::player::{OwnedInstrument, Player};
-use crate::utils::NameFromEnum;
+use crate::utils::{DQueue, NameFromEnum};
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub enum Tab {
@@ -292,7 +293,7 @@ pub enum PlotRange {
     SixMonths,
     NineMonths,
     YTD,
-    Year,
+    OneYear,
     Max,
 }
 
@@ -304,8 +305,20 @@ impl PlotRange {
             PlotRange::SixMonths => "6M",
             PlotRange::NineMonths => "9M",
             PlotRange::YTD => "YTD",
-            PlotRange::Year => "1Y",
+            PlotRange::OneYear => "1Y",
             PlotRange::Max => "MAX",
+        }
+    }
+
+    pub fn description(&self) -> &str {
+        match self {
+            PlotRange::OneMonth => "Last 30 days",
+            PlotRange::ThreeMonths => "Last 90 days",
+            PlotRange::SixMonths => "Last 180 days",
+            PlotRange::NineMonths => "Last 270 days",
+            PlotRange::YTD => "Year to date",
+            PlotRange::OneYear => "Last 365 days",
+            PlotRange::Max => "All available data",
         }
     }
 
@@ -319,8 +332,8 @@ impl PlotRange {
                 let start = NaiveDate::from_ymd_opt(today.year(), 1, 1).unwrap();
                 (*today - start).num_days() as u32
             },
-            PlotRange::Year => 365,
-            PlotRange::Max => u32::MAX,
+            PlotRange::OneYear => 365,
+            PlotRange::Max => DQueue::<u32>::CAPACITY as u32,
         }
     }
 }
@@ -473,4 +486,5 @@ pub struct UiState {
     pub credit: CreditState,
     pub modal: Option<InstrumentKind>,
     pub modal_info: ModalInfo,
+    pub active_event: Option<EventName>,
 }

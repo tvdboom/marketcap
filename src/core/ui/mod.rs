@@ -2,6 +2,7 @@ pub mod bonds;
 pub mod commodities;
 pub mod credit;
 mod crypto;
+pub mod events;
 pub mod forex;
 pub mod menu;
 pub mod modal;

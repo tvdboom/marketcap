@@ -1,11 +1,9 @@
 use std::collections::HashMap;
 
-use bevy::prelude::*;
-use chrono::{Datelike, Duration};
-use rand::{Rng, rng};
-
-use crate::core::constants::{CURRENCY, DATE_FORMAT, VICTORY_AMOUNT};
+use crate::core::audio::PlayAudioEv;
+use crate::core::constants::{CURRENCY, DATE_FORMAT, DAYS_PER_EVENT, VICTORY_AMOUNT};
 use crate::core::derivatives::{DerivativeAction, DerivativeKind, OptionKind};
+use crate::core::events::EventName;
 use crate::core::factors::Factor;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::{Bond, BondIssuer};
@@ -18,6 +16,9 @@ use crate::core::research::TechName;
 use crate::core::states::GameState;
 use crate::core::ui::state::UiState;
 use crate::utils::{EnhFloat, NameFromEnum};
+use bevy::prelude::*;
+use chrono::{Datelike, Duration};
+use rand::{Rng, rng};
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
@@ -26,6 +27,7 @@ pub fn time_pass(
     mut order_ev: EventWriter<OrderEv>,
     mut message: EventWriter<MessageEv>,
     mut next_game_state: ResMut<NextState<GameState>>,
+    mut play_audio_ev: EventWriter<PlayAudioEv>,
     time: Res<Time>,
 ) {
     economy.clock.tick(time.delta());
@@ -71,6 +73,23 @@ pub fn time_pass(
                 order.bound = order.bound.max(economy.get_price(&order.instrument));
             }
         }
+
+        // Start new events
+        if rng().random::<f32>() < 1. / DAYS_PER_EVENT
+        // && economy.date > START_DATE + Duration::days(30)
+        {
+            let new_event = EventName::create_event();
+            state.active_event = Some(new_event.name.clone());
+            economy.events.push(new_event);
+            play_audio_ev.write(PlayAudioEv::new("message"));
+            next_game_state.set(GameState::Paused);
+        }
+
+        // Advance all events
+        economy.events.retain_mut(|event| {
+            event.advance(); // todo!
+            event.duration > 0
+        });
 
         let mut cash = player.cash.current();
 
@@ -332,6 +351,8 @@ pub fn time_pass(
                     }
                 }
             }
+
+            player.cash.amount = cash;
         }
 
         // Update derivatives ====================================== >>
@@ -356,7 +377,7 @@ pub fn time_pass(
                 // Always disable bought options when there is no cash or instruments to cover
                 if option.action == DerivativeAction::Bought
                     && ((option.option_kind == OptionKind::Call
-                        && cash < option.price * option.amount as f32)
+                        && player.cash.current() < option.price * option.amount as f32)
                         || (option.option_kind == OptionKind::Put
                             && player.get_owned(&option.instrument) < option.amount as i32))
                 {
@@ -375,8 +396,6 @@ pub fn time_pass(
         {
             option.execute = status;
         }
-
-        player.cash.amount = cash;
 
         player.resolve_derivatives(&mut economy, &mut message);
 

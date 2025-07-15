@@ -64,6 +64,12 @@ impl FromWorld for WorldAssets {
             ("research", assets.load("images/icons/research.png")),
             ("time", assets.load("images/icons/time.png")),
             ("time-paused", assets.load("images/icons/time-paused.png")),
+            // Events
+            (
+                "crypto-crash",
+                assets.load("images/events/crypto-crash.png"),
+            ),
+            ("covid", assets.load("images/events/covid.png")),
         ]);
 
         for stock in Company::iter() {
