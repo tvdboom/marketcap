@@ -40,7 +40,8 @@ pub fn time_pass(
 
     if economy.clock.just_finished() {
         // Advance 1 day
-        economy.date = economy.date.succ_opt().unwrap();
+        let today = economy.date.succ_opt().unwrap();
+        economy.date = today;
 
         // Daily operations =================================== >>
 
@@ -78,18 +79,26 @@ pub fn time_pass(
         if rng().random::<f32>() < 1. / DAYS_PER_EVENT
         // && economy.date > START_DATE + Duration::days(30)
         {
-            let new_event = EventName::create_event();
+            let new_event = EventName::create(&economy, &player);
+            new_event.initialize(&mut economy);
+
             state.active_event = Some(new_event.name.clone());
             economy.events.push(new_event);
+
             play_audio_ev.write(PlayAudioEv::new("message"));
             next_game_state.set(GameState::Paused);
         }
 
         // Advance all events
-        economy.events.retain_mut(|event| {
-            event.advance(); // todo!
-            event.duration > 0
-        });
+        let events = economy
+            .active_events()
+            .into_iter()
+            .cloned()
+            .collect::<Vec<_>>();
+
+        for event in events {
+            event.advance(&mut economy); // todo!
+        }
 
         let mut cash = player.cash.current();
 

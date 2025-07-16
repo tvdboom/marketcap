@@ -167,7 +167,7 @@ pub fn trade_modal(
                             InstrumentKind::Commodity(_) => CommodityName::iter().map(|c| (InstrumentKind::Commodity(c), c.to_name())).collect(),
                             InstrumentKind::Crypto(_) => CryptoName::iter().filter_map(|c| {
                                 let instrument = economy.get(&InstrumentKind::Crypto(c));
-                                (instrument.current() > 0. && (instrument.market_cap() > 5.0e9 || player.has_tech(&TechName::ObscureCoins))).then_some((InstrumentKind::Crypto(c), c.to_name()))
+                                (instrument.current() > 0. && player.can_see_crypto(instrument)).then_some((InstrumentKind::Crypto(c), c.to_name()))
                             }).collect(),
                         };
         

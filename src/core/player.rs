@@ -11,7 +11,7 @@ use crate::core::factors::cash::Cash;
 use crate::core::factors::credit_score::CreditScore;
 use crate::core::factors::influence::Influence;
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::instruments::instrument::InstrumentKind;
+use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::instruments::stocks::Company;
 use crate::core::loans::{MarginLoan, TermLoan};
 use crate::core::messages::{MessageEv, MessageLevel};
@@ -157,6 +157,11 @@ impl Player {
 
     pub fn has_tech(&self, name: &TechName) -> bool {
         self.research.has_technology(name)
+    }
+
+    pub fn can_see_crypto(&self, instrument: &dyn Instrument) -> bool {
+        self.has_tech(&TechName::Cryptocurrencies)
+            && (instrument.market_cap() > 5.0e9 || self.has_tech(&TechName::ObscureCoins))
     }
 
     // Instruments ================================================= >>

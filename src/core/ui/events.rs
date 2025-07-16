@@ -7,7 +7,9 @@ use crate::core::ui::utils::CustomUi;
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::{Align, Frame, Id, Image, Layout, Modal, UiBuilder};
+use bevy_egui::egui::{
+    Align, Color32, Frame, Id, Image, Layout, Margin, Modal, RichText, UiBuilder,
+};
 
 pub fn event_modal(
     mut contexts: EguiContexts,
@@ -39,6 +41,17 @@ pub fn event_modal(
                 ui.vertical_centered(|ui| {
                     ui.heading(event.title());
                 });
+
+                ui.add_space(window.height() * 0.02);
+
+                Frame::default()
+                    .fill(Color32::from_black_alpha(120))
+                    .outer_margin(Margin::same(20))
+                    .inner_margin(Margin::same(10))
+                    .corner_radius(4.)
+                    .show(ui, |ui| {
+                        ui.label(RichText::new(event.description()).color(Color32::WHITE));
+                    });
 
                 ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
                     ui.add_space(window.height() * 0.05);

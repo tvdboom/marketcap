@@ -53,6 +53,7 @@ pub enum OverviewTab {
     OrderBook,
     Derivatives,
     Debts,
+    Events,
 }
 
 impl OverviewTab {
@@ -62,6 +63,7 @@ impl OverviewTab {
             OverviewTab::OrderBook => "📋",
             OverviewTab::Derivatives => "🔮",
             OverviewTab::Debts => "💳",
+            OverviewTab::Events => "📅",
         }
     }
 }

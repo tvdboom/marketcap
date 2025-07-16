@@ -4,7 +4,6 @@ use bevy_egui::egui::{ScrollArea, Ui};
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::instrument::Instrument;
 use crate::core::player::Player;
-use crate::core::research::TechName;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderOptions, UiState};
 use crate::core::ui::utils::CustomUi;
@@ -48,10 +47,8 @@ pub fn crypto_panel(
         let instruments = economy
             .cryptos
             .iter()
-            .filter_map(|c| {
-                (c.market_cap > 5.0e9 || player.has_tech(&TechName::ObscureCoins))
-                    .then_some(c as &dyn Instrument)
-            })
+            .map(|c| c as &dyn Instrument)
+            .filter(|c| player.can_see_crypto(*c))
             .collect::<Vec<_>>();
 
         for inst in

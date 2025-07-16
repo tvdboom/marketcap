@@ -1,10 +1,12 @@
 use bevy::prelude::*;
-use bevy_egui::egui::{Frame, Sense, Ui};
+use bevy_egui::egui::{Frame, ScrollArea, Sense, Ui};
+use chrono::NaiveDate;
 use egui_extras::{Column, TableBuilder};
 use strum::IntoEnumIterator;
 
 use crate::core::constants::{CURRENCY, DATE_FORMAT, NA};
 use crate::core::derivatives::{Derivative, DerivativeAction, DerivativeKind};
+use crate::core::events::EconomicEvent;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::instrument::InstrumentKind;
 use crate::core::loans::TermLoan;
@@ -38,7 +40,7 @@ pub fn overview_panel(
 
     ui.separator();
 
-    match state.overview.tab {
+    ScrollArea::vertical().show(ui, |ui| match state.overview.tab {
         OverviewTab::Portfolio => {
             let stocks = OrderOptions::sort_owned_instrument(
                 player.stocks(),
@@ -326,7 +328,7 @@ pub fn overview_panel(
                     window,
                 );
 
-                term_loan_overview(ui, state, &term_loans);
+                term_loan_table(ui, state, &term_loans);
                 ui.small("Click on a row to repay the loan early.");
             }
 
@@ -348,11 +350,32 @@ pub fn overview_panel(
                     window,
                 );
 
-                margin_loan_overview(ui, state, &margin_loans, economy);
+                margin_loan_table(ui, state, &margin_loans, economy);
                 ui.small("Click on a row to increase the loan's collateral.");
             }
         },
-    }
+        OverviewTab::Events => {
+            let mut active_events = economy.active_events();
+            let mut historical_events = economy.historical_events();
+
+            if active_events.is_empty() && historical_events.is_empty() {
+                ui.add_space(window.height() * 0.02);
+
+                ui.label("No events have occurred yet.");
+            }
+
+            if !active_events.is_empty() {
+                ui.heading("Active events");
+                event_table(ui, economy.date, &mut active_events);
+                ui.add_space(window.height() * 0.05);
+            }
+
+            if !historical_events.is_empty() {
+                ui.heading("Historical events");
+                event_table(ui, economy.date, &mut historical_events);
+            }
+        },
+    });
 }
 
 pub fn instrument_table(
@@ -789,7 +812,7 @@ pub fn processed_derivative_table(
         });
 }
 
-pub fn term_loan_overview(ui: &mut Ui, state: &mut UiState, loans: &Vec<TermLoan>) {
+pub fn term_loan_table(ui: &mut Ui, state: &mut UiState, loans: &Vec<TermLoan>) {
     let columns = [
         "Id",
         "Start date",
@@ -852,7 +875,7 @@ pub fn term_loan_overview(ui: &mut Ui, state: &mut UiState, loans: &Vec<TermLoan
         });
 }
 
-pub fn margin_loan_overview(
+pub fn margin_loan_table(
     ui: &mut Ui,
     state: &mut UiState,
     loans: &Vec<OwnedInstrument>,
@@ -913,6 +936,55 @@ pub fn margin_loan_overview(
                                 state.tab = Tab::Credit;
                                 state.credit.tab = CreditTab::IncreaseCollateral;
                                 state.credit.increase = Some(loan.id.clone());
+                            }
+                        });
+                    }
+                });
+        });
+}
+
+pub fn event_table(ui: &mut Ui, today: NaiveDate, events: &mut Vec<&EconomicEvent>) {
+    let columns = vec!["Title", "Start date", "Duration", "Description"];
+
+    // Sort events by start date, newest first
+    events.sort_by(|a, b| b.start_date.cmp(&a.start_date));
+
+    Frame::new()
+        .inner_margin(ui.spacing().menu_margin)
+        .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
+        .show(ui, |ui| {
+            TableBuilder::new(ui)
+                .id_salt(create_guid())
+                .striped(false)
+                .column(Column::initial(300.))
+                .columns(Column::initial(100.), 2)
+                .column(Column::remainder())
+                .header(30., |mut header| {
+                    for col in columns {
+                        header.col(|ui| {
+                            ui.strong(col);
+                        });
+                    }
+                })
+                .body(|mut body| {
+                    for event in events {
+                        let content = vec![
+                            event.title(),
+                            event.start_date.format(DATE_FORMAT).to_string(),
+                            format!(
+                                "{} days",
+                                (today - event.start_date)
+                                    .num_days()
+                                    .min(event.duration as i64)
+                            ),
+                            event.description(),
+                        ];
+
+                        body.row(30., |mut row| {
+                            for col in content {
+                                row.col(|ui| {
+                                    ui.label(col);
+                                });
                             }
                         });
                     }

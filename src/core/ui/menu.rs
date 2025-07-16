@@ -3,11 +3,15 @@ use std::time::Duration;
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::{Align, CentralPanel, Color32, Frame, Id, Image, Layout, Modal, RichText, Separator, Slider, Ui, UiBuilder};
+use bevy_egui::egui::{
+    Align, CentralPanel, Frame, Id, Image, Layout, Modal, RichText, Separator, Slider, Ui,
+    UiBuilder,
+};
 use bevy_kira_audio::AudioControl;
 use bevy_kira_audio::prelude::Audio;
 use strum::IntoEnumIterator;
 
+use crate::TITLE;
 use crate::core::constants::{GAME_SPEED_STEP, HEIGHT, MAX_GAME_SPEED, WIDTH};
 use crate::core::game_settings::{AudioSetting, GameSettings, Theme};
 use crate::core::global_economy::GlobalEconomy;
@@ -17,16 +21,13 @@ use crate::core::resources::ImageIds;
 use crate::core::states::{AppState, GameState};
 use crate::core::ui::state::UiState;
 use crate::core::ui::utils::CustomUi;
-use crate::TITLE;
 use crate::utils::NameFromEnum;
 
 fn load_settings(ui: &mut Ui, game_settings: &mut GameSettings, window: &Window) {
-    ui.add_space(window.height() * 0.05);
-
-    ui.label("Theme");
+    ui.heading("Theme");
 
     ui.horizontal(|ui| {
-        ui.add_space(window.width() * 0.06);
+        ui.add_space(ui.available_width() * 0.5 - 100.);
 
         for label in Theme::iter() {
             ui.selectable_value(
@@ -39,10 +40,10 @@ fn load_settings(ui: &mut Ui, game_settings: &mut GameSettings, window: &Window)
 
     ui.add_space(window.height() * 0.02);
 
-    ui.label("Game speed");
+    ui.heading("Game speed");
 
     ui.horizontal(|ui| {
-        ui.add_space(window.width() * 0.06);
+        ui.add_space(ui.available_width() * 0.5 - 100.);
 
         let speed = game_settings.speed;
         ui.spacing_mut().slider_width = (window.width() * 0.1).min(250.);
@@ -56,10 +57,10 @@ fn load_settings(ui: &mut Ui, game_settings: &mut GameSettings, window: &Window)
 
     ui.add_space(window.height() * 0.02);
 
-    ui.label("Audio");
+    ui.heading("Audio");
 
     ui.horizontal(|ui| {
-        ui.add_space(window.width() * 0.01);
+        ui.add_space(ui.available_width() * 0.5 - 180.);
         for label in AudioSetting::iter() {
             ui.selectable_value(
                 &mut game_settings.audio,
@@ -122,53 +123,56 @@ pub fn main_menu(
                 ui.add_space(window.height() * 0.02);
                 ui.vertical_centered(|ui| {
                     ui.label(RichText::new(TITLE).size(window.width() * 0.1));
+
+                    ui.add_space(window.height() * 0.1);
+
+                    ui.vertical_centered(|ui| match *app_state.get() {
+                        AppState::MainMenu => {
+                            if ui
+                                .add_button(RichText::new("New game").heading(), &window)
+                                .clicked()
+                            {
+                                next_app_state.set(AppState::Game);
+                            }
+
+                            #[cfg(not(target_arch = "wasm32"))]
+                            {
+                                if ui
+                                    .add_button(RichText::new("Load game").heading(), &window)
+                                    .clicked()
+                                {
+                                    load_game_ev.write(LoadGameEv);
+                                }
+                            }
+
+                            if ui
+                                .add_button(RichText::new("Settings").heading(), &window)
+                                .clicked()
+                            {
+                                next_app_state.set(AppState::Settings);
+                            }
+
+                            if ui
+                                .add_button(RichText::new("Exit").heading(), &window)
+                                .clicked()
+                            {
+                                std::process::exit(0);
+                            }
+                        },
+                        AppState::Settings => {
+                            load_settings(ui, &mut game_settings, &window);
+
+                            if ui
+                                .add_button(RichText::new("Back").heading(), &window)
+                                .clicked()
+                            {
+                                next_app_state.set(AppState::MainMenu);
+                            }
+                        },
+                        _ => {},
+                    });
                 });
             });
-        });
-
-    Modal::new(Id::new("main_menu"))
-        .backdrop_color(Color32::TRANSPARENT)
-        .frame(Frame {
-            fill: Color32::from_rgba_premultiplied(0, 0, 0, 0),
-            ..Default::default()
-        })
-        .show(contexts.ctx_mut(), |ui| {
-            ui.set_width((window.width() * 0.25).min(450.));
-
-            ui.add_space(window.height() * 0.02);
-
-            ui.vertical_centered(|ui| match *app_state.get() {
-                AppState::MainMenu => {
-                    if ui.add_button("New game", &window).clicked() {
-                        next_app_state.set(AppState::Game);
-                    }
-
-                    #[cfg(not(target_arch = "wasm32"))]
-                    {
-                        if ui.add_button("Load game", &window).clicked() {
-                            load_game_ev.write(LoadGameEv);
-                        }
-                    }
-
-                    if ui.add_button("Settings", &window).clicked() {
-                        next_app_state.set(AppState::Settings);
-                    }
-
-                    if ui.add_button("Exit", &window).clicked() {
-                        std::process::exit(0);
-                    }
-                },
-                AppState::Settings => {
-                    load_settings(ui, &mut game_settings, &window);
-
-                    if ui.add_button("Back", &window).clicked() {
-                        next_app_state.set(AppState::MainMenu);
-                    }
-                },
-                _ => {},
-            });
-
-            ui.add_space(window.height() * 0.01);
         });
 
     update_settings(
@@ -202,22 +206,34 @@ pub fn in_game_menu(
 
             ui.vertical_centered(|ui| match *game_state.get() {
                 GameState::InGameMenu => {
-                    if ui.add_button("Continue", &window).clicked() {
+                    if ui
+                        .add_button(RichText::new("Continue").heading(), &window)
+                        .clicked()
+                    {
                         next_game_state.set(GameState::Running);
                     }
 
                     #[cfg(not(target_arch = "wasm32"))]
                     {
-                        if ui.add_button("Save game", &window).clicked() {
+                        if ui
+                            .add_button(RichText::new("Save game").heading(), &window)
+                            .clicked()
+                        {
                             save_game_ev.write(SaveGameEv);
                         }
                     }
 
-                    if ui.add_button("Settings", &window).clicked() {
+                    if ui
+                        .add_button(RichText::new("Settings").heading(), &window)
+                        .clicked()
+                    {
                         next_game_state.set(GameState::Settings);
                     }
 
-                    if ui.add_button("Exit", &window).clicked() {
+                    if ui
+                        .add_button(RichText::new("Exit").heading(), &window)
+                        .clicked()
+                    {
                         next_game_state.set(GameState::Running);
                         next_app_state.set(AppState::MainMenu);
                     }
@@ -225,10 +241,14 @@ pub fn in_game_menu(
                 GameState::Settings => {
                     ui.heading("Settings");
                     ui.add(Separator::default().shrink(50.));
+                    ui.add_space(window.height() * 0.05);
 
                     load_settings(ui, &mut game_settings, &window);
 
-                    if ui.add_button("Back", &window).clicked() {
+                    if ui
+                        .add_button(RichText::new("Back").heading(), &window)
+                        .clicked()
+                    {
                         next_game_state.set(GameState::InGameMenu);
                     }
                 },
@@ -336,6 +356,8 @@ pub fn in_game_menu_keyboard(
             GameState::Running | GameState::Paused => {
                 if state.modal.is_some() {
                     state.modal = None;
+                } else if state.active_event.is_some() {
+                    state.active_event = None;
                 } else {
                     next_game_state.set(GameState::InGameMenu);
                 }
@@ -347,5 +369,9 @@ pub fn in_game_menu_keyboard(
                 next_app_state.set(AppState::MainMenu);
             },
         }
+    }
+
+    if keyboard.just_pressed(KeyCode::Enter) && state.active_event.is_some() {
+        state.active_event = None;
     }
 }

@@ -50,6 +50,18 @@ pub enum CommodityName {
     Wheat,
 }
 
+impl CommodityName {
+    pub fn is_food(&self) -> bool {
+        matches!(
+            self,
+            CommodityName::Cocoa
+                | CommodityName::Coffee
+                | CommodityName::Corn
+                | CommodityName::Wheat
+        )
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Commodity {
     /// The name of the commodity

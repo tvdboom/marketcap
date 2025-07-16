@@ -66,10 +66,21 @@ impl FromWorld for WorldAssets {
             ("time-paused", assets.load("images/icons/time-paused.png")),
             // Events
             (
+                "brazil-politics",
+                assets.load("images/events/brazil-politics.png"),
+            ),
+            ("covid", assets.load("images/events/covid.png")),
+            ("crimea", assets.load("images/events/crimea.png")),
+            (
                 "crypto-crash",
                 assets.load("images/events/crypto-crash.png"),
             ),
-            ("covid", assets.load("images/events/covid.png")),
+            ("drought", assets.load("images/events/drought.png")),
+            ("gas", assets.load("images/events/gas.png")),
+            ("harvest", assets.load("images/events/harvest.png")),
+            ("oil", assets.load("images/events/oil.png")),
+            ("russia-war", assets.load("images/events/russia-war.png")),
+            ("trade-war", assets.load("images/events/trade-war.png")),
         ]);
 
         for stock in Company::iter() {

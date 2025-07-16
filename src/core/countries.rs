@@ -39,8 +39,9 @@ impl MarketKind {
     }
 }
 
-#[derive(EnumIter, Clone, Copy, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Copy, Debug, Default, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum CountryName {
+    #[default]
     Australia,
     Brazil,
     Canada,

@@ -208,6 +208,20 @@ impl GlobalEconomy {
     pub fn get_price(&self, instrument: &InstrumentKind) -> f32 {
         self.get(instrument).current()
     }
+
+    pub fn active_events(&self) -> Vec<&EconomicEvent> {
+        self.events
+            .iter()
+            .filter(|e| self.date < e.start_date + Duration::days(e.duration as i64))
+            .collect()
+    }
+
+    pub fn historical_events(&self) -> Vec<&EconomicEvent> {
+        self.events
+            .iter()
+            .filter(|e| self.date >= e.start_date + Duration::days(e.duration as i64))
+            .collect()
+    }
 }
 
 impl Default for GlobalEconomy {
