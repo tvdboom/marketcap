@@ -13,14 +13,22 @@ impl CreditScore {
 
     pub fn increase(&mut self, has_tech: bool) {
         if self.score < Self::MAX {
-            self.score += if has_tech { 2 } else { 1 };
+            self.score += if has_tech {
+                2
+            } else {
+                1
+            };
         }
     }
 
     pub fn decrease(&mut self, has_tech: bool) {
         self.score = self
             .score
-            .saturating_sub(if has_tech { 6 } else { 12 })
+            .saturating_sub(if has_tech {
+                6
+            } else {
+                12
+            })
             .max(Self::MIN);
     }
 

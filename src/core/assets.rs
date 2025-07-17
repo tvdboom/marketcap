@@ -24,8 +24,7 @@ impl WorldAssets {
         name: &str,
         asset_type: &str,
     ) -> &'a T {
-        map.get(name)
-            .expect(&format!("No asset for {asset_type} {name}"))
+        map.get(name).expect(&format!("No asset for {asset_type} {name}"))
     }
 
     pub fn audio(&self, name: &str) -> Handle<AudioSource> {
@@ -65,20 +64,16 @@ impl FromWorld for WorldAssets {
             ("time", assets.load("images/icons/time.png")),
             ("time-paused", assets.load("images/icons/time-paused.png")),
             // Events
-            (
-                "brazil-politics",
-                assets.load("images/events/brazil-politics.png"),
-            ),
+            ("brazil-politics", assets.load("images/events/brazil-politics.png")),
             ("covid", assets.load("images/events/covid.png")),
             ("crimea", assets.load("images/events/crimea.png")),
-            (
-                "crypto-crash",
-                assets.load("images/events/crypto-crash.png"),
-            ),
+            ("crypto-crash", assets.load("images/events/crypto-crash.png")),
             ("drought", assets.load("images/events/drought.png")),
-            ("gas", assets.load("images/events/gas.png")),
+            ("gas-discovery", assets.load("images/events/gas-discovery.png")),
+            ("grounded", assets.load("images/events/grounded.png")),
             ("harvest", assets.load("images/events/harvest.png")),
-            ("oil", assets.load("images/events/oil.png")),
+            ("oil-discovery", assets.load("images/events/oil-discovery.png")),
+            ("oil-disruption", assets.load("images/events/oil-disruption.png")),
             ("russia-war", assets.load("images/events/russia-war.png")),
             ("trade-war", assets.load("images/events/trade-war.png")),
         ]);
@@ -88,10 +83,7 @@ impl FromWorld for WorldAssets {
             images.insert(name, assets.load(format!("images/stocks/{}.png", name)));
 
             let name = Box::leak(Box::new(format!("{}-bond", stock.to_lowername()))).as_str();
-            images.insert(
-                name,
-                assets.load(format!("images/bonds/{}.png", stock.to_lowername())),
-            );
+            images.insert(name, assets.load(format!("images/bonds/{}.png", stock.to_lowername())));
         }
 
         for country in CountryName::iter() {
@@ -106,10 +98,7 @@ impl FromWorld for WorldAssets {
 
         for commodity in CommodityName::iter() {
             let name = Box::leak(Box::new(commodity.to_lowername())).as_str();
-            images.insert(
-                name,
-                assets.load(format!("images/commodities/{}.png", name)),
-            );
+            images.insert(name, assets.load(format!("images/commodities/{}.png", name)));
         }
 
         for crypto in CryptoName::iter() {
@@ -117,6 +106,9 @@ impl FromWorld for WorldAssets {
             images.insert(name, assets.load(format!("images/crypto/{}.png", name)));
         }
 
-        Self { audio, images }
+        Self {
+            audio,
+            images,
+        }
     }
 }

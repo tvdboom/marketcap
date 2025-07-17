@@ -105,26 +105,17 @@ impl OrderOptions {
     ) -> Ordering {
         match state.order {
             Self::Name => a.lowername().cmp(&b.lowername()),
-            Self::OwnedAmount => player
-                .get_owned(&a.kind())
-                .cmp(&player.get_owned(&b.kind())),
+            Self::OwnedAmount => player.get_owned(&a.kind()).cmp(&player.get_owned(&b.kind())),
             Self::OwnedValue => player
                 .get_value(&a.kind(), economy)
                 .partial_cmp(&player.get_value(&b.kind(), economy))
                 .unwrap_or(Ordering::Equal),
-            Self::Price => a
-                .current()
-                .partial_cmp(&b.current())
-                .unwrap_or(Ordering::Equal),
-            Self::Volatility => a
-                .volatility()
-                .partial_cmp(&b.volatility())
-                .unwrap_or(Ordering::Equal),
+            Self::Price => a.current().partial_cmp(&b.current()).unwrap_or(Ordering::Equal),
+            Self::Volatility => {
+                a.volatility().partial_cmp(&b.volatility()).unwrap_or(Ordering::Equal)
+            },
             Self::Quality => a.quality().cmp(&b.quality()),
-            Self::Interest => a
-                .interest()
-                .partial_cmp(&b.interest())
-                .unwrap_or(Ordering::Equal),
+            Self::Interest => a.interest().partial_cmp(&b.interest()).unwrap_or(Ordering::Equal),
             _ => unreachable!(),
         }
     }
@@ -192,9 +183,9 @@ impl OrderOptions {
             Self::Action => a.action.to_name().cmp(&b.action.to_name()),
             Self::Maturity => a.maturity_date().cmp(&b.maturity_date()),
             Self::OwnedAmount => a.amount.cmp(&b.amount),
-            Self::OwnedValue => (a.amount as f32 * a.price)
-                .partial_cmp(&(b.amount as f32 * b.price))
-                .unwrap(),
+            Self::OwnedValue => {
+                (a.amount as f32 * a.price).partial_cmp(&(b.amount as f32 * b.price)).unwrap()
+            },
             Self::Price => a.price.partial_cmp(&b.price).unwrap(),
             Self::Execute => a.execute.cmp(&b.execute),
             _ => unreachable!(),
@@ -237,10 +228,9 @@ impl OrderOptions {
                 Self::Provider => a.provider.to_name().cmp(&b.provider.to_name()),
                 Self::Principal => a.principal.partial_cmp(&b.principal).unwrap(),
                 Self::Outstanding => a.outstanding.partial_cmp(&b.outstanding).unwrap(),
-                Self::Installment => a
-                    .next_installment_amount()
-                    .partial_cmp(&b.next_installment_amount())
-                    .unwrap(),
+                Self::Installment => {
+                    a.next_installment_amount().partial_cmp(&b.next_installment_amount()).unwrap()
+                },
                 Self::Interest => a.interest_rate.partial_cmp(&b.interest_rate).unwrap(),
                 _ => unreachable!(),
             })
@@ -270,10 +260,9 @@ impl OrderOptions {
                     Self::Collateral => l1.collateral.partial_cmp(&l2.collateral).unwrap(),
                     Self::Interest => l1.interest().partial_cmp(&l2.interest()).unwrap(),
                     Self::Price => l1.interest().partial_cmp(&l2.interest()).unwrap(),
-                    Self::Margin => economy
-                        .get_price(&a.kind)
-                        .partial_cmp(&economy.get_price(&b.kind))
-                        .unwrap(),
+                    Self::Margin => {
+                        economy.get_price(&a.kind).partial_cmp(&economy.get_price(&b.kind)).unwrap()
+                    },
                     _ => unreachable!(),
                 }
             })

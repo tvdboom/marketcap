@@ -195,9 +195,7 @@ impl TermLoan {
     }
 
     pub fn maturity_date(&self) -> NaiveDate {
-        self.start_date
-            .checked_add_months(Months::new(self.installments_left()))
-            .unwrap()
+        self.start_date.checked_add_months(Months::new(self.installments_left())).unwrap()
     }
 }
 
@@ -236,11 +234,7 @@ impl MarginLoan {
 
     pub fn max_loan_debt(economy: &GlobalEconomy, player: &Player) -> f32 {
         player.aum(&economy) / 2. * (0.3 + 0.7 * player.credit_score.relative())
-            - player
-                .instruments
-                .iter()
-                .filter_map(|o| o.loan.as_ref().map(|l| l.debt))
-                .sum::<f32>()
+            - player.instruments.iter().filter_map(|o| o.loan.as_ref().map(|l| l.debt)).sum::<f32>()
     }
 
     pub fn margin(&self, amount: i32) -> f32 {

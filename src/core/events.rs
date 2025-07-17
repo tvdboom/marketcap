@@ -1,11 +1,3 @@
-use crate::core::countries::CountryName;
-use crate::core::global_economy::GlobalEconomy;
-use crate::core::instruments::commodities::CommodityName;
-use crate::core::instruments::crypto::CryptoName;
-use crate::core::instruments::instrument::InstrumentKind;
-use crate::core::player::Player;
-use crate::core::research::TechName;
-use crate::utils::NameFromEnum;
 use chrono::NaiveDate;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
@@ -15,6 +7,15 @@ use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
 
+use crate::core::countries::CountryName;
+use crate::core::global_economy::GlobalEconomy;
+use crate::core::instruments::commodities::CommodityName;
+use crate::core::instruments::crypto::CryptoName;
+use crate::core::instruments::instrument::InstrumentKind;
+use crate::core::player::Player;
+use crate::core::research::TechName;
+use crate::utils::NameFromEnum;
+
 #[derive(EnumIter, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum EventName {
     BrazilPolitics,
@@ -22,9 +23,11 @@ pub enum EventName {
     Crimea,
     CryptoCrash(CryptoName),
     Drought(CountryName),
-    Gas(CountryName),
+    GasDiscovery(CountryName),
+    Grounded,
     Harvest(CountryName),
-    Oil(CountryName),
+    OilDiscovery(CountryName),
+    OilDisruption,
     RussiaWar,
     TradeWar,
 }
@@ -48,12 +51,7 @@ impl EventName {
                 let country = economy
                     .countries
                     .iter()
-                    .filter_map(|c| {
-                        c.production
-                            .iter()
-                            .any(|(n, _)| n.is_food())
-                            .then_some(c.name)
-                    })
+                    .filter_map(|c| c.production.iter().any(|(n, _)| n.is_food()).then_some(c.name))
                     .choose(&mut rng())
                     .unwrap();
 
@@ -63,28 +61,22 @@ impl EventName {
                     _ => unreachable!(),
                 }
             },
-            EventName::Gas(_) => EventName::Gas(
+            EventName::GasDiscovery(_) => EventName::GasDiscovery(
                 economy
                     .countries
                     .iter()
                     .filter_map(|c| {
-                        c.production
-                            .iter()
-                            .any(|(n, _)| *n == CommodityName::LNG)
-                            .then_some(c.name)
+                        c.production.iter().any(|(n, _)| *n == CommodityName::LNG).then_some(c.name)
                     })
                     .choose(&mut rng())
                     .unwrap(),
             ),
-            EventName::Oil(_) => EventName::Oil(
+            EventName::OilDiscovery(_) => EventName::OilDiscovery(
                 economy
                     .countries
                     .iter()
                     .filter_map(|c| {
-                        c.production
-                            .iter()
-                            .any(|(n, _)| *n == CommodityName::Oil)
-                            .then_some(c.name)
+                        c.production.iter().any(|(n, _)| *n == CommodityName::Oil).then_some(c.name)
                     })
                     .choose(&mut rng())
                     .unwrap(),
@@ -96,6 +88,7 @@ impl EventName {
             EventName::BrazilPolitics => 365 + rand::random::<u32>() % 365,
             EventName::Covid => 120 + rand::random::<u32>() % 120,
             EventName::Drought(_) | EventName::Harvest(_) => 30 + rand::random::<u32>() % 30,
+            EventName::OilDisruption => 10 + rand::random::<u32>() % 10,
             EventName::RussiaWar => 365 + rand::random::<u32>() % 365,
             EventName::TradeWar => 180 + rand::random::<u32>() % 180,
             _ => 1,
@@ -123,18 +116,16 @@ impl EventName {
                     EventName::Drought(_) | EventName::Harvest(_) => {
                         player.has_tech(&TechName::Commodities).then_some(1.)
                     },
-                    EventName::Gas(_) | EventName::Oil(_) => {
+                    EventName::GasDiscovery(_) | EventName::OilDiscovery(_) => {
                         player.has_tech(&TechName::Commodities).then_some(1.)
                     },
                     n @ EventName::RussiaWar => (!economy.events.iter().any(|e| e.name == n)
-                        && economy
-                            .active_events()
-                            .iter()
-                            .any(|e| e.name == EventName::Crimea))
+                        && economy.active_events().iter().any(|e| e.name == EventName::Crimea))
                     .then_some(0.1),
                     n @ EventName::TradeWar => {
                         (!economy.events.iter().any(|e| e.name == n)).then_some(0.1)
                     },
+                    n => (!economy.events.iter().any(|e| e.name == n)).then_some(1.),
                 }
                 .unwrap_or(0.)
             })
@@ -170,9 +161,15 @@ impl EconomicEvent {
             EventName::Crimea => "Russia invades Crimea".to_string(),
             EventName::CryptoCrash(name) => format!("{} crash", name.to_name()),
             EventName::Drought(country) => format!("Prolonged drought in {}", country.to_name()),
-            EventName::Gas(country) => format!("New gas field discovered in {}", country.to_name()),
+            EventName::GasDiscovery(country) => {
+                format!("New gas field discovered in {}", country.to_name())
+            },
+            EventName::Grounded => "Air travel in EU grounded".to_string(),
             EventName::Harvest(country) => format!("Plentiful harvest in {}", country.to_name()),
-            EventName::Oil(country) => format!("New oil field discovered in {}", country.to_name()),
+            EventName::OilDiscovery(country) => {
+                format!("New oil field discovered in {}", country.to_name())
+            },
+            EventName::OilDisruption => "Oil supply disruption in Saudi Arabia".to_string(),
             EventName::RussiaWar => "Russia invades Ukraine".to_string(),
             EventName::TradeWar => "USA - China trade war escalates".to_string(),
         }
@@ -220,25 +217,37 @@ impl EconomicEvent {
                 implement measures to conserve water and support farmers.",
                 country.to_name()
             ),
-            EventName::Gas(country) => format!(
+            EventName::GasDiscovery(country) => format!(
                 "The discovery of a new gas field in {} boosts the country's energy sector, \
                 leading to increased exports and potential economic growth. This may also lead \
                 to geopolitical tensions over energy resources.",
                 country.to_name()
             ),
+            EventName::Grounded => {
+                "Volcanic activity in Iceland has grounded all air traffic in the European Union. \
+                This disrupts travel plans for millions of passengers and causes significant \
+                economic losses for airlines and related industries."
+                    .to_string()
+            },
             EventName::Harvest(country) => format!(
                 "A plentiful harvest in {} boosts the agricultural sector, leading to lower food \
                 prices and increased exports. This positively impacts the country's economy, \
                 providing a temporary relief from inflation and improving trade balances.",
                 country.to_name()
             ),
-            EventName::Oil(country) => format!(
+            EventName::OilDiscovery(country) => format!(
                 "The discovery of a new oil field in {} significantly increases the country's \
                 oil reserves, leading to potential economic growth. This may attract foreign \
                 investment and boost the energy sector, but could also lead to environmental \
                 concerns and geopolitical tensions.",
                 country.to_name()
             ),
+            EventName::OilDisruption => {
+                "A major disruption in oil supply from Saudi Arabia leads to a spike in global \
+                oil prices. This causes inflation and economic instability in the area, affecting \
+                industries reliant on oil and energy."
+                    .to_string()
+            },
             EventName::RussiaWar => {
                 "Russia's invasion of Ukraine leads to a prolonged conflict, causing significant \
                 economic disruption in the region. It results in sanctions, trade restrictions, \
@@ -256,7 +265,7 @@ impl EconomicEvent {
         }
     }
 
-    pub fn initialize(&self, economy: &mut GlobalEconomy) {
+    pub fn immediate(&self, economy: &mut GlobalEconomy) {
         match self.name {
             EventName::Covid => {
                 *economy.economy.values.back_mut().unwrap() += 0.05;

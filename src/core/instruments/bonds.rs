@@ -39,10 +39,7 @@ pub enum BondQuality {
 
 impl BondQuality {
     pub fn is_high_yield(&self) -> bool {
-        matches!(
-            self,
-            BondQuality::B | BondQuality::CCC | BondQuality::CC | BondQuality::C
-        )
+        matches!(self, BondQuality::B | BondQuality::CCC | BondQuality::CC | BondQuality::C)
     }
 
     pub fn description(&self) -> &str {
@@ -107,11 +104,7 @@ impl BondIssuer {
         // Multiply by 0.5 since coupon is paid out twice a year
         match self {
             BondIssuer::Government(country) => {
-                let currency = economy
-                    .currencies
-                    .iter()
-                    .find(|c| c.country == *country)
-                    .unwrap();
+                let currency = economy.currencies.iter().find(|c| c.country == *country).unwrap();
 
                 Bond::FACE_VALUE_GOVERNMENT * 0.5 * interest / 100. * currency.current()
             },

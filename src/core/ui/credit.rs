@@ -210,11 +210,7 @@ pub fn credit_panel(
             });
         },
         CreditTab::RepayLoan => {
-            let loans = player
-                .loans
-                .iter()
-                .map(|l| l.id.clone())
-                .collect::<Vec<_>>();
+            let loans = player.loans.iter().map(|l| l.id.clone()).collect::<Vec<_>>();
 
             if loans.is_empty() {
                 ui.heading("Repay term loan early");

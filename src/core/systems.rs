@@ -1,5 +1,9 @@
 use std::collections::HashMap;
 
+use bevy::prelude::*;
+use chrono::{Datelike, Duration};
+use rand::{Rng, rng};
+
 use crate::core::audio::PlayAudioEv;
 use crate::core::constants::{CURRENCY, DATE_FORMAT, DAYS_PER_EVENT, VICTORY_AMOUNT};
 use crate::core::derivatives::{DerivativeAction, DerivativeKind, OptionKind};
@@ -16,9 +20,6 @@ use crate::core::research::TechName;
 use crate::core::states::GameState;
 use crate::core::ui::state::UiState;
 use crate::utils::{EnhFloat, NameFromEnum};
-use bevy::prelude::*;
-use chrono::{Datelike, Duration};
-use rand::{Rng, rng};
 
 pub fn time_pass(
     mut economy: ResMut<GlobalEconomy>,
@@ -80,7 +81,7 @@ pub fn time_pass(
         // && economy.date > START_DATE + Duration::days(30)
         {
             let new_event = EventName::create(&economy, &player);
-            new_event.initialize(&mut economy);
+            new_event.immediate(&mut economy);
 
             state.active_event = Some(new_event.name.clone());
             economy.events.push(new_event);
@@ -90,11 +91,7 @@ pub fn time_pass(
         }
 
         // Advance all events
-        let events = economy
-            .active_events()
-            .into_iter()
-            .cloned()
-            .collect::<Vec<_>>();
+        let events = economy.active_events().into_iter().cloned().collect::<Vec<_>>();
 
         for event in events {
             event.advance(&mut economy); // todo!
@@ -109,11 +106,8 @@ pub fn time_pass(
                     // Bond matured, pay out face value
                     match issuer {
                         BondIssuer::Government(country) => {
-                            let currency = economy
-                                .currencies
-                                .iter()
-                                .find(|c| c.country == country)
-                                .unwrap();
+                            let currency =
+                                economy.currencies.iter().find(|c| c.country == country).unwrap();
 
                             cash += Bond::FACE_VALUE_GOVERNMENT
                                 * owned.amount as f32
@@ -212,10 +206,7 @@ pub fn time_pass(
                     .stocks
                     .iter()
                     .map(|stock| {
-                        (
-                            stock.issuer,
-                            stock.dividend() * (1. + rng().random_range(-0.2..0.2)),
-                        )
+                        (stock.issuer, stock.dividend() * (1. + rng().random_range(-0.2..0.2)))
                     })
                     .collect();
 
@@ -265,10 +256,7 @@ pub fn time_pass(
                     .bonds
                     .iter()
                     .map(|b| {
-                        (
-                            b.issuer.clone(),
-                            rng().random::<f32>() < b.quality().default_chance(),
-                        )
+                        (b.issuer.clone(), rng().random::<f32>() < b.quality().default_chance())
                     })
                     .collect();
 
@@ -398,10 +386,7 @@ pub fn time_pass(
         }
 
         // Assign execution status to derivatives
-        for (option, status) in player
-            .pending_derivatives_mut()
-            .into_iter()
-            .zip(status.into_iter())
+        for (option, status) in player.pending_derivatives_mut().into_iter().zip(status.into_iter())
         {
             option.execute = status;
         }

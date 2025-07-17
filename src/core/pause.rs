@@ -31,18 +31,14 @@ pub fn toggle_pause_keyboard(
             if game_settings.speed == 0. {
                 next_game_state.set(GameState::Paused);
             } else {
-                economy
-                    .clock
-                    .set_duration(Duration::from_secs_f32(1. / game_settings.speed));
+                economy.clock.set_duration(Duration::from_secs_f32(1. / game_settings.speed));
             }
         }
 
         if keyboard.just_pressed(KeyCode::ArrowRight) && game_settings.speed < MAX_GAME_SPEED {
             game_settings.speed += GAME_SPEED_STEP;
 
-            economy
-                .clock
-                .set_duration(Duration::from_secs_f32(1. / game_settings.speed));
+            economy.clock.set_duration(Duration::from_secs_f32(1. / game_settings.speed));
 
             next_game_state.set(GameState::Running);
         }

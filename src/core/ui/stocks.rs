@@ -45,11 +45,7 @@ pub fn stock_panel(
             window,
         );
 
-        let instruments = economy
-            .stocks
-            .iter()
-            .map(|c| c as &dyn Instrument)
-            .collect::<Vec<_>>();
+        let instruments = economy.stocks.iter().map(|c| c as &dyn Instrument).collect::<Vec<_>>();
 
         for inst in OrderOptions::sort_instrument(instruments, &state.stocks.order, economy, player)
         {

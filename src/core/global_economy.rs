@@ -122,7 +122,10 @@ impl GlobalEconomy {
                             status: OrderStatus::Executed,
                         });
 
-                        order_ev.write(OrderEv { id, price: 0. });
+                        order_ev.write(OrderEv {
+                            id,
+                            price: 0.,
+                        });
                     }
 
                     message.write(MessageEv {
@@ -149,11 +152,7 @@ impl GlobalEconomy {
         }
 
         if self.date.day() == 1 && self.date.month() % 6 == 1 {
-            for bond in self
-                .bonds
-                .iter_mut()
-                .filter(|b| b.kind() == BondKind::Government)
-            {
+            for bond in self.bonds.iter_mut().filter(|b| b.kind() == BondKind::Government) {
                 bond.issue(interest, &self.stocks, &self.currencies);
             }
 
@@ -167,11 +166,7 @@ impl GlobalEconomy {
         }
 
         if self.date.day() == 1 && self.date.month() == 1 {
-            for bond in self
-                .bonds
-                .iter_mut()
-                .filter(|b| b.kind() == BondKind::Corporate)
-            {
+            for bond in self.bonds.iter_mut().filter(|b| b.kind() == BondKind::Corporate) {
                 bond.issue(interest, &self.stocks, &self.currencies);
             }
 

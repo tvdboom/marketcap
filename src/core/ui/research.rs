@@ -42,11 +42,7 @@ pub fn research_panel(
 
             ui.add(Image::new(SizedTexture::new(
                 images.get("research"),
-                [get_ratio(
-                    window.width() * 0.75,
-                    window.height() * 0.75,
-                    TextStyle::Heading,
-                ); 2],
+                [get_ratio(window.width() * 0.75, window.height() * 0.75, TextStyle::Heading); 2],
             )));
         })
         .response

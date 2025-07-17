@@ -81,21 +81,13 @@ fn update_settings(
     window: &Window,
 ) {
     // Adjust settings based on the current choice
-    contexts.ctx_mut().set_style(
-        game_settings
-            .theme
-            .get()
-            .custom_style(window.width(), window.height()),
-    );
+    contexts
+        .ctx_mut()
+        .set_style(game_settings.theme.get().custom_style(window.width(), window.height()));
 
-    economy
-        .clock
-        .set_duration(Duration::from_secs_f32(1. / game_settings.speed));
+    economy.clock.set_duration(Duration::from_secs_f32(1. / game_settings.speed));
 
-    if matches!(
-        game_settings.audio,
-        AudioSetting::Mute | AudioSetting::NoMusic
-    ) {
+    if matches!(game_settings.audio, AudioSetting::Mute | AudioSetting::NoMusic) {
         audio.stop();
     }
 }
@@ -111,13 +103,11 @@ pub fn main_menu(
     audio: Res<Audio>,
     window: Single<&Window>,
 ) {
-    CentralPanel::default()
-        .frame(Frame::default().inner_margin(0.))
-        .show(contexts.ctx_mut(), |ui| {
-            let response = ui.add(Image::new(SizedTexture::new(
-                images.get("cover"),
-                ui.available_size(),
-            )));
+    CentralPanel::default().frame(Frame::default().inner_margin(0.)).show(
+        contexts.ctx_mut(),
+        |ui| {
+            let response =
+                ui.add(Image::new(SizedTexture::new(images.get("cover"), ui.available_size())));
 
             ui.allocate_new_ui(UiBuilder::new().max_rect(response.rect), |ui| {
                 ui.add_space(window.height() * 0.02);
@@ -128,9 +118,7 @@ pub fn main_menu(
 
                     ui.vertical_centered(|ui| match *app_state.get() {
                         AppState::MainMenu => {
-                            if ui
-                                .add_button(RichText::new("New game").heading(), &window)
-                                .clicked()
+                            if ui.add_button(RichText::new("New game").heading(), &window).clicked()
                             {
                                 next_app_state.set(AppState::Game);
                             }
@@ -145,27 +133,19 @@ pub fn main_menu(
                                 }
                             }
 
-                            if ui
-                                .add_button(RichText::new("Settings").heading(), &window)
-                                .clicked()
+                            if ui.add_button(RichText::new("Settings").heading(), &window).clicked()
                             {
                                 next_app_state.set(AppState::Settings);
                             }
 
-                            if ui
-                                .add_button(RichText::new("Exit").heading(), &window)
-                                .clicked()
-                            {
+                            if ui.add_button(RichText::new("Exit").heading(), &window).clicked() {
                                 std::process::exit(0);
                             }
                         },
                         AppState::Settings => {
                             load_settings(ui, &mut game_settings, &window);
 
-                            if ui
-                                .add_button(RichText::new("Back").heading(), &window)
-                                .clicked()
-                            {
+                            if ui.add_button(RichText::new("Back").heading(), &window).clicked() {
                                 next_app_state.set(AppState::MainMenu);
                             }
                         },
@@ -173,15 +153,10 @@ pub fn main_menu(
                     });
                 });
             });
-        });
-
-    update_settings(
-        &mut contexts,
-        &mut game_settings,
-        &mut economy,
-        &audio,
-        &window,
+        },
     );
+
+    update_settings(&mut contexts, &mut game_settings, &mut economy, &audio, &window);
 }
 
 pub fn in_game_menu(
@@ -195,10 +170,7 @@ pub fn in_game_menu(
     audio: Res<Audio>,
     window: Single<&Window>,
 ) {
-    if matches!(
-        *game_state.get(),
-        GameState::InGameMenu | GameState::Settings
-    ) {
+    if matches!(*game_state.get(), GameState::InGameMenu | GameState::Settings) {
         let modal = Modal::new(Id::new("menu")).show(contexts.ctx_mut(), |ui| {
             ui.set_width((window.width() * 0.25).min(450.));
 
@@ -206,34 +178,22 @@ pub fn in_game_menu(
 
             ui.vertical_centered(|ui| match *game_state.get() {
                 GameState::InGameMenu => {
-                    if ui
-                        .add_button(RichText::new("Continue").heading(), &window)
-                        .clicked()
-                    {
+                    if ui.add_button(RichText::new("Continue").heading(), &window).clicked() {
                         next_game_state.set(GameState::Running);
                     }
 
                     #[cfg(not(target_arch = "wasm32"))]
                     {
-                        if ui
-                            .add_button(RichText::new("Save game").heading(), &window)
-                            .clicked()
-                        {
+                        if ui.add_button(RichText::new("Save game").heading(), &window).clicked() {
                             save_game_ev.write(SaveGameEv);
                         }
                     }
 
-                    if ui
-                        .add_button(RichText::new("Settings").heading(), &window)
-                        .clicked()
-                    {
+                    if ui.add_button(RichText::new("Settings").heading(), &window).clicked() {
                         next_game_state.set(GameState::Settings);
                     }
 
-                    if ui
-                        .add_button(RichText::new("Exit").heading(), &window)
-                        .clicked()
-                    {
+                    if ui.add_button(RichText::new("Exit").heading(), &window).clicked() {
                         next_game_state.set(GameState::Running);
                         next_app_state.set(AppState::MainMenu);
                     }
@@ -245,10 +205,7 @@ pub fn in_game_menu(
 
                     load_settings(ui, &mut game_settings, &window);
 
-                    if ui
-                        .add_button(RichText::new("Back").heading(), &window)
-                        .clicked()
-                    {
+                    if ui.add_button(RichText::new("Back").heading(), &window).clicked() {
                         next_game_state.set(GameState::InGameMenu);
                     }
                 },
@@ -262,13 +219,7 @@ pub fn in_game_menu(
             next_game_state.set(GameState::Running);
         }
 
-        update_settings(
-            &mut contexts,
-            &mut game_settings,
-            &mut economy,
-            &audio,
-            &window,
-        );
+        update_settings(&mut contexts, &mut game_settings, &mut economy, &audio, &window);
     }
 }
 
@@ -283,14 +234,18 @@ pub fn end_game_menu(
     window: Single<&Window>,
 ) {
     let defeat = player.aum(&economy) <= 0.;
-    Modal::new(Id::new("end_game"))
-        .frame(Frame::default().inner_margin(0.))
-        .show(contexts.ctx_mut(), |ui| {
+    Modal::new(Id::new("end_game")).frame(Frame::default().inner_margin(0.)).show(
+        contexts.ctx_mut(),
+        |ui| {
             ui.set_width((window.width() * 0.75).max(WIDTH * 0.75));
             ui.set_height((window.height() * 0.7).max(HEIGHT * 0.7));
 
             let response = ui.add(Image::new(SizedTexture::new(
-                images.get(if defeat { "game-over" } else { "victory" }),
+                images.get(if defeat {
+                    "game-over"
+                } else {
+                    "victory"
+                }),
                 ui.available_size(),
             )));
 
@@ -328,7 +283,8 @@ pub fn end_game_menu(
                     });
                 });
             });
-        });
+        },
+    );
 }
 
 pub fn main_menu_keyboard(

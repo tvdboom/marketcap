@@ -78,9 +78,7 @@ impl Plugin for GamePlugin {
             .configure_sets(Update, InGameSet.run_if(in_state(AppState::Game)))
             .configure_sets(
                 Update,
-                InRunningGameSet
-                    .run_if(in_state(GameState::Running))
-                    .in_set(InGameSet),
+                InRunningGameSet.run_if(in_state(GameState::Running)).in_set(InGameSet),
             )
             .configure_sets(
                 Update,

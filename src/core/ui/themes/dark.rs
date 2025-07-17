@@ -54,7 +54,10 @@ impl Aesthetics for NordDark {
     }
 
     fn button_padding(&self) -> Vec2 {
-        Vec2 { x: 12.0, y: 10.0 }
+        Vec2 {
+            x: 12.0,
+            y: 10.0,
+        }
     }
 
     fn item_spacing_style(&self) -> f32 {

@@ -42,12 +42,7 @@ pub fn set_egui_style(
         options.line_scroll_speed = 100.;
     });
 
-    context.set_style(
-        game_settings
-            .theme
-            .get()
-            .custom_style(window.width(), window.height()),
-    );
+    context.set_style(game_settings.theme.get().custom_style(window.width(), window.height()));
 
     context.add_font(FontInsert::new(
         "firamono",
@@ -97,9 +92,7 @@ pub fn on_resize_system(
     mut resize_reader: EventReader<WindowResized>,
 ) {
     for ev in resize_reader.read() {
-        contexts
-            .ctx_mut()
-            .set_style(game_settings.theme.get().custom_style(ev.width, ev.height));
+        contexts.ctx_mut().set_style(game_settings.theme.get().custom_style(ev.width, ev.height));
     }
 }
 
@@ -112,11 +105,7 @@ pub fn top_panel(
     images: Res<ImageIds>,
     window: Single<&Window>,
 ) {
-    let text_color = game_settings
-        .theme
-        .get()
-        .fg_primary_text_color_visuals()
-        .unwrap();
+    let text_color = game_settings.theme.get().fg_primary_text_color_visuals().unwrap();
 
     TopBottomPanel::top("top_panel")
         .exact_height(window.height() * TOP_LABEL_FRAC)
@@ -367,14 +356,14 @@ pub fn central_panel(
 ) {
     CentralPanel::default()
         .frame(
-            Frame::new()
-                .fill(game_settings.theme.get().bg_primary_color_visuals())
-                .inner_margin(Margin {
+            Frame::new().fill(game_settings.theme.get().bg_primary_color_visuals()).inner_margin(
+                Margin {
                     left: 60,
                     right: 60,
                     top: 40,
                     bottom: 40,
-                }),
+                },
+            ),
         )
         .show(contexts.ctx_mut(), |ui| match state.tab {
             Tab::Overview => {

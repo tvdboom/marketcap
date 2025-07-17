@@ -1,15 +1,16 @@
-use crate::core::constants::{HEIGHT, WIDTH};
-use crate::core::global_economy::GlobalEconomy;
-use crate::core::resources::ImageIds;
-use crate::core::states::GameState;
-use crate::core::ui::state::UiState;
-use crate::core::ui::utils::CustomUi;
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::{
     Align, Color32, Frame, Id, Image, Layout, Margin, Modal, RichText, UiBuilder,
 };
+
+use crate::core::constants::{HEIGHT, WIDTH};
+use crate::core::global_economy::GlobalEconomy;
+use crate::core::resources::ImageIds;
+use crate::core::states::GameState;
+use crate::core::ui::state::UiState;
+use crate::core::ui::utils::CustomUi;
 
 pub fn event_modal(
     mut contexts: EguiContexts,
@@ -25,9 +26,9 @@ pub fn event_modal(
         return;
     };
 
-    let modal = Modal::new(Id::new("event_modal"))
-        .frame(Frame::default().inner_margin(0.))
-        .show(contexts.ctx_mut(), |ui| {
+    let modal = Modal::new(Id::new("event_modal")).frame(Frame::default().inner_margin(0.)).show(
+        contexts.ctx_mut(),
+        |ui| {
             ui.set_width((window.width() * 0.55).max(WIDTH * 0.55));
             ui.set_height((window.height() * 0.5).max(HEIGHT * 0.5));
 
@@ -68,7 +69,8 @@ pub fn event_modal(
                     });
                 });
             });
-        });
+        },
+    );
 
     if modal.should_close() {
         state.active_event = None;

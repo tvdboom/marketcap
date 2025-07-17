@@ -106,9 +106,7 @@ impl Derivative {
     }
 
     pub fn maturity_date(&self) -> NaiveDate {
-        self.start_date
-            .checked_add_signed(Duration::days(self.term.days() as i64))
-            .unwrap()
+        self.start_date.checked_add_signed(Duration::days(self.term.days() as i64)).unwrap()
     }
 
     pub fn is_buy(&self) -> bool {

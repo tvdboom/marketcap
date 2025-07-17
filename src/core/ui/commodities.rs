@@ -45,11 +45,8 @@ pub fn commodities_panel(
             window,
         );
 
-        let instruments = economy
-            .commodities
-            .iter()
-            .map(|c| c as &dyn Instrument)
-            .collect::<Vec<_>>();
+        let instruments =
+            economy.commodities.iter().map(|c| c as &dyn Instrument).collect::<Vec<_>>();
 
         for inst in
             OrderOptions::sort_instrument(instruments, &state.commodities.order, economy, player)

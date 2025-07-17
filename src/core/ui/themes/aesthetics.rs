@@ -97,7 +97,10 @@ pub trait Aesthetics {
             button_padding: self.button_padding(),
             menu_margin: Margin::same(self.margin_style()),
             indent: 18.0,
-            interact_size: Vec2 { x: 40.0, y: 20.0 },
+            interact_size: Vec2 {
+                x: 40.0,
+                y: 20.0,
+            },
             slider_width: 100.0,
             combo_width: 130.0,
             text_edit_width: 280.0,
@@ -243,38 +246,23 @@ pub trait Aesthetics {
         [
             (
                 TextStyle::Small,
-                FontId::new(
-                    get_ratio(width, height, TextStyle::Small),
-                    FontFamily::Proportional,
-                ),
+                FontId::new(get_ratio(width, height, TextStyle::Small), FontFamily::Proportional),
             ),
             (
                 TextStyle::Body,
-                FontId::new(
-                    get_ratio(width, height, TextStyle::Body),
-                    FontFamily::Proportional,
-                ),
+                FontId::new(get_ratio(width, height, TextStyle::Body), FontFamily::Proportional),
             ),
             (
                 TextStyle::Button,
-                FontId::new(
-                    get_ratio(width, height, TextStyle::Button),
-                    FontFamily::Proportional,
-                ),
+                FontId::new(get_ratio(width, height, TextStyle::Button), FontFamily::Proportional),
             ),
             (
                 TextStyle::Heading,
-                FontId::new(
-                    get_ratio(width, height, TextStyle::Heading),
-                    FontFamily::Proportional,
-                ),
+                FontId::new(get_ratio(width, height, TextStyle::Heading), FontFamily::Proportional),
             ),
             (
                 TextStyle::Monospace,
-                FontId::new(
-                    get_ratio(width, height, TextStyle::Monospace),
-                    FontFamily::Monospace,
-                ),
+                FontId::new(get_ratio(width, height, TextStyle::Monospace), FontFamily::Monospace),
             ),
         ]
         .into()

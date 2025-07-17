@@ -68,10 +68,7 @@ impl Player {
     }
 
     pub fn margin_loan_debt(&self) -> f32 {
-        self.instruments
-            .iter()
-            .filter_map(|o| o.loan.as_ref().map(|l| l.debt - l.collateral))
-            .sum()
+        self.instruments.iter().filter_map(|o| o.loan.as_ref().map(|l| l.debt - l.collateral)).sum()
     }
 
     pub fn aum(&self, economy: &GlobalEconomy) -> f32 {
@@ -136,10 +133,7 @@ impl Player {
     }
 
     pub fn short_sell_interest(&self) -> f32 {
-        self.instruments
-            .iter()
-            .filter_map(|o| o.loan.as_ref().map(|l| l.interest()))
-            .sum()
+        self.instruments.iter().filter_map(|o| o.loan.as_ref().map(|l| l.interest())).sum()
     }
 
     pub fn outflow(&self, economy: &GlobalEconomy) -> f32 {
@@ -236,45 +230,27 @@ impl Player {
     // Orders ====================================================== >>
 
     pub fn pending_orders(&self) -> Vec<&Order> {
-        self.orders
-            .iter()
-            .filter(|o| o.status == OrderStatus::Pending)
-            .collect::<Vec<_>>()
+        self.orders.iter().filter(|o| o.status == OrderStatus::Pending).collect::<Vec<_>>()
     }
 
     pub fn pending_orders_mut(&mut self) -> Vec<&mut Order> {
-        self.orders
-            .iter_mut()
-            .filter(|o| o.status == OrderStatus::Pending)
-            .collect::<Vec<_>>()
+        self.orders.iter_mut().filter(|o| o.status == OrderStatus::Pending).collect::<Vec<_>>()
     }
 
     pub fn processed_orders(&self) -> Vec<&Order> {
-        self.orders
-            .iter()
-            .filter(|o| o.status != OrderStatus::Pending)
-            .collect::<Vec<_>>()
+        self.orders.iter().filter(|o| o.status != OrderStatus::Pending).collect::<Vec<_>>()
     }
 
     pub fn pending_derivatives(&self) -> Vec<&Derivative> {
-        self.derivatives
-            .iter()
-            .filter(|d| d.status == OrderStatus::Pending)
-            .collect::<Vec<_>>()
+        self.derivatives.iter().filter(|d| d.status == OrderStatus::Pending).collect::<Vec<_>>()
     }
 
     pub fn pending_derivatives_mut(&mut self) -> Vec<&mut Derivative> {
-        self.derivatives
-            .iter_mut()
-            .filter(|d| d.status == OrderStatus::Pending)
-            .collect::<Vec<_>>()
+        self.derivatives.iter_mut().filter(|d| d.status == OrderStatus::Pending).collect::<Vec<_>>()
     }
 
     pub fn processed_derivatives(&self) -> Vec<&Derivative> {
-        self.derivatives
-            .iter()
-            .filter(|d| d.status != OrderStatus::Pending)
-            .collect::<Vec<_>>()
+        self.derivatives.iter().filter(|d| d.status != OrderStatus::Pending).collect::<Vec<_>>()
     }
 
     pub fn resolve_orders(
@@ -368,11 +344,7 @@ impl Player {
         economy: &mut GlobalEconomy,
         message: &mut EventWriter<MessageEv>,
     ) {
-        let pending = self
-            .pending_derivatives()
-            .into_iter()
-            .cloned()
-            .collect::<Vec<_>>();
+        let pending = self.pending_derivatives().into_iter().cloned().collect::<Vec<_>>();
 
         for derivative in pending {
             if economy.date == derivative.maturity_date() {

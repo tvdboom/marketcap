@@ -196,12 +196,7 @@ pub fn overview_panel(
             if !pending.is_empty() {
                 ui.add_combobox(
                     "Pending orders",
-                    [
-                        OrderOptions::Name,
-                        OrderOptions::Created,
-                        OrderOptions::Price,
-                    ]
-                    .into(),
+                    [OrderOptions::Name, OrderOptions::Created, OrderOptions::Price].into(),
                     &mut state.overview.pending_order,
                     window,
                 );
@@ -296,11 +291,7 @@ pub fn overview_panel(
             let term_loans = OrderOptions::sort_term_loan(&player.loans, &state.overview.term_loan);
 
             let margin_loans = OrderOptions::sort_margin_loan(
-                player
-                    .instruments
-                    .iter()
-                    .filter(|o| o.loan.is_some())
-                    .collect(),
+                player.instruments.iter().filter(|o| o.loan.is_some()).collect(),
                 &state.overview.margin_loan,
                 economy,
             );
@@ -396,10 +387,7 @@ pub fn instrument_table(
         "Value",
     ];
 
-    if matches!(
-        instruments.first().unwrap().kind,
-        InstrumentKind::Commodity(_)
-    ) {
+    if matches!(instruments.first().unwrap().kind, InstrumentKind::Commodity(_)) {
         columns.push("Storage cost");
     }
 
@@ -438,10 +426,8 @@ pub fn instrument_table(
                             ),
                         ];
 
-                        if matches!(
-                            instruments.first().unwrap().kind,
-                            InstrumentKind::Commodity(_)
-                        ) {
+                        if matches!(instruments.first().unwrap().kind, InstrumentKind::Commodity(_))
+                        {
                             content.push(format!(
                                 "{}{CURRENCY}/month",
                                 (30. * owned.amount as f32 * instrument.storage_cost(player))
@@ -472,15 +458,7 @@ pub fn pending_order_table(
     player: &mut Player,
     messages: &mut EventWriter<MessageEv>,
 ) {
-    let columns = [
-        "Created",
-        "Name",
-        "Order",
-        "Kind",
-        "Amount",
-        "Threshold",
-        "Market price",
-    ];
+    let columns = ["Created", "Name", "Order", "Kind", "Amount", "Threshold", "Market price"];
 
     Frame::new()
         .inner_margin(ui.spacing().menu_margin)
@@ -742,15 +720,8 @@ pub fn processed_derivative_table(
     economy: &GlobalEconomy,
     derivatives: Vec<&Derivative>,
 ) {
-    let columns = vec![
-        "Name",
-        "Maturity",
-        "Kind",
-        "Action",
-        "Amount",
-        "Transaction price",
-        "Contract price",
-    ];
+    let columns =
+        vec!["Name", "Maturity", "Kind", "Action", "Amount", "Transaction price", "Contract price"];
 
     Frame::new()
         .inner_margin(ui.spacing().menu_margin)
@@ -973,9 +944,7 @@ pub fn event_table(ui: &mut Ui, today: NaiveDate, events: &mut Vec<&EconomicEven
                             event.start_date.format(DATE_FORMAT).to_string(),
                             format!(
                                 "{} days",
-                                (today - event.start_date)
-                                    .num_days()
-                                    .min(event.duration as i64)
+                                (today - event.start_date).num_days().min(event.duration as i64)
                             ),
                             event.description(),
                         ];

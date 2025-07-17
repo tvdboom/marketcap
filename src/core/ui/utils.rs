@@ -1,3 +1,11 @@
+use bevy::prelude::Window;
+use bevy_egui::egui::load::SizedTexture;
+use bevy_egui::egui::*;
+use chrono::{Datelike, Duration, NaiveDate};
+use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
+use itertools::Itertools;
+use strum::IntoEnumIterator;
+
 use crate::core::constants::{
     CURRENCY, CUSTOM_GREEN, DATE_FORMAT, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH,
 };
@@ -10,13 +18,6 @@ use crate::core::research::{TechName, Technology};
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{OrderByState, OrderOptions, PlotRange};
 use crate::utils::{DQueue, EnhFloat, NameFromEnum, create_guid, get_ratio};
-use bevy::prelude::Window;
-use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::*;
-use chrono::{Datelike, Duration, NaiveDate};
-use egui_plot::{AxisHints, GridMark, Line, Plot, PlotPoints};
-use itertools::Itertools;
-use strum::IntoEnumIterator;
 
 /// Custom IOS style toggle for UI
 pub fn toggle(on: &mut bool) -> impl Widget + '_ {
@@ -45,8 +46,7 @@ pub fn toggle(on: &mut bool) -> impl Widget + '_ {
             );
             let circle_x = lerp((rect.left() + radius)..=(rect.right() - radius), how_on);
             let center = Pos2::new(circle_x, rect.center().y);
-            ui.painter()
-                .circle(center, 0.75 * radius, visuals.bg_fill, visuals.fg_stroke);
+            ui.painter().circle(center, 0.75 * radius, visuals.bg_fill, visuals.fg_stroke);
         }
 
         response
@@ -97,19 +97,13 @@ pub trait CustomUi {
 impl CustomUi for Ui {
     fn add_button(&mut self, text: impl Into<WidgetText>, window: &Window) -> Response {
         self.add_sized(
-            [
-                (window.width() * 0.2).min(300.),
-                (window.height() * 0.075).min(70.),
-            ],
+            [(window.width() * 0.2).min(300.), (window.height() * 0.075).min(70.)],
             Button::new(text),
         )
     }
 
     fn add_modal_button(&mut self, text: impl Into<WidgetText>, window: &Window) -> Response {
-        self.add_sized(
-            [window.width() * 0.08, window.height() * 0.05],
-            Button::new(text),
-        )
+        self.add_sized([window.width() * 0.08, window.height() * 0.05], Button::new(text))
     }
 
     fn add_indicator(&mut self, diff: f32) -> Response {
@@ -146,13 +140,14 @@ impl CustomUi for Ui {
             |ui| {
                 ui.add_space(window.width() * 0.02);
 
-                ComboBox::from_id_salt(title)
-                    .selected_text(state.order.to_name())
-                    .show_ui(ui, |ui| {
+                ComboBox::from_id_salt(title).selected_text(state.order.to_name()).show_ui(
+                    ui,
+                    |ui| {
                         for order in options {
                             ui.selectable_value(&mut state.order, order, order.to_name());
                         }
-                    });
+                    },
+                );
 
                 let descending = ui
                     .label(if state.descending {
@@ -171,9 +166,7 @@ impl CustomUi for Ui {
 
     fn add_technology(&mut self, technology: &Technology) -> Response {
         self.scope_builder(
-            UiBuilder::new()
-                .id_salt(technology.name.to_name())
-                .sense(Sense::click()),
+            UiBuilder::new().id_salt(technology.name.to_name()).sense(Sense::click()),
             |ui| {
                 let response = ui.response();
                 let visuals = ui.style().interact(&response);
@@ -214,10 +207,7 @@ impl CustomUi for Ui {
             "{}{}",
             technology.name.description(),
             if let Some(deps) = &technology.dependencies {
-                format!(
-                    "\n\nDependencies: {}.",
-                    deps.iter().map(|d| d.to_name()).join(", ")
-                )
+                format!("\n\nDependencies: {}.", deps.iter().map(|d| d.to_name()).join(", "))
             } else {
                 String::new()
             }
@@ -236,12 +226,8 @@ impl CustomUi for Ui {
         let start = data.len() - days;
         let init_date = today - Duration::days(days as i64);
 
-        let points: PlotPoints = data
-            .iter()
-            .skip(start)
-            .enumerate()
-            .map(|(i, &v)| [i as f64, v as f64])
-            .collect();
+        let points: PlotPoints =
+            data.iter().skip(start).enumerate().map(|(i, &v)| [i as f64, v as f64]).collect();
 
         Plot::new(create_guid())
             .sense(Sense::empty()) // Disable dragging
@@ -286,11 +272,7 @@ impl CustomUi for Ui {
                 }
             })
             .show(self, |plot_ui| {
-                plot_ui.line(
-                    Line::new("price", points)
-                        .width(LINE_WIDTH)
-                        .color(LINE_COLOR),
-                );
+                plot_ui.line(Line::new("price", points).width(LINE_WIDTH).color(LINE_COLOR));
 
                 if let Some(orders) = orders {
                     for order in orders {
@@ -311,13 +293,13 @@ impl CustomUi for Ui {
                             .collect();
 
                         plot_ui.line(
-                            Line::new(create_guid(), points)
-                                .width(LINE_WIDTH - 1.)
-                                .color(match order.command {
+                            Line::new(create_guid(), points).width(LINE_WIDTH - 1.).color(
+                                match order.command {
                                     Command::Buy => Color32::LIGHT_GREEN,
                                     Command::Sell => Color32::LIGHT_RED,
                                     Command::Close => Color32::RED,
-                                }),
+                                },
+                            ),
                         );
                     }
                 }

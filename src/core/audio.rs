@@ -12,7 +12,10 @@ pub struct PlayAudioEv {
 
 impl PlayAudioEv {
     pub fn new(name: &'static str) -> Self {
-        Self { name, volume: 1. }
+        Self {
+            name,
+            volume: 1.,
+        }
     }
 }
 
@@ -36,7 +39,11 @@ pub fn play_audio_event(
     assets: Local<WorldAssets>,
 ) {
     if game_settings.audio != AudioSetting::Mute {
-        for PlayAudioEv { name, volume } in ev.read() {
+        for PlayAudioEv {
+            name,
+            volume,
+        } in ev.read()
+        {
             audio.play(assets.audio(name)).with_volume(*volume);
         }
     }

@@ -58,7 +58,11 @@ fn extract_variant_name(text: String) -> String {
 
 /// Approximation of the cumulative distribution function for a standard normal distribution
 pub fn norm_cdf(x: f32) -> f32 {
-    let sign = if x < 0.0 { -1.0 } else { 1.0 };
+    let sign = if x < 0.0 {
+        -1.0
+    } else {
+        1.0
+    };
     let x = x.abs();
 
     let t = 1.0 / (1.0 + 0.2316419 * x);
@@ -72,7 +76,11 @@ pub fn norm_cdf(x: f32) -> f32 {
     let pdf = (-x * x / 2.0).exp() / (2.0 * std::f32::consts::PI).sqrt();
     let cdf = 1.0 - pdf * poly;
 
-    if sign == 1.0 { cdf } else { 1.0 - cdf }
+    if sign == 1.0 {
+        cdf
+    } else {
+        1.0 - cdf
+    }
 }
 
 /// Trait to get the text of an enum variant

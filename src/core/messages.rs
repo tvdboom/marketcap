@@ -25,22 +25,15 @@ pub struct Messages(pub Toasts);
 
 impl Messages {
     pub fn info(&mut self, message: impl Into<WidgetText>) -> &mut Toast {
-        self.0
-            .info(message)
-            .duration(Some(Duration::from_secs(MESSAGE_DURATION)))
+        self.0.info(message).duration(Some(Duration::from_secs(MESSAGE_DURATION)))
     }
 
     pub fn warning(&mut self, message: impl Into<WidgetText>) -> &mut Toast {
-        self.0
-            .warning(message)
-            .duration(Some(Duration::from_secs(MESSAGE_DURATION)))
+        self.0.warning(message).duration(Some(Duration::from_secs(MESSAGE_DURATION)))
     }
 
     pub fn error(&mut self, message: impl Into<WidgetText>) -> &mut Toast {
-        self.0
-            .error(message)
-            .duration(Some(Duration::from_secs(MESSAGE_DURATION)))
-            .closable(true)
+        self.0.error(message).duration(Some(Duration::from_secs(MESSAGE_DURATION))).closable(true)
     }
 }
 
@@ -53,7 +46,11 @@ fn check_messages(
     // Only make one sound per level per frame
     let (mut info, mut warning, mut error) = (true, true, true);
 
-    for MessageEv { message, level } in message_ev.read() {
+    for MessageEv {
+        message,
+        level,
+    } in message_ev.read()
+    {
         match level {
             MessageLevel::Info => {
                 if info {
@@ -90,9 +87,7 @@ impl Default for MessagesPlugin {
     fn default() -> Self {
         Self {
             builder: Some(|| {
-                Toasts::default()
-                    .with_margin([0., 70.].into())
-                    .with_anchor(Anchor::TopRight)
+                Toasts::default().with_margin([0., 70.].into()).with_anchor(Anchor::TopRight)
             }),
         }
     }

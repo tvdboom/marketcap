@@ -156,10 +156,7 @@ impl Research {
     const COST_PER_CAPACITY: f32 = 0.1;
 
     pub fn get_tech_mut(&mut self, field: &ResearchField) -> Vec<&mut Technology> {
-        self.technologies
-            .iter_mut()
-            .filter(|r| r.field == *field)
-            .collect()
+        self.technologies.iter_mut().filter(|r| r.field == *field).collect()
     }
 
     pub fn has_technology(&self, name: &TechName) -> bool {

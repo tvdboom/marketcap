@@ -43,10 +43,7 @@ impl OrderKind {
     }
 
     pub fn is_short_derivative(&self) -> bool {
-        matches!(
-            self,
-            OrderKind::ShortSell | OrderKind::Futures | OrderKind::Options
-        )
+        matches!(self, OrderKind::ShortSell | OrderKind::Futures | OrderKind::Options)
     }
 
     pub fn description(&self) -> &str {
@@ -203,7 +200,11 @@ pub fn execute_orders(
     mut order_ev: EventReader<OrderEv>,
     mut message: EventWriter<MessageEv>,
 ) {
-    for OrderEv { id, price } in order_ev.read() {
+    for OrderEv {
+        id,
+        price,
+    } in order_ev.read()
+    {
         economy.economy.current_traded_volume += price.abs();
 
         let order = Order {
