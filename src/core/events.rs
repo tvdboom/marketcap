@@ -88,6 +88,7 @@ impl EventName {
             EventName::BrazilPolitics => 365 + rand::random::<u32>() % 365,
             EventName::Covid => 120 + rand::random::<u32>() % 120,
             EventName::Drought(_) | EventName::Harvest(_) => 30 + rand::random::<u32>() % 30,
+            EventName::Grounded => 7 + rand::random::<u32>() % 7,
             EventName::OilDisruption => 10 + rand::random::<u32>() % 10,
             EventName::RussiaWar => 365 + rand::random::<u32>() % 365,
             EventName::TradeWar => 180 + rand::random::<u32>() % 180,

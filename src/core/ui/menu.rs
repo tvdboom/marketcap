@@ -313,6 +313,7 @@ pub fn in_game_menu_keyboard(
                 if state.modal.is_some() {
                     state.modal = None;
                 } else if state.active_event.is_some() {
+                    next_game_state.set(GameState::Running);
                     state.active_event = None;
                 } else {
                     next_game_state.set(GameState::InGameMenu);
@@ -328,6 +329,7 @@ pub fn in_game_menu_keyboard(
     }
 
     if keyboard.just_pressed(KeyCode::Enter) && state.active_event.is_some() {
+        next_game_state.set(GameState::Running);
         state.active_event = None;
     }
 }

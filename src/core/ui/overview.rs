@@ -1,5 +1,6 @@
 use bevy::prelude::*;
-use bevy_egui::egui::{Frame, ScrollArea, Sense, Ui};
+use bevy_egui::egui::load::SizedTexture;
+use bevy_egui::egui::{Frame, Image, ScrollArea, Sense, Ui};
 use chrono::NaiveDate;
 use egui_extras::{Column, TableBuilder};
 use strum::IntoEnumIterator;
@@ -14,6 +15,7 @@ use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderKind, OrderStatus};
 use crate::core::player::{OwnedInstrument, Player};
 use crate::core::research::TechName;
+use crate::core::resources::ImageIds;
 use crate::core::ui::state::{CreditTab, ModalInfo, OrderOptions, OverviewTab, Tab, UiState};
 use crate::core::ui::utils::{CustomUi, toggle};
 use crate::utils::{EnhFloat, NameFromEnum, create_guid};
@@ -24,6 +26,7 @@ pub fn overview_panel(
     economy: &GlobalEconomy,
     player: &mut Player,
     messages: &mut EventWriter<MessageEv>,
+    images: &ImageIds,
     window: &Window,
 ) {
     ui.horizontal(|ui| {
@@ -104,6 +107,7 @@ pub fn overview_panel(
 
                 instrument_table(ui, state, &economy, &player, stocks);
                 ui.small("Click on a row to trade that stock.");
+                ui.add_space(window.height() * 0.03);
             }
 
             if !bonds.is_empty() {
@@ -122,6 +126,7 @@ pub fn overview_panel(
 
                 instrument_table(ui, state, &economy, &player, bonds);
                 ui.small("Click on a row to trade that bond.");
+                ui.add_space(window.height() * 0.03);
             }
 
             if !forex.is_empty() {
@@ -140,6 +145,7 @@ pub fn overview_panel(
 
                 instrument_table(ui, state, &economy, &player, forex);
                 ui.small("Click on a row to trade that currency.");
+                ui.add_space(window.height() * 0.03);
             }
 
             if !commodities.is_empty() {
@@ -158,6 +164,7 @@ pub fn overview_panel(
 
                 instrument_table(ui, state, &economy, &player, commodities);
                 ui.small("Click on a row to trade that commodity.");
+                ui.add_space(window.height() * 0.03);
             }
 
             if !crypto.is_empty() {
@@ -357,13 +364,13 @@ pub fn overview_panel(
 
             if !active_events.is_empty() {
                 ui.heading("Active events");
-                event_table(ui, economy.date, &mut active_events);
+                event_table(ui, economy.date, &mut active_events, &images);
                 ui.add_space(window.height() * 0.05);
             }
 
             if !historical_events.is_empty() {
                 ui.heading("Historical events");
-                event_table(ui, economy.date, &mut historical_events);
+                event_table(ui, economy.date, &mut historical_events, &images);
             }
         },
     });
@@ -914,8 +921,13 @@ pub fn margin_loan_table(
         });
 }
 
-pub fn event_table(ui: &mut Ui, today: NaiveDate, events: &mut Vec<&EconomicEvent>) {
-    let columns = vec!["Title", "Start date", "Duration", "Description"];
+pub fn event_table(
+    ui: &mut Ui,
+    today: NaiveDate,
+    events: &mut Vec<&EconomicEvent>,
+    images: &ImageIds,
+) {
+    let columns = vec!["Name", "Start date", "Duration", "Description"];
 
     // Sort events by start date, newest first
     events.sort_by(|a, b| b.start_date.cmp(&a.start_date));
@@ -950,9 +962,16 @@ pub fn event_table(ui: &mut Ui, today: NaiveDate, events: &mut Vec<&EconomicEven
                         ];
 
                         body.row(30., |mut row| {
-                            for col in content {
+                            for (i, col) in content.iter().enumerate() {
                                 row.col(|ui| {
                                     ui.label(col);
+
+                                    if i == 0 {
+                                        ui.add(Image::new(SizedTexture::new(
+                                            images.get(event.image().as_str()),
+                                            [160., 90.],
+                                        )));
+                                    }
                                 });
                             }
                         });

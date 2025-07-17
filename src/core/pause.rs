@@ -7,16 +7,18 @@ use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::player::Player;
 use crate::core::states::GameState;
+use crate::core::ui::state::UiState;
 
 pub fn toggle_pause_keyboard(
     keyboard: Res<ButtonInput<KeyCode>>,
     game_state: Res<State<GameState>>,
     mut next_game_state: ResMut<NextState<GameState>>,
     mut game_settings: ResMut<GameSettings>,
+    state: Res<UiState>,
     mut economy: ResMut<GlobalEconomy>,
     mut player: ResMut<Player>,
 ) {
-    if keyboard.just_pressed(KeyCode::Space) {
+    if keyboard.just_pressed(KeyCode::Space) && state.active_event.is_none() {
         match game_state.get() {
             GameState::Running => next_game_state.set(GameState::Paused),
             GameState::Paused => next_game_state.set(GameState::Running),

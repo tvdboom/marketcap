@@ -29,7 +29,7 @@ pub fn event_modal(
     let modal = Modal::new(Id::new("event_modal")).frame(Frame::default().inner_margin(0.)).show(
         contexts.ctx_mut(),
         |ui| {
-            ui.set_width((window.width() * 0.55).max(WIDTH * 0.55));
+            ui.set_width((window.width() * 0.45).max(WIDTH * 0.45));
             ui.set_height((window.height() * 0.5).max(HEIGHT * 0.5));
 
             let response = ui.add(Image::new(SizedTexture::new(

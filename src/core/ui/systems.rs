@@ -366,9 +366,15 @@ pub fn central_panel(
             ),
         )
         .show(contexts.ctx_mut(), |ui| match state.tab {
-            Tab::Overview => {
-                overview_panel(ui, &mut state, &economy, &mut player, &mut message, &window)
-            },
+            Tab::Overview => overview_panel(
+                ui,
+                &mut state,
+                &economy,
+                &mut player,
+                &mut message,
+                &images,
+                &window,
+            ),
             Tab::Stocks => stock_panel(ui, &mut state, &economy, &player, &images, &window),
             Tab::Bonds => bonds_panel(ui, &mut state, &economy, &player, &images, &window),
             Tab::Forex => forex_panel(ui, &mut state, &economy, &player, &images, &window),
