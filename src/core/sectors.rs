@@ -9,6 +9,7 @@ use crate::core::instruments::instrument::Instrument;
 #[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum SectorName {
     Energy,
+    Fashion,
     Finance,
     Food,
     Healthcare,
@@ -23,12 +24,13 @@ impl SectorName {
     pub fn emoji(&self) -> &str {
         match self {
             SectorName::Energy => "⚡",
+            SectorName::Fashion => "👗",
             SectorName::Finance => "💰",
             SectorName::Food => "🍔",
             SectorName::Healthcare => "💊",
             SectorName::Materials => "🔨",
             SectorName::Military => "🔫",
-            SectorName::Retail => "👗",
+            SectorName::Retail => "👤",
             SectorName::Technology => "💻",
             SectorName::Transport => "🚚",
         }
@@ -38,6 +40,9 @@ impl SectorName {
         match self {
             SectorName::Energy => {
                 "Companies involved in the production and distribution of energy."
+            },
+            SectorName::Fashion => {
+                "Apparel and fashion industry, including clothing and accessories."
             },
             SectorName::Finance => "Financial institutions, including banks and investment firms.",
             SectorName::Food => "Businesses related to food production and distribution.",
@@ -104,6 +109,15 @@ pub fn start_sectors() -> Vec<Sector> {
             ]),
         },
         Sector {
+            name: SectorName::Fashion,
+            value: 50,
+            commodities: HashMap::from([
+                (CommodityName::Cotton, 0.6),
+                (CommodityName::Silver, 0.2),
+                (CommodityName::Gold, 0.1),
+            ]),
+        },
+        Sector {
             name: SectorName::Finance,
             value: 50,
             commodities: HashMap::new(),
@@ -154,7 +168,7 @@ pub fn start_sectors() -> Vec<Sector> {
             name: SectorName::Retail,
             value: 50,
             commodities: HashMap::from([
-                (CommodityName::Cotton, 0.3),
+                (CommodityName::Cotton, 0.2),
                 (CommodityName::Silver, 0.1),
                 (CommodityName::Aluminium, 0.1),
                 (CommodityName::Coffee, 0.1),

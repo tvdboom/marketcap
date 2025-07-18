@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
-use rand::rng;
+use rand::{rng, Rng};
 use rand::seq::IteratorRandom;
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
@@ -12,8 +12,10 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::crypto::CryptoName;
 use crate::core::instruments::instrument::InstrumentKind;
+use crate::core::instruments::stocks::Company;
 use crate::core::player::Player;
 use crate::core::research::TechName;
+use crate::core::sectors::SectorName;
 use crate::utils::NameFromEnum;
 
 #[derive(EnumIter, Clone, Debug, PartialEq, Serialize, Deserialize)]
@@ -22,14 +24,20 @@ pub enum EventName {
     Covid,
     Crimea,
     CryptoCrash(CryptoName),
+    CryptoFan(CryptoName),
     Drought(CountryName),
+    EsgScandal(Company),
     GasDiscovery(CountryName),
     Grounded,
     Harvest(CountryName),
+    InterestBump(CountryName),
+    NewProduct(Company),
     OilDiscovery(CountryName),
     OilDisruption,
+    Recession,
     RussiaWar,
     TradeWar,
+    Vaccine(Company),
 }
 
 impl EventName {
@@ -38,15 +46,21 @@ impl EventName {
         let mut name = Self::iter().collect::<Vec<_>>()[dist.sample(&mut rng())].clone();
 
         name = match name {
-            EventName::CryptoCrash(_) => EventName::CryptoCrash(
-                CryptoName::iter()
+            name @ (EventName::CryptoCrash(_) | EventName::CryptoFan(_)) => {
+                let crypto = CryptoName::iter()
                     .filter(|c| {
                         let instrument = economy.get(&InstrumentKind::Crypto(*c));
                         player.can_see_crypto(instrument)
                     })
                     .choose(&mut rng())
-                    .unwrap(),
-            ),
+                    .unwrap();
+
+                match name {
+                    EventName::CryptoCrash(_) => EventName::CryptoCrash(crypto),
+                    EventName::CryptoFan(_) => EventName::CryptoFan(crypto),
+                    _ => unreachable!(),
+                }
+            },
             name @ (EventName::Drought(_) | EventName::Harvest(_)) => {
                 let country = economy
                     .countries
@@ -61,6 +75,22 @@ impl EventName {
                     _ => unreachable!(),
                 }
             },
+            EventName::EsgScandal(_) => {
+                EventName::EsgScandal(Company::iter().choose(&mut rng()).unwrap())
+            },
+            EventName::NewProduct(_) => EventName::NewProduct(
+                Company::iter()
+                    .filter(|c| {
+                        economy
+                            .get(&InstrumentKind::Stock(*c))
+                            .sectors()
+                            .get(&SectorName::Retail)
+                            .map(|v| *v > 0.2)
+                            .unwrap_or(false)
+                    })
+                    .choose(&mut rng())
+                    .unwrap(),
+            ),
             EventName::GasDiscovery(_) => EventName::GasDiscovery(
                 economy
                     .countries
@@ -71,12 +101,28 @@ impl EventName {
                     .choose(&mut rng())
                     .unwrap(),
             ),
+            EventName::InterestBump(_) => {
+                EventName::InterestBump(CountryName::iter().choose(&mut rng()).unwrap())
+            },
             EventName::OilDiscovery(_) => EventName::OilDiscovery(
                 economy
                     .countries
                     .iter()
                     .filter_map(|c| {
                         c.production.iter().any(|(n, _)| *n == CommodityName::Oil).then_some(c.name)
+                    })
+                    .choose(&mut rng())
+                    .unwrap(),
+            ),
+            EventName::Vaccine(_) => EventName::Vaccine(
+                Company::iter()
+                    .filter(|c| {
+                        economy
+                            .get(&InstrumentKind::Stock(*c))
+                            .sectors()
+                            .get(&SectorName::Healthcare)
+                            .map(|v| *v > 0.7)
+                            .unwrap_or(false)
                     })
                     .choose(&mut rng())
                     .unwrap(),
@@ -90,6 +136,7 @@ impl EventName {
             EventName::Drought(_) | EventName::Harvest(_) => 30 + rand::random::<u32>() % 30,
             EventName::Grounded => 7 + rand::random::<u32>() % 7,
             EventName::OilDisruption => 10 + rand::random::<u32>() % 10,
+            EventName::Recession => 60 + rand::random::<u32>() % 60,
             EventName::RussiaWar => 365 + rand::random::<u32>() % 365,
             EventName::TradeWar => 180 + rand::random::<u32>() % 180,
             _ => 1,
@@ -116,6 +163,9 @@ impl EventName {
                     },
                     EventName::Drought(_) | EventName::Harvest(_) => {
                         player.has_tech(&TechName::Commodities).then_some(1.)
+                    },
+                    EventName::EsgScandal(_) => {
+                        player.has_tech(&TechName::ESG).then_some(1.)
                     },
                     EventName::GasDiscovery(_) | EventName::OilDiscovery(_) => {
                         player.has_tech(&TechName::Commodities).then_some(1.)
@@ -161,18 +211,30 @@ impl EconomicEvent {
             EventName::Covid => "Covid pandemic".to_string(),
             EventName::Crimea => "Russia invades Crimea".to_string(),
             EventName::CryptoCrash(name) => format!("{} crash", name.to_name()),
+            EventName::CryptoFan(name) => format!("Influencers support {}", name.to_name()),
             EventName::Drought(country) => format!("Prolonged drought in {}", country.to_name()),
+            EventName::EsgScandal(company) => {
+                format!("{} ESG scandal", company.to_name())
+            },
             EventName::GasDiscovery(country) => {
                 format!("New gas field discovered in {}", country.to_name())
             },
             EventName::Grounded => "Air travel in EU grounded".to_string(),
             EventName::Harvest(country) => format!("Plentiful harvest in {}", country.to_name()),
+            EventName::InterestBump(country) => {
+                format!("Interest rates raised in {}", country.to_name())
+            },
+            EventName::NewProduct(company) => {
+                format!("{} launches a new product", company.to_name())
+            },
             EventName::OilDiscovery(country) => {
                 format!("New oil field discovered in {}", country.to_name())
             },
             EventName::OilDisruption => "Oil supply disruption in Saudi Arabia".to_string(),
+            EventName::Recession => "Global recession".to_string(),
             EventName::RussiaWar => "Russia invades Ukraine".to_string(),
             EventName::TradeWar => "USA - China trade war escalates".to_string(),
+            EventName::Vaccine(company) => format!("{} vaccine breakthrough", company.to_name()),
         }
     }
 
@@ -212,11 +274,23 @@ impl EconomicEvent {
                 significant drop in the value of the coin.",
                 name.to_name()
             ),
+            EventName::CryptoFan(name) => format!(
+                "Influencers and celebrities endorse the cryptocurrency {} on social media, \
+                leading to a surge in interest and investment. This causes the price of the coin \
+                to rise sharply as new investors enter the market.",
+                name.to_name()
+            ),
             EventName::Drought(country) => format!(
                 "A prolonged drought in {} leads to reduced agricultural output, causing food \
                 prices to rise and impacting the economy of the country. The government may \
                 implement measures to conserve water and support farmers.",
                 country.to_name()
+            ),
+            EventName::EsgScandal(company) => format!(
+                "A major ESG scandal involving {} leads to a loss of investor confidence and \
+                a significant drop in the company's stock price. The scandal may involve issues \
+                such as environmental violations, labor rights abuses, or governance failures.",
+                company.to_name()
             ),
             EventName::GasDiscovery(country) => format!(
                 "The discovery of a new gas field in {} boosts the country's energy sector, \
@@ -236,6 +310,18 @@ impl EconomicEvent {
                 providing a temporary relief from inflation and improving trade balances.",
                 country.to_name()
             ),
+            EventName::InterestBump(country) => format!(
+                "The central bank of {} raises interest rates to combat inflation, leading to \
+                higher borrowing costs for consumers and businesses. This may slow down economic \
+                growth in the short term but is aimed at stabilizing the economy in the long run.",
+                country.to_name()
+            ),
+            EventName::NewProduct(company) => format!(
+                "The launch of a new product by {} creates a buzz in the market, leading to \
+                increased sales and stock price appreciation. The product's success may depend \
+                on consumer demand, marketing strategies, and competition.",
+                company.to_name()
+            ),
             EventName::OilDiscovery(country) => format!(
                 "The discovery of a new oil field in {} significantly increases the country's \
                 oil reserves, leading to potential economic growth. This may attract foreign \
@@ -247,6 +333,14 @@ impl EconomicEvent {
                 "A major disruption in oil supply from Saudi Arabia leads to a spike in global \
                 oil prices. This causes inflation and economic instability in the area, affecting \
                 industries reliant on oil and energy."
+                    .to_string()
+            },
+            EventName::Recession => {
+                "A global recession leads to a significant downturn in economic activity, \
+                resulting in high unemployment rates, reduced consumer spending, and falling \
+                stock prices. Governments implement stimulus measures to boost the economy, \
+                but recovery may take time as businesses struggle to adapt to the new economic \
+                environment."
                     .to_string()
             },
             EventName::RussiaWar => {
@@ -263,6 +357,12 @@ impl EconomicEvent {
                 conflict may lead to shifts in supply chains and trade alliances."
                     .to_string()
             },
+            EventName::Vaccine(company) => format!(
+                "A breakthrough in vaccine development by {} leads to a significant reduction \
+                in the spread of infectious diseases. This boosts public health, increases \
+                consumer confidence, and positively impacts the company's stock price.",
+                company.to_name()
+            ),
         }
     }
 
@@ -270,6 +370,11 @@ impl EconomicEvent {
         match self.name {
             EventName::Covid => {
                 *economy.economy.values.back_mut().unwrap() += 0.05;
+            },
+            EventName::CryptoCrash(name) => {
+                economy.cryptos.iter_mut().find(|c| c.name == name).map(|c| {
+                    *c.prices.back_mut().unwrap() *= rng().random_range(0.25..0.75);
+                });
             },
             _ => (),
         }

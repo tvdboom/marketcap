@@ -8,8 +8,9 @@ use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::sectors::{Sector, SectorName};
 use crate::utils::{DQueue, NameFromEnum};
 
-#[derive(EnumIter, Clone, Copy, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Copy, Debug, Default, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum Company {
+    #[default]
     Apple,
     Boeing,
     GoldmanSachs,
@@ -231,7 +232,7 @@ impl Instrument for Stock {
         self.esg.clone()
     }
 
-    fn sector(&self) -> HashMap<SectorName, f32> {
+    fn sectors(&self) -> HashMap<SectorName, f32> {
         self.sector.clone()
     }
 
@@ -252,7 +253,7 @@ pub fn start_stocks() -> Vec<Stock> {
             prices: DQueue::from([175.]),
             volatility: 2.5,
             dividend: 0.22,
-            sector: HashMap::from([(SectorName::Technology, 1.0)]),
+            sector: HashMap::from([(SectorName::Technology, 0.8), (SectorName::Retail, 0.2)]),
             sentiment: 0.,
             esg: ESGRating::AA,
         },
@@ -272,7 +273,7 @@ pub fn start_stocks() -> Vec<Stock> {
             prices: DQueue::from([350.]),
             volatility: 2.0,
             dividend: 3.0,
-            sector: HashMap::from([(SectorName::Finance, 1.0)]),
+            sector: HashMap::from([(SectorName::Finance, 0.9), (SectorName::Technology, 0.1)]),
             sentiment: 0.,
             esg: ESGRating::BB,
         },
@@ -282,7 +283,7 @@ pub fn start_stocks() -> Vec<Stock> {
             prices: DQueue::from([32.]),
             volatility: 1.8,
             dividend: 0.25,
-            sector: HashMap::from([(SectorName::Retail, 1.0)]),
+            sector: HashMap::from([(SectorName::Fashion, 0.6), (SectorName::Retail, 0.4)]),
             sentiment: 0.,
             esg: ESGRating::A,
         },
@@ -302,7 +303,7 @@ pub fn start_stocks() -> Vec<Stock> {
             prices: DQueue::from([830.]),
             volatility: 1.5,
             dividend: 4.25,
-            sector: HashMap::from([(SectorName::Retail, 1.0)]),
+            sector: HashMap::from([(SectorName::Fashion, 0.8), (SectorName::Retail, 0.2)]),
             sentiment: 0.,
             esg: ESGRating::AA,
         },
@@ -312,7 +313,7 @@ pub fn start_stocks() -> Vec<Stock> {
             prices: DQueue::from([1450.]),
             volatility: 2.8,
             dividend: 9.5,
-            sector: HashMap::from([(SectorName::Transport, 0.7), (SectorName::Energy, 0.3)]),
+            sector: HashMap::from([(SectorName::Transport, 0.8), (SectorName::Energy, 0.2)]),
             sentiment: 0.,
             esg: ESGRating::A,
         },
@@ -322,7 +323,7 @@ pub fn start_stocks() -> Vec<Stock> {
             prices: DQueue::from([110.]),
             volatility: 4.5,
             dividend: 0.0,
-            sector: HashMap::from([(SectorName::Healthcare, 1.0)]),
+            sector: HashMap::from([(SectorName::Healthcare, 0.9), (SectorName::Technology, 0.1)]),
             sentiment: 0.,
             esg: ESGRating::AA,
         },
@@ -332,7 +333,11 @@ pub fn start_stocks() -> Vec<Stock> {
             prices: DQueue::from([120.]),
             volatility: 1.2,
             dividend: 0.875,
-            sector: HashMap::from([(SectorName::Food, 1.0)]),
+            sector: HashMap::from([
+                (SectorName::Food, 0.7),
+                (SectorName::Healthcare, 0.2),
+                (SectorName::Retail, 0.1),
+            ]),
             sentiment: 0.,
             esg: ESGRating::AAA,
         },
@@ -342,7 +347,7 @@ pub fn start_stocks() -> Vec<Stock> {
             prices: DQueue::from([1250.]),
             volatility: 4.2,
             dividend: 0.3,
-            sector: HashMap::from([(SectorName::Technology, 1.0)]),
+            sector: HashMap::from([(SectorName::Technology, 0.85), (SectorName::Military, 0.15)]),
             sentiment: 0.,
             esg: ESGRating::A,
         },
@@ -352,7 +357,7 @@ pub fn start_stocks() -> Vec<Stock> {
             prices: DQueue::from([30.]),
             volatility: 2.5,
             dividend: 0.275,
-            sector: HashMap::from([(SectorName::Healthcare, 1.0)]),
+            sector: HashMap::from([(SectorName::Healthcare, 0.9), (SectorName::Retail, 0.1)]),
             sentiment: 0.,
             esg: ESGRating::AA,
         },
@@ -362,7 +367,7 @@ pub fn start_stocks() -> Vec<Stock> {
             prices: DQueue::from([65.]),
             volatility: 1.9,
             dividend: 0.65,
-            sector: HashMap::from([(SectorName::Materials, 1.0)]),
+            sector: HashMap::from([(SectorName::Materials, 0.9), (SectorName::Energy, 0.1)]),
             sentiment: 0.,
             esg: ESGRating::BBB,
         },
@@ -372,7 +377,7 @@ pub fn start_stocks() -> Vec<Stock> {
             prices: DQueue::from([65.]),
             volatility: 2.0,
             dividend: 0.625,
-            sector: HashMap::from([(SectorName::Energy, 1.0)]),
+            sector: HashMap::from([(SectorName::Energy, 0.8), (SectorName::Materials, 0.2)]),
             sentiment: 0.,
             esg: ESGRating::BB,
         },
@@ -382,7 +387,12 @@ pub fn start_stocks() -> Vec<Stock> {
             prices: DQueue::from([190.]),
             volatility: 2.1,
             dividend: 0.45,
-            sector: HashMap::from([(SectorName::Transport, 1.0)]),
+            sector: HashMap::from([
+                (SectorName::Transport, 0.6),
+                (SectorName::Energy, 0.1),
+                (SectorName::Technology, 0.1),
+                (SectorName::Retail, 0.1),
+            ]),
             sentiment: 0.,
             esg: ESGRating::A,
         },

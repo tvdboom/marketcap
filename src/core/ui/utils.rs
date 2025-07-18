@@ -511,8 +511,8 @@ impl CustomUi for Ui {
                             if matches!(instrument.kind(), InstrumentKind::Stock(_)) {
                                 ui.add_space(window.width() * 0.02);
                                 ui.vertical(|ui| {
-                                    ui.label("Sector");
-                                    for (name, weight) in instrument.sector().iter().sorted_by(|a, b| b.1.partial_cmp(&a.1).unwrap()) {
+                                    ui.label("Sectors");
+                                    for (name, weight) in instrument.sectors().iter().sorted_by(|a, b| b.1.partial_cmp(&a.1).unwrap()) {
                                         ui.add(
                                             ProgressBar::new(*weight)
                                                 .text(RichText::new(format!("{} {}", name.emoji(), name.to_name())).small())

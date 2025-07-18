@@ -142,7 +142,7 @@ pub trait Instrument {
     fn quality(&self) -> BondQuality {
         BondQuality::AAA
     }
-    fn sector(&self) -> HashMap<SectorName, f32> {
+    fn sectors(&self) -> HashMap<SectorName, f32> {
         HashMap::new()
     }
     fn sentiment(&self) -> f32 {

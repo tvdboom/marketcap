@@ -364,13 +364,13 @@ pub fn overview_panel(
 
             if !active_events.is_empty() {
                 ui.heading("Active events");
-                event_table(ui, economy.date, &mut active_events, &images);
+                event_table(ui, economy.date, true, &mut active_events, &images);
                 ui.add_space(window.height() * 0.05);
             }
 
             if !historical_events.is_empty() {
                 ui.heading("Historical events");
-                event_table(ui, economy.date, &mut historical_events, &images);
+                event_table(ui, economy.date, false, &mut historical_events, &images);
             }
         },
     });
@@ -404,6 +404,7 @@ pub fn instrument_table(
         .show(ui, |ui| {
             TableBuilder::new(ui)
                 .id_salt(create_guid())
+                .min_scrolled_height(400.)
                 .striped(false)
                 .sense(Sense::click())
                 .columns(Column::remainder(), columns.len())
@@ -924,6 +925,7 @@ pub fn margin_loan_table(
 pub fn event_table(
     ui: &mut Ui,
     today: NaiveDate,
+    active: bool,
     events: &mut Vec<&EconomicEvent>,
     images: &ImageIds,
 ) {
@@ -937,7 +939,7 @@ pub fn event_table(
         .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
         .show(ui, |ui| {
             TableBuilder::new(ui)
-                .id_salt(create_guid())
+                .id_salt(format!("event_table_{}", if active { "active" } else { "historical" }))
                 .striped(false)
                 .column(Column::initial(300.))
                 .columns(Column::initial(100.), 2)
