@@ -308,7 +308,7 @@ pub fn time_pass(
             let storage_costs = player
                 .instruments
                 .iter()
-                .map(|o| o.amount as f32 * economy.get(&o.kind).storage_cost(&player))
+                .map(|o| o.amount as f32 * economy.get(&o.kind).storage_cost(&economy, &player))
                 .sum::<f32>();
 
             if storage_costs > 0. {

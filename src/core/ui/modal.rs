@@ -67,7 +67,7 @@ pub fn trade_modal(
         } else {
             1.0
         };
-    let storage_costs = (amount * 30) as f32 * instrument.storage_cost(&player);
+    let storage_costs = (amount * 30) as f32 * instrument.storage_cost(&economy, &player);
 
     let derivatives = player
         .derivatives
@@ -88,6 +88,7 @@ pub fn trade_modal(
         instrument.future_price(
             economy.interest.current(),
             state.modal_info.derivative_term.years(),
+            &economy,
             &player,
         )
     } else {

@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::render::render_resource::encase::private::RuntimeSizedArray;
 use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::{Frame, Image, ScrollArea, Sense, Ui};
 use chrono::NaiveDate;
@@ -18,7 +19,7 @@ use crate::core::research::TechName;
 use crate::core::resources::ImageIds;
 use crate::core::ui::state::{CreditTab, ModalInfo, OrderOptions, OverviewTab, Tab, UiState};
 use crate::core::ui::utils::{CustomUi, toggle};
-use crate::utils::{EnhFloat, NameFromEnum, create_guid};
+use crate::utils::{EnhFloat, NameFromEnum};
 
 pub fn overview_panel(
     ui: &mut Ui,
@@ -383,9 +384,11 @@ pub fn instrument_table(
     player: &Player,
     instruments: Vec<&OwnedInstrument>,
 ) {
+    let kind = instruments.first().unwrap().kind;
+
     let mut columns = vec![
         "Name",
-        if matches!(instruments.first().unwrap().kind, InstrumentKind::Bond(_)) {
+        if matches!(kind, InstrumentKind::Bond(_)) {
             "Maturity"
         } else {
             "Market price"
@@ -394,7 +397,7 @@ pub fn instrument_table(
         "Value",
     ];
 
-    if matches!(instruments.first().unwrap().kind, InstrumentKind::Commodity(_)) {
+    if matches!(kind, InstrumentKind::Commodity(_)) {
         columns.push("Storage cost");
     }
 
@@ -403,8 +406,7 @@ pub fn instrument_table(
         .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
         .show(ui, |ui| {
             TableBuilder::new(ui)
-                .id_salt(create_guid())
-                .min_scrolled_height(400.)
+                .id_salt(format!("instrument_{}", kind.to_name()))
                 .striped(false)
                 .sense(Sense::click())
                 .columns(Column::remainder(), columns.len())
@@ -421,8 +423,7 @@ pub fn instrument_table(
 
                         let mut content = vec![
                             instrument.name(),
-                            if matches!(instruments.first().unwrap().kind, InstrumentKind::Bond(_))
-                            {
+                            if matches!(kind, InstrumentKind::Bond(_)) {
                                 owned.maturity_date.format(DATE_FORMAT).to_string()
                             } else {
                                 format!("{}{CURRENCY}", instrument.current().clean())
@@ -434,12 +435,12 @@ pub fn instrument_table(
                             ),
                         ];
 
-                        if matches!(instruments.first().unwrap().kind, InstrumentKind::Commodity(_))
-                        {
+                        if matches!(kind, InstrumentKind::Commodity(_)) {
                             content.push(format!(
                                 "{}{CURRENCY}/month",
-                                (30. * owned.amount as f32 * instrument.storage_cost(player))
-                                    .max(0.) as u32
+                                (30. * owned.amount as f32
+                                    * instrument.storage_cost(economy, player))
+                                .max(0.) as u32
                             ));
                         }
 
@@ -938,8 +939,14 @@ pub fn event_table(
         .inner_margin(ui.spacing().menu_margin)
         .stroke(ui.visuals().widgets.noninteractive.bg_stroke)
         .show(ui, |ui| {
+            ui.set_min_height((90. * events.len() as f32).min(500.));
+
             TableBuilder::new(ui)
-                .id_salt(format!("event_table_{}", if active { "active" } else { "historical" }))
+                .id_salt(if active {
+                    "event_table_active"
+                } else {
+                    "event_table_historical"
+                })
                 .striped(false)
                 .column(Column::initial(300.))
                 .columns(Column::initial(100.), 2)

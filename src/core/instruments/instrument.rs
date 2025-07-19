@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 
 use crate::core::derivatives::OptionKind;
+use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::{BondIssuer, BondQuality};
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::crypto::CryptoName;
@@ -16,7 +17,7 @@ use crate::core::research::TechName;
 use crate::core::sectors::SectorName;
 use crate::utils::{DQueue, NameFromEnum, norm_cdf};
 
-#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum InstrumentKind {
     Stock(Company),
     Bond(BondIssuer),
@@ -79,11 +80,17 @@ pub trait Instrument {
         *self.all().back().unwrap()
     }
 
-    fn future_price(&self, interest: f32, years: f32, player: &Player) -> f32 {
+    fn future_price(
+        &self,
+        interest: f32,
+        years: f32,
+        economy: &GlobalEconomy,
+        player: &Player,
+    ) -> f32 {
         self.current()
             * E.powf(
                 (interest / 100.
-                    + self.storage_cost(player) / 100. * 365.
+                    + self.storage_cost(economy, player) / 100. * 365.
                     + self.volatility() / 100.)
                     * years,
             )
@@ -151,7 +158,7 @@ pub trait Instrument {
 
     /// Costs of holding this instrument per unit per day
     #[allow(unused_variables)]
-    fn storage_cost(&self, player: &Player) -> f32 {
+    fn storage_cost(&self, economy: &GlobalEconomy, player: &Player) -> f32 {
         0.
     }
     fn volatility(&self) -> f32 {

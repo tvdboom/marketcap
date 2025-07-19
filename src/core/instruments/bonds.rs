@@ -69,7 +69,7 @@ impl BondQuality {
     }
 }
 
-#[derive(Clone, Copy, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum BondIssuer {
     Government(CountryName),
     Corporate(Company),

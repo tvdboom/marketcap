@@ -1,8 +1,8 @@
 use chrono::NaiveDate;
 use rand::distr::Distribution;
 use rand::distr::weighted::WeightedIndex;
-use rand::{rng, Rng};
 use rand::seq::IteratorRandom;
+use rand::{Rng, rng};
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
 use strum_macros::EnumIter;
@@ -12,13 +12,13 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::crypto::CryptoName;
 use crate::core::instruments::instrument::InstrumentKind;
-use crate::core::instruments::stocks::Company;
+use crate::core::instruments::stocks::{Company, ESGRating};
 use crate::core::player::Player;
 use crate::core::research::TechName;
 use crate::core::sectors::SectorName;
 use crate::utils::NameFromEnum;
 
-#[derive(EnumIter, Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum EventName {
     BrazilPolitics,
     Covid,
@@ -32,8 +32,10 @@ pub enum EventName {
     Harvest(CountryName),
     InterestBump(CountryName),
     NewProduct(Company),
+    NewContract(Company),
     OilDiscovery(CountryName),
     OilDisruption,
+    StorageCosts,
     Recession,
     RussiaWar,
     TradeWar,
@@ -75,9 +77,23 @@ impl EventName {
                     _ => unreachable!(),
                 }
             },
-            EventName::EsgScandal(_) => {
-                EventName::EsgScandal(Company::iter().choose(&mut rng()).unwrap())
-            },
+            EventName::EsgScandal(_) => EventName::EsgScandal(
+                Company::iter()
+                    .filter(|c| {
+                        let instrument = economy.get(&InstrumentKind::Stock(*c));
+                        instrument.esg() >= ESGRating::BB
+                    })
+                    .choose(&mut rng())
+                    .unwrap(),
+            ),
+            EventName::NewContract(_) => EventName::NewContract(
+                Company::iter()
+                    .filter(|c| {
+                        matches!(*c, Company::Boeing | Company::LockheedMartin | Company::Toyota)
+                    })
+                    .choose(&mut rng())
+                    .unwrap(),
+            ),
             EventName::NewProduct(_) => EventName::NewProduct(
                 Company::iter()
                     .filter(|c| {
@@ -130,53 +146,67 @@ impl EventName {
             _ => name,
         };
 
-        let duration = match name {
-            EventName::BrazilPolitics => 365 + rand::random::<u32>() % 365,
-            EventName::Covid => 120 + rand::random::<u32>() % 120,
-            EventName::Drought(_) | EventName::Harvest(_) => 30 + rand::random::<u32>() % 30,
-            EventName::Grounded => 7 + rand::random::<u32>() % 7,
-            EventName::OilDisruption => 10 + rand::random::<u32>() % 10,
-            EventName::Recession => 60 + rand::random::<u32>() % 60,
-            EventName::RussiaWar => 365 + rand::random::<u32>() % 365,
-            EventName::TradeWar => 180 + rand::random::<u32>() % 180,
+        EconomicEvent::new(name.clone(), economy.date, name.duration())
+    }
+
+    pub fn duration(&self) -> u32 {
+        let duration = match self {
+            EventName::BrazilPolitics => 365,
+            EventName::Covid => 120,
+            EventName::Drought(_) | EventName::Harvest(_) => 30,
+            EventName::Grounded => 7,
+            EventName::OilDisruption => 10,
+            EventName::StorageCosts => 90,
+            EventName::Recession => 60,
+            EventName::RussiaWar => 365,
+            EventName::TradeWar => 180,
             _ => 1,
         };
 
-        EconomicEvent::new(name, economy.date, duration)
+        if duration > 1 {
+            duration * rng().random_range(1..3)
+        } else {
+            duration
+        }
+    }
+
+    pub fn base_weight(&self) -> f32 {
+        match self {
+            EventName::BrazilPolitics => 0.1,
+            EventName::Covid => 0.1,
+            EventName::Crimea => 0.1,
+            EventName::Recession => 0.4,
+            EventName::RussiaWar => 0.1,
+            EventName::TradeWar => 0.1,
+            EventName::Vaccine(_) => 0.1,
+            _ => 1.0,
+        }
     }
 
     pub fn weights(economy: &GlobalEconomy, player: &Player) -> Vec<f32> {
         Self::iter()
             .map(|event| {
                 match event {
-                    n @ EventName::BrazilPolitics => {
-                        (!economy.events.iter().any(|e| e.name == n)).then_some(0.1)
-                    },
-                    n @ EventName::Covid => {
-                        (!economy.events.iter().any(|e| e.name == n)).then_some(0.1)
-                    },
                     n @ EventName::Crimea => (player.has_tech(&TechName::ForeignExchange)
                         && !economy.events.iter().any(|e| e.name == n))
-                    .then_some(0.1),
+                    .then_some(n.base_weight()),
                     EventName::CryptoCrash(_) => {
                         player.has_tech(&TechName::Cryptocurrencies).then_some(1.)
                     },
                     EventName::Drought(_) | EventName::Harvest(_) => {
                         player.has_tech(&TechName::Commodities).then_some(1.)
                     },
-                    EventName::EsgScandal(_) => {
-                        player.has_tech(&TechName::ESG).then_some(1.)
-                    },
+                    EventName::EsgScandal(_) => player.has_tech(&TechName::ESG).then_some(1.),
                     EventName::GasDiscovery(_) | EventName::OilDiscovery(_) => {
                         player.has_tech(&TechName::Commodities).then_some(1.)
                     },
                     n @ EventName::RussiaWar => (!economy.events.iter().any(|e| e.name == n)
                         && economy.active_events().iter().any(|e| e.name == EventName::Crimea))
-                    .then_some(0.1),
-                    n @ EventName::TradeWar => {
-                        (!economy.events.iter().any(|e| e.name == n)).then_some(0.1)
-                    },
-                    n => (!economy.events.iter().any(|e| e.name == n)).then_some(1.),
+                    .then_some(n.base_weight()),
+                    n @ EventName::StorageCosts => (player.has_tech(&TechName::Commodities)
+                        && !economy.active_events().iter().any(|e| e.name == n))
+                    .then_some(n.base_weight()),
+                    n => (!economy.events.iter().any(|e| e.name == n)).then_some(n.base_weight()),
                 }
                 .unwrap_or(0.)
             })
@@ -224,6 +254,9 @@ impl EconomicEvent {
             EventName::InterestBump(country) => {
                 format!("Interest rates raised in {}", country.to_name())
             },
+            EventName::NewContract(company) => {
+                format!("{} signs a big new contract", company.to_name())
+            },
             EventName::NewProduct(company) => {
                 format!("{} launches a new product", company.to_name())
             },
@@ -233,6 +266,7 @@ impl EconomicEvent {
             EventName::OilDisruption => "Oil supply disruption in Saudi Arabia".to_string(),
             EventName::Recession => "Global recession".to_string(),
             EventName::RussiaWar => "Russia invades Ukraine".to_string(),
+            EventName::StorageCosts => "Storage costs rise".to_string(),
             EventName::TradeWar => "USA - China trade war escalates".to_string(),
             EventName::Vaccine(company) => format!("{} vaccine breakthrough", company.to_name()),
         }
@@ -316,6 +350,12 @@ impl EconomicEvent {
                 growth in the short term but is aimed at stabilizing the economy in the long run.",
                 country.to_name()
             ),
+            EventName::NewContract(company) => format!(
+                "A major contract signed by {} boosts the company's stock price and increases its \
+                revenue. The contract involves the production of new equipment, leading to \
+                increased spending in the sector.",
+                company.to_name()
+            ),
             EventName::NewProduct(company) => format!(
                 "The launch of a new product by {} creates a buzz in the market, leading to \
                 increased sales and stock price appreciation. The product's success may depend \
@@ -348,6 +388,13 @@ impl EconomicEvent {
                 economic disruption in the region. It results in sanctions, trade restrictions, \
                 and increased military spending. The war also affects global energy prices and \
                 supply chains, leading to inflationary pressures worldwide."
+                    .to_string()
+            },
+            EventName::StorageCosts => {
+                "Rising storage costs for commodities lead to increased prices and reduced \
+                profitability for producers. This may result in a shift in supply chains, as \
+                companies seek to minimize storage expenses. The situation could also lead to \
+                increased investment in logistics and infrastructure."
                     .to_string()
             },
             EventName::TradeWar => {

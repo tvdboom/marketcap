@@ -122,6 +122,18 @@ impl ESGRating {
         }
     }
 
+    pub fn decrease(&self) -> ESGRating {
+        match self {
+            ESGRating::AAA => ESGRating::A,
+            ESGRating::AA => ESGRating::BBB,
+            ESGRating::A => ESGRating::BB,
+            ESGRating::BBB => ESGRating::B,
+            ESGRating::BB => ESGRating::CCC,
+            ESGRating::B => ESGRating::CCC,
+            ESGRating::CCC => ESGRating::CCC,
+        }
+    }
+
     pub fn value(&self) -> f32 {
         match self {
             ESGRating::AAA => 1.0,

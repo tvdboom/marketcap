@@ -124,7 +124,7 @@ impl Player {
     pub fn storage_costs(&self, economy: &GlobalEconomy) -> f32 {
         self.instruments
             .iter()
-            .map(|o| (o.amount as f32 * economy.get(&o.kind).storage_cost(&self)).max(0.))
+            .map(|o| (o.amount as f32 * economy.get(&o.kind).storage_cost(economy, &self)).max(0.))
             .sum()
     }
 
@@ -267,7 +267,7 @@ impl Player {
                 - if order.command == Command::Buy {
                     0.
                 } else {
-                    instrument.storage_cost(&self) * 30.
+                    instrument.storage_cost(economy, &self) * 30.
                 })
                 * order.amount as f32;
 

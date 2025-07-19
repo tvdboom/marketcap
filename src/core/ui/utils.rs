@@ -468,7 +468,7 @@ impl CustomUi for Ui {
                                     InstrumentKind::Commodity(name) => {
                                         ui.label(format!(
                                             "Storage costs: {:.0}{CURRENCY}{}/month",
-                                            instrument.storage_cost(player) * 30.,
+                                            instrument.storage_cost(economy, player) * 30.,
                                             instrument.per_unit(),
                                         ))
                                             .on_hover_text(

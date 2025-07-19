@@ -1,12 +1,14 @@
-use rand::{Rng, rng};
-use serde::{Deserialize, Serialize};
-use strum_macros::EnumIter;
-
+use crate::core::events::EventName;
 use crate::core::factors::economy::Economy;
+use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::player::Player;
 use crate::core::research::TechName;
 use crate::utils::{DQueue, NameFromEnum};
+use itertools::Itertools;
+use rand::{Rng, rng};
+use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Unit {
@@ -212,11 +214,16 @@ impl Instrument for Commodity {
         &self.prices
     }
 
-    fn storage_cost(&self, player: &Player) -> f32 {
+    fn storage_cost(&self, economy: &GlobalEconomy, player: &Player) -> f32 {
         self.storage_cost / 100.
             * self.base_price
             * if player.has_tech(&TechName::ReducedStorage) {
                 0.8
+            } else {
+                1.
+            }
+            * if economy.active_events().iter().map(|e| e.name).contains(&EventName::StorageCosts) {
+                1.5
             } else {
                 1.
             }

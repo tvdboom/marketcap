@@ -75,11 +75,13 @@ impl FromWorld for WorldAssets {
             ("grounded", assets.load("images/events/grounded.png")),
             ("harvest", assets.load("images/events/harvest.png")),
             ("interest-bump", assets.load("images/events/interest-bump.png")),
+            ("new-contract", assets.load("images/events/new-contract.png")),
             ("new-product", assets.load("images/events/new-product.png")),
             ("oil-discovery", assets.load("images/events/oil-discovery.png")),
             ("oil-disruption", assets.load("images/events/oil-disruption.png")),
             ("recession", assets.load("images/events/recession.png")),
             ("russia-war", assets.load("images/events/russia-war.png")),
+            ("storage-costs", assets.load("images/events/storage-costs.png")),
             ("trade-war", assets.load("images/events/trade-war.png")),
             ("vaccine", assets.load("images/events/vaccine.png")),
         ]);
