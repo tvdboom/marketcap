@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::constants::{DEFAULT_SPEED, START_DATE};
 use crate::core::countries::{Country, start_countries};
-use crate::core::events::EconomicEvent;
+use crate::core::events::{EconomicEvent, EventName};
 use crate::core::factors::economy::Economy;
 use crate::core::factors::inflation::Inflation;
 use crate::core::factors::interest::Interest;
@@ -209,6 +209,10 @@ impl GlobalEconomy {
             .iter()
             .filter(|e| self.date < e.start_date + Duration::days(e.duration as i64))
             .collect()
+    }
+
+    pub fn has_active_event(&self, name: &EventName) -> bool {
+        self.active_events().iter().any(|e| e.name == *name)
     }
 
     pub fn historical_events(&self) -> Vec<&EconomicEvent> {

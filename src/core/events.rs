@@ -206,6 +206,13 @@ impl EventName {
                     n @ EventName::StorageCosts => (player.has_tech(&TechName::Commodities)
                         && !economy.active_events().iter().any(|e| e.name == n))
                     .then_some(n.base_weight()),
+                    n @ EventName::Vaccine(_) => {
+                        Some(if economy.has_active_event(&EventName::Covid) {
+                            3. * n.base_weight()
+                        } else {
+                            n.base_weight()
+                        })
+                    },
                     n => (!economy.events.iter().any(|e| e.name == n)).then_some(n.base_weight()),
                 }
                 .unwrap_or(0.)

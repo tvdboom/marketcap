@@ -222,7 +222,7 @@ impl Instrument for Commodity {
             } else {
                 1.
             }
-            * if economy.active_events().iter().map(|e| e.name).contains(&EventName::StorageCosts) {
+            * if economy.has_active_event(&EventName::StorageCosts) {
                 1.5
             } else {
                 1.
