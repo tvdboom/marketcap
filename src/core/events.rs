@@ -28,6 +28,7 @@ pub enum EventName {
     Drought(CountryName),
     EsgScandal(Company),
     GasDiscovery(CountryName),
+    GoldRush,
     Grounded,
     Harvest(CountryName),
     InterestBump(CountryName),
@@ -200,6 +201,9 @@ impl EventName {
                     EventName::GasDiscovery(_) | EventName::OilDiscovery(_) => {
                         player.has_tech(&TechName::Commodities).then_some(1.)
                     },
+                    n @ EventName::GoldRush => (player.has_tech(&TechName::Commodities)
+                        && !economy.events.iter().any(|e| e.name == n))
+                    .then_some(n.base_weight()),
                     n @ EventName::RussiaWar => (!economy.events.iter().any(|e| e.name == n)
                         && economy.active_events().iter().any(|e| e.name == EventName::Crimea))
                     .then_some(n.base_weight()),
@@ -256,6 +260,7 @@ impl EconomicEvent {
             EventName::GasDiscovery(country) => {
                 format!("New gas field discovered in {}", country.to_name())
             },
+            EventName::GoldRush => "Gold rush".to_string(),
             EventName::Grounded => "Air travel in EU grounded".to_string(),
             EventName::Harvest(country) => format!("Plentiful harvest in {}", country.to_name()),
             EventName::InterestBump(country) => {
@@ -339,6 +344,11 @@ impl EconomicEvent {
                 to geopolitical tensions over energy resources.",
                 country.to_name()
             ),
+            EventName::GoldRush => {
+                "Tensions un geopolitics causes gold and silver prices to skyrocket. Investors \
+                flock to these safe-haven assets, leading to a surge in mining activities."
+                    .to_string()
+            },
             EventName::Grounded => {
                 "Volcanic activity in Iceland has grounded all air traffic in the European Union. \
                 This disrupts travel plans for millions of passengers and causes significant \
