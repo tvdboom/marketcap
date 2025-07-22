@@ -28,6 +28,7 @@ use crate::core::ui::credit::credit_panel;
 use crate::core::ui::crypto::crypto_panel;
 use crate::core::ui::forex::forex_panel;
 use crate::core::ui::overview::overview_panel;
+use crate::core::ui::policies::policies_panel;
 use crate::core::ui::research::research_panel;
 use crate::core::ui::state::{Tab, UiState};
 use crate::core::ui::stocks::stock_panel;
@@ -457,7 +458,7 @@ pub fn central_panel(
                 credit_panel(ui, &mut state, &economy, &mut player, &mut message, &window)
             },
             Tab::Policies => {
-                ui.heading("Policies");
+                policies_panel(ui, &mut state, &economy, &mut player, &mut message, &window);
             },
             Tab::Research => research_panel(ui, &mut player, &mut message, &images, &window),
         });

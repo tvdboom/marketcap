@@ -128,7 +128,118 @@ impl Instrument for Currency {
     }
 
     fn description(&self) -> &str {
-        self.country.description()
+        match self.name {
+            CurrencyName::AUD => {
+                "\
+                The Australian dollar (AUD) is a commodity-linked currency heavily influenced \
+                by global demand for resources like iron ore, and gold. It's considered a \
+                risk-sensitive currency, often gaining value in times of global economic \
+                optimism and declining during risk-off sentiment. The Reserve Bank of Australia \
+                (RBA) plays a major role in guiding its value through interest rate policy. \
+                AUD is actively traded in the Asia-Pacific region and is popular in carry trades \
+                due to historically higher interest rates compared to other developed economies."
+            },
+            CurrencyName::BRL => {
+                "\
+                The Brazilian real (BRL) is the official currency of Brazil and is considered an \
+                emerging market currency. It's influenced by commodity prices, especially Brazil's \
+                key exports: coffee and cocoa. The real is sensitive to political risk, inflation, \
+                and fiscal policy, with the Central Bank of Brazil playing a key role through \
+                interest rate adjustments. BRL tends to be volatile and is often used by traders \
+                to gain exposure to emerging markets or to capitalize on carry trade opportunities \
+                during periods of high domestic interest rates."
+            },
+            CurrencyName::CAD => {
+                "\
+                The Canadian dollar (CAD) is a commodity-linked currency closely tied to the \
+                price of oil, as Canada is one of the world’s largest oil exporters. It’s \
+                considered a stable and highly liquid currency, actively traded during North \
+                American market hours. While relatively less volatile than some emerging market \
+                currencies, CAD still responds to shifts in global risk sentiment and U.S. \
+                economic data due to the countries' close trade relationship."
+            },
+            CurrencyName::CNY => {
+                "\
+                The Chinese yuan (CNY), also known as the renminbi (RMB), is the official currency \
+                of the People’s Republic of China. It is partially managed by the People's Bank \
+                of China, with a tightly controlled exchange rate regime that allows limited \
+                daily movement against a basket of currencies. While not fully convertible, the \
+                yuan's global influence has grown due to China's economic size and trade \
+                relationships. The currency is sensitive to government policy, trade balances, \
+                and geopolitical tensions."
+            },
+            CurrencyName::EUR => {
+                "\
+                The euro (EUR) is the official currency of the Eurozone, used by 20 of the 27 EU \
+                member states, making it the second most traded and held currency globally after \
+                the U.S. dollar. Issued by the European Central Bank (ECB), the euro is seen as \
+                a stable, low-volatility currency backed by a large, diversified economy. Its \
+                value is influenced by ECB monetary policy, inflation data, and political \
+                developments within the EU."
+            },
+            CurrencyName::JPY => {
+                "\
+                The Japanese yen (JPY) is one of the most traded currencies globally, known for \
+                its high liquidity and role as a safe-haven asset. It is heavily influenced by \
+                monetary policy from the Bank of Japan, which has maintained ultra-low interest \
+                rates for decades. The yen tends to strengthen during periods of global uncertainty \
+                as investors seek safety. It’s also widely used in carry trades due to its \
+                historically low yields. JPY trading is most active during Asian market hours \
+                and is a key currency in global forex pairs, especially against USD and EUR."
+            },
+            CurrencyName::RUB => {
+                "\
+                The Russian ruble (RUB) is the official currency of the Russian Federation and \
+                is considered a high-volatility emerging market currency. It is heavily influenced \
+                by global energy prices—especially oil and gas exports — as well as geopolitical \
+                developments and domestic fiscal policy. The Central Bank of Russia manages the \
+                ruble through interest rates and, at times, capital controls. Sanctions, political \
+                risk, and trade restrictions can cause sharp movements in RUB."
+            },
+            CurrencyName::SAR => {
+                "\
+                The Saudi riyal (SAR) value is indirectly influenced by global oil prices, as \
+                Saudi Arabia’s economy is heavily reliant on petroleum exports. While not widely \
+                traded internationally, the SAR is important in regional finance and reflects \
+                the kingdom's fiscal health and oil market dynamics."
+            },
+            CurrencyName::UAH => {
+                "\
+                The Ukrainian hryvnia (UAH) is considered an emerging market currency with high \
+                volatility due to ongoing political and economic instability. While less liquid \
+                than major currencies, UAH plays a crucial role in Ukraine’s economy and regional \
+                trade."
+            },
+            CurrencyName::USD => {
+                "\
+                The U.S. dollar (USD) is the world's primary reserve and most traded currency, \
+                widely used in global trade, finance, and as a benchmark currency. Issued by the \
+                Federal Reserve, its value is influenced by U.S. economic data, interest rates, \
+                and geopolitical events. The dollar acts as a safe haven during market uncertainty \
+                and is central to many commodities priced globally. USD liquidity is highest \
+                during overlapping North American and European trading sessions, making it the \
+                dominant currency in forex markets."
+            },
+            CurrencyName::VES => {
+                "\
+                The Venezuelan bolívar (VES) is the official currency of Venezuela and is highly \
+                volatile due to severe hyperinflation, political instability, and economic crisis. \
+                Its value has drastically depreciated over recent years, leading to widespread \
+                dollarization in the economy. The Central Bank of Venezuela has limited ability to \
+                stabilize the currency, and exchange rates vary significantly between official and \
+                black markets. Despite reforms, the bolívar remains weak and illiquid, reflecting \
+                the country’s ongoing economic challenges."
+            },
+            CurrencyName::ZAR => {
+                "\
+                The South African rand (ZAR) is the official currency of South Africa and a key \
+                emerging market currency. It is commodity-sensitive, influenced heavily by prices \
+                of gold and other minerals, which are major exports. The rand is known for its \
+                volatility due to political risk, domestic economic challenges, and shifts in \
+                global risk sentiment. It is actively traded during African and European market \
+                hours and often used by traders seeking exposure to African markets."
+            },
+        }
     }
 
     fn kind(&self) -> InstrumentKind {

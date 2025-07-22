@@ -9,6 +9,7 @@ use strum::IntoEnumIterator;
 use crate::core::constants::{
     CURRENCY, CUSTOM_GREEN, DATE_FORMAT, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH,
 };
+use crate::core::countries::Country;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::BondIssuer;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
@@ -56,6 +57,7 @@ pub fn toggle(on: &mut bool) -> impl Widget + '_ {
 pub trait CustomUi {
     fn add_button(&mut self, text: impl Into<WidgetText>, window: &Window) -> Response;
     fn add_modal_button(&mut self, text: impl Into<WidgetText>, window: &Window) -> Response;
+    fn add_image(&mut self, texture: impl Into<TextureId>, size: impl Into<Vec2>) -> Response;
     fn add_indicator(&mut self, diff: f32) -> Response;
     fn add_combobox(
         &mut self,
@@ -65,6 +67,7 @@ pub trait CustomUi {
         window: &Window,
     );
     fn add_technology(&mut self, research: &Technology) -> Response;
+    fn add_country(&mut self, country: &Country, images: &ImageIds, window: &Window);
     fn add_plot(
         &mut self,
         data: &DQueue<f32>,
@@ -104,6 +107,10 @@ impl CustomUi for Ui {
 
     fn add_modal_button(&mut self, text: impl Into<WidgetText>, window: &Window) -> Response {
         self.add_sized([window.width() * 0.08, window.height() * 0.05], Button::new(text))
+    }
+
+    fn add_image(&mut self, texture: impl Into<TextureId>, size: impl Into<Vec2>) -> Response {
+        self.add(Image::new(SizedTexture::new(texture, size)))
     }
 
     fn add_indicator(&mut self, diff: f32) -> Response {
@@ -215,6 +222,59 @@ impl CustomUi for Ui {
         .on_hover_cursor(CursorIcon::PointingHand)
     }
 
+    fn add_country(&mut self, country: &Country, images: &ImageIds, window: &Window) {
+        let ratio = 5. * get_ratio(window.width(), window.height(), TextStyle::Heading);
+
+        self.horizontal(|ui| {
+            ui.vertical(|ui| {
+                ui.heading(country.name.to_name());
+                ui.add_image(
+                    images.get(format!("{}-flag", country.name.to_lowername()).as_str()),
+                    [ratio, ratio / 16. * 9.],
+                );
+            });
+
+            ui.add_space(window.width() * 0.02);
+
+            ui.vertical(|ui| {
+                ui.label(country.name.description());
+
+                ui.horizontal(|ui| {
+                    ui.vertical(|ui| {
+                        ui.label(format!(
+                            "Currency: {} ({})",
+                            country.currency.fullname(),
+                            country.currency.symbol()
+                        ));
+                        ui.label(format!("Classification: {}", country.market.to_name()));
+                        ui.label(format!("GDP: {} trillion euros", country.gdp));
+                    });
+                    ui.vertical(|ui| {
+                        ui.label("Production");
+
+                        let production = country
+                            .production
+                            .iter()
+                            .sorted_by(|a, b| b.1.partial_cmp(&a.1).unwrap())
+                            .collect::<Vec<_>>();
+                        let max = production.first().unwrap().1;
+                        for (name, weight) in production {
+                            ui.horizontal(|ui| {
+                                ui.add_image(images.get(name.to_lowername().as_str()), [20.; 2]);
+                                ui.add(
+                                    ProgressBar::new(weight / max)
+                                        .text(RichText::new(name.to_name()).small())
+                                        .corner_radius(5.)
+                                        .desired_width(ui.available_width().max(250.)),
+                                );
+                            });
+                        }
+                    });
+                });
+            });
+        });
+    }
+
     fn add_plot(
         &mut self,
         data: &DQueue<f32>,
@@ -318,10 +378,10 @@ impl CustomUi for Ui {
         window: &Window,
     ) -> Response {
         self.horizontal_centered(|ui| {
-            ui.add(Image::new(SizedTexture::new(
+            ui.add_image(
                 texture_id,
                 [get_ratio(window.width(), window.height(), TextStyle::Heading); 2],
-            )));
+            );
             ui.label(value.into().heading().color(color))
         })
         .response
@@ -362,10 +422,10 @@ impl CustomUi for Ui {
                             ui.heading(instrument.name());
                         }
 
-                        ui.add(Image::new(SizedTexture::new(
+                        ui.add_image(
                             images.get(instrument.image().as_str()),
                             [window.height() * 0.2; 2],
-                        )));
+                        );
                     });
 
                     ui.vertical(|ui| {
@@ -458,7 +518,16 @@ impl CustomUi for Ui {
                                                 The interest increases with the bond's term.",
                                             );
                                     },
-                                    InstrumentKind::Forex(_) => {
+                                    InstrumentKind::Forex(name) => {
+                                        let country = economy
+                                            .countries
+                                            .iter()
+                                            .find(|c| c.currency == name)
+                                            .unwrap();
+
+                                        ui.label(format!("Country: {}", country.name.to_name()))
+                                            .on_hover_ui(|ui| ui.add_country(country, images, window));
+
                                         ui.label(format!(
                                             "Currency: {} ({})",
                                             instrument.fullname(),
@@ -526,26 +595,28 @@ impl CustomUi for Ui {
                                                 .production
                                                 .iter()
                                                 .find(|(n, _)| **n == name)
-                                                .map(|(_, w)| (c.name, *w)))
+                                                .map(|(_, w)| (c, *w)))
                                             .collect::<Vec<_>>();
 
                                         production.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
 
                                         let max = production.iter().map(|(_, w)| *w).max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
-                                        for (name, weight) in production {
+                                        for (country, weight) in production {
                                             ui.horizontal(|ui| {
-                                                ui.add(Image::new(SizedTexture::new(
-                                                    images.get(format!("{}-flag", name.to_lowername()).as_str()),
+                                                ui.add_image(
+                                                    images.get(format!("{}-flag", country.name.to_lowername()).as_str()),
                                                     [30., 17.],
-                                                )));
+                                                );
 
                                                 ui.add(
                                                     ProgressBar::new(weight / max)
-                                                        .text(RichText::new(name.to_name()).small())
+                                                        .text(RichText::new(country.name.to_name()).small())
                                                         .corner_radius(5.)
                                                         .desired_width(ui.available_width() * 0.8)
-                                                ).on_hover_text(name.description());
-                                            });
+                                                );
+                                            })
+                                            .response
+                                            .on_hover_ui(|ui| ui.add_country(country, images, window));
                                         }
                                     });
                                 }

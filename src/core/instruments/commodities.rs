@@ -226,7 +226,7 @@ impl Instrument for Commodity {
     fn group(&self) -> CommodityGroup {
         self.group.clone()
     }
-    
+
     fn storage_cost(&self, economy: &GlobalEconomy, player: &Player) -> f32 {
         self.storage_cost / 100.
             * self.base_price

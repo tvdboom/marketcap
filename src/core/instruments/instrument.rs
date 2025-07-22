@@ -140,7 +140,9 @@ pub trait Instrument {
     fn esg(&self) -> ESGRating {
         ESGRating::AAA
     }
-    fn group(&self) -> CommodityGroup { CommodityGroup::Agricultural }
+    fn group(&self) -> CommodityGroup {
+        CommodityGroup::Agricultural
+    }
     fn interest(&self) -> f32 {
         0.0
     }

@@ -1,9 +1,6 @@
 use bevy::prelude::{EventWriter, Res, ResMut, Single, Window};
 use bevy_egui::EguiContexts;
-use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::{
-    ComboBox, Id, Image, Modal, RichText, ScrollArea, Sense, Separator, Sides, Slider,
-};
+use bevy_egui::egui::{ComboBox, Id, Modal, RichText, ScrollArea, Sense, Separator, Sides, Slider};
 use chrono::NaiveDate;
 use strum::IntoEnumIterator;
 
@@ -185,10 +182,10 @@ pub fn trade_modal(
                         }
                     });
 
-                ui.add(Image::new(SizedTexture::new(
+                ui.add_image(
                     images.get(instrument.image().as_str()),
                     [window.height() * 0.2; 2],
-                )))
+                )
                 .on_hover_ui(|ui| {
                     ui.set_min_width(window.width() * 0.4);
 

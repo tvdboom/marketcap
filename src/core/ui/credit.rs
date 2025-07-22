@@ -456,6 +456,5 @@ pub fn credit_panel(
                 }
             }
         },
-        CreditTab::P2P => {},
     }
 }

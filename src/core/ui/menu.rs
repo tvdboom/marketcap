@@ -2,10 +2,8 @@ use std::time::Duration;
 
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
-use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::{
-    Align, CentralPanel, Frame, Id, Image, Layout, Modal, RichText, Separator, Slider, Ui,
-    UiBuilder,
+    Align, CentralPanel, Frame, Id, Layout, Modal, RichText, Separator, Slider, Ui, UiBuilder,
 };
 use bevy_kira_audio::AudioControl;
 use bevy_kira_audio::prelude::Audio;
@@ -106,8 +104,7 @@ pub fn main_menu(
     CentralPanel::default().frame(Frame::default().inner_margin(0.)).show(
         contexts.ctx_mut(),
         |ui| {
-            let response =
-                ui.add(Image::new(SizedTexture::new(images.get("cover"), ui.available_size())));
+            let response = ui.add_image(images.get("cover"), ui.available_size());
 
             ui.allocate_new_ui(UiBuilder::new().max_rect(response.rect), |ui| {
                 ui.add_space(window.height() * 0.02);
@@ -240,14 +237,14 @@ pub fn end_game_menu(
             ui.set_width((window.width() * 0.75).max(WIDTH * 0.75));
             ui.set_height((window.height() * 0.7).max(HEIGHT * 0.7));
 
-            let response = ui.add(Image::new(SizedTexture::new(
+            let response = ui.add_image(
                 images.get(if defeat {
                     "game-over"
                 } else {
                     "victory"
                 }),
                 ui.available_size(),
-            )));
+            );
 
             ui.allocate_new_ui(UiBuilder::new().max_rect(response.rect), |ui| {
                 ui.with_layout(Layout::bottom_up(Align::Min), |ui| {

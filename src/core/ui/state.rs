@@ -422,7 +422,6 @@ pub enum CreditTab {
     NewLoan,
     RepayLoan,
     IncreaseCollateral,
-    P2P,
 }
 
 impl CreditTab {
@@ -431,7 +430,6 @@ impl CreditTab {
             CreditTab::NewLoan => "✏",
             CreditTab::RepayLoan => "💰",
             CreditTab::IncreaseCollateral => "💲",
-            CreditTab::P2P => "👤",
         }
     }
 }
@@ -448,6 +446,24 @@ pub struct CreditState {
     pub repay_amount: u32,
     pub increase: Option<String>,
     pub collateral_amount: u32,
+}
+
+#[derive(EnumIter, Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub enum PoliciesTab {
+    #[default]
+    Sectors,
+    Politics,
+    Laws,
+}
+
+impl PoliciesTab {
+    pub fn emoji(&self) -> &str {
+        match self {
+            PoliciesTab::Sectors => "🏭",
+            PoliciesTab::Politics => "⚖",
+            PoliciesTab::Laws => "🎓",
+        }
+    }
 }
 
 #[derive(Clone, Default, Serialize, Deserialize)]
@@ -475,6 +491,7 @@ pub struct UiState {
     pub commodities: InstrumentState,
     pub cryptos: InstrumentState,
     pub credit: CreditState,
+    pub policies: PoliciesTab,
     pub modal: Option<InstrumentKind>,
     pub modal_info: ModalInfo,
     pub active_event: Option<EventName>,

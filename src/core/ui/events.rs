@@ -1,9 +1,6 @@
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
-use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::{
-    Align, Color32, Frame, Id, Image, Layout, Margin, Modal, RichText, UiBuilder,
-};
+use bevy_egui::egui::{Align, Color32, Frame, Id, Layout, Margin, Modal, RichText, UiBuilder};
 
 use crate::core::constants::{HEIGHT, WIDTH};
 use crate::core::global_economy::GlobalEconomy;
@@ -32,10 +29,7 @@ pub fn event_modal(
             ui.set_width((window.width() * 0.45).max(WIDTH * 0.45));
             ui.set_height((window.height() * 0.5).max(HEIGHT * 0.5));
 
-            let response = ui.add(Image::new(SizedTexture::new(
-                images.get(event.image().as_str()),
-                ui.available_size(),
-            )));
+            let response = ui.add_image(images.get(event.image().as_str()), ui.available_size());
 
             ui.allocate_new_ui(UiBuilder::new().max_rect(response.rect), |ui| {
                 ui.add_space(window.height() * 0.02);

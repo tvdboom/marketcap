@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy::render::render_resource::encase::private::RuntimeSizedArray;
-use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::{Frame, Image, ScrollArea, Sense, Ui};
+use bevy_egui::egui::{Frame, ScrollArea, Sense, Ui};
 use chrono::NaiveDate;
 use egui_extras::{Column, TableBuilder};
 use strum::IntoEnumIterator;
@@ -982,10 +981,10 @@ pub fn event_table(
                                     ui.label(col);
 
                                     if i == 0 {
-                                        ui.add(Image::new(SizedTexture::new(
+                                        ui.add_image(
                                             images.get(event.image().as_str()),
                                             [160., 90.],
-                                        )));
+                                        );
                                     }
                                 });
                             }

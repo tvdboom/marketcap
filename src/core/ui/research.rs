@@ -1,6 +1,5 @@
 use bevy::prelude::{EventWriter, Window};
-use bevy_egui::egui::load::SizedTexture;
-use bevy_egui::egui::{Align, Image, Layout, Pos2, ScrollArea, Sense, Slider, TextStyle, Ui};
+use bevy_egui::egui::{Align, Layout, Pos2, ScrollArea, Sense, Slider, TextStyle, Ui};
 use strum::IntoEnumIterator;
 
 use crate::core::messages::{MessageEv, MessageLevel};
@@ -40,10 +39,10 @@ pub fn research_panel(
                     .step_by(1.),
             );
 
-            ui.add(Image::new(SizedTexture::new(
+            ui.add_image(
                 images.get("research"),
                 [get_ratio(window.width() * 0.75, window.height() * 0.75, TextStyle::Heading); 2],
-            )));
+            );
         })
         .response
         .on_hover_text(

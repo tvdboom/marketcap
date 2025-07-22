@@ -141,6 +141,7 @@ impl EnhFloat for f32 {
 
     fn format(self) -> String {
         match self {
+            n if n > 1_000_000_000_000. => format!("{}T", (self / 1_000_000_000.).clean()),
             n if n > 1_000_000_000. => format!("{}B", (self / 1_000_000_000.).clean()),
             n if n > 1_000_000. => format!("{}M", (self / 1_000_000.).clean()),
             n if n >= 1_000. => format!("{}k", (self / 1_000.).clean()),

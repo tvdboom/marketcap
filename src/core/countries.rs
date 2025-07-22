@@ -73,7 +73,7 @@ impl CountryName {
             },
             CountryName::China => {
                 "China is an emerging market with rapid industrialization, significant production \
-                of metals and commodities."
+                of commodities."
             },
             CountryName::EU => {
                 "The European Union is a developed market with diverse economies, strong \
@@ -120,6 +120,9 @@ pub struct Country {
     /// Type of market in terms of development
     pub market: MarketKind,
 
+    /// Gross Domestic Product (GDP) in trillion euros
+    pub gdp: f32,
+
     /// Commodities produced, with a dependency factor on the local currency
     pub production: HashMap<CommodityName, f32>,
 }
@@ -130,6 +133,7 @@ pub fn start_countries() -> Vec<Country> {
             name: CountryName::Australia,
             currency: CurrencyName::AUD,
             market: MarketKind::DevelopedMarket,
+            gdp: 1.496,
             production: HashMap::from([
                 (CommodityName::Cotton, 0.5),
                 (CommodityName::Gold, 0.45),
@@ -143,6 +147,7 @@ pub fn start_countries() -> Vec<Country> {
             name: CountryName::Brazil,
             currency: CurrencyName::BRL,
             market: MarketKind::EmergingMarket,
+            gdp: 1.864,
             production: HashMap::from([
                 (CommodityName::Coffee, 0.4),
                 (CommodityName::Cocoa, 0.4),
@@ -156,6 +161,7 @@ pub fn start_countries() -> Vec<Country> {
             name: CountryName::Canada,
             currency: CurrencyName::CAD,
             market: MarketKind::DevelopedMarket,
+            gdp: 1.918,
             production: HashMap::from([
                 (CommodityName::Oil, 0.5),
                 (CommodityName::LNG, 0.4),
@@ -169,6 +175,7 @@ pub fn start_countries() -> Vec<Country> {
             name: CountryName::China,
             currency: CurrencyName::CNY,
             market: MarketKind::EmergingMarket,
+            gdp: 16.07,
             production: HashMap::from([
                 (CommodityName::Iron, 0.5),
                 (CommodityName::Gold, 0.35),
@@ -182,6 +189,7 @@ pub fn start_countries() -> Vec<Country> {
             name: CountryName::EU,
             currency: CurrencyName::EUR,
             market: MarketKind::DevelopedMarket,
+            gdp: 16.61,
             production: HashMap::from([
                 (CommodityName::Ethanol, 0.3),
                 (CommodityName::Silicon, 0.25),
@@ -194,12 +202,14 @@ pub fn start_countries() -> Vec<Country> {
             name: CountryName::Japan,
             currency: CurrencyName::JPY,
             market: MarketKind::DevelopedMarket,
+            gdp: 3.43,
             production: HashMap::from([(CommodityName::Wheat, 0.2)]),
         },
         Country {
             name: CountryName::Russia,
             currency: CurrencyName::RUB,
             market: MarketKind::RestrictedMarket,
+            gdp: 1.859,
             production: HashMap::from([
                 (CommodityName::Oil, 0.5),
                 (CommodityName::LNG, 0.4),
@@ -213,12 +223,14 @@ pub fn start_countries() -> Vec<Country> {
             name: CountryName::SaudiArabia,
             currency: CurrencyName::SAR,
             market: MarketKind::EmergingMarket,
+            gdp: 1.058,
             production: HashMap::from([(CommodityName::Oil, 0.8), (CommodityName::LNG, 0.5)]),
         },
         Country {
             name: CountryName::SouthAfrica,
             currency: CurrencyName::ZAR,
             market: MarketKind::EmergingMarket,
+            gdp: 0.351,
             production: HashMap::from([
                 (CommodityName::Gold, 0.5),
                 (CommodityName::Iron, 0.25),
@@ -231,25 +243,28 @@ pub fn start_countries() -> Vec<Country> {
             name: CountryName::Ukraine,
             currency: CurrencyName::UAH,
             market: MarketKind::EmergingMarket,
+            gdp: 0.2,
             production: HashMap::from([(CommodityName::Wheat, 0.5), (CommodityName::Corn, 0.4)]),
         },
         Country {
             name: CountryName::USA,
             currency: CurrencyName::USD,
             market: MarketKind::DevelopedMarket,
+            gdp: 26.09,
             production: HashMap::from([
                 (CommodityName::Oil, 0.3),
-                (CommodityName::Ethanol, 0.3),
-                (CommodityName::LNG, 0.3),
                 (CommodityName::Corn, 0.3),
-                (CommodityName::Wheat, 0.3),
-                (CommodityName::Silver, 0.2),
+                (CommodityName::Ethanol, 0.25),
+                (CommodityName::LNG, 0.25),
+                (CommodityName::Wheat, 0.2),
+                (CommodityName::Silver, 0.15),
             ]),
         },
         Country {
             name: CountryName::Venezuela,
             currency: CurrencyName::VES,
             market: MarketKind::RestrictedMarket,
+            gdp: 0.098,
             production: HashMap::from([
                 (CommodityName::Oil, 0.6),
                 (CommodityName::Coffee, 0.5),

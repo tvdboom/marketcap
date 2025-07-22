@@ -262,7 +262,7 @@ impl EconomicEvent {
         match self.name {
             EventName::BrazilPolitics => "Brazilian right-wing gains power".to_string(),
             EventName::CeoResignation(company) => {
-                format!("{} CEO resigns", company.to_name())
+                format!("The CEO of {} resigns", company.to_name())
             },
             EventName::Covid => "Covid pandemic".to_string(),
             EventName::Crimea => "Russia invades Crimea".to_string(),
@@ -492,14 +492,23 @@ impl EconomicEvent {
                 });
             },
             EventName::Crimea => {
-                economy.currencies.iter_mut().find(|c| matches!(c.country, CountryName::Russia | CountryName::Ukraine)).map(|c| {
-                    *c.values.back_mut().unwrap() *= rng.random_range(0.5..0.8);
-                });
+                economy
+                    .currencies
+                    .iter_mut()
+                    .find(|c| matches!(c.country, CountryName::Russia | CountryName::Ukraine))
+                    .map(|c| {
+                        *c.values.back_mut().unwrap() *= rng.random_range(0.5..0.8);
+                    });
 
                 economy
                     .commodities
                     .iter_mut()
-                    .find(|c| matches!(c.name, CommodityName::LNG | CommodityName::Oil | CommodityName::Wheat))
+                    .find(|c| {
+                        matches!(
+                            c.name,
+                            CommodityName::LNG | CommodityName::Oil | CommodityName::Wheat
+                        )
+                    })
                     .map(|c| {
                         *c.prices.back_mut().unwrap() *= rng.random_range(1.2..1.3);
                     });
@@ -561,10 +570,14 @@ impl EconomicEvent {
                 });
             },
             EventName::RussiaWar => {
-                economy.currencies.iter_mut().find(|c| matches!(c.country, CountryName::Russia | CountryName::Ukraine)).map(|c| {
-                    c.base_value *= rng.random_range(0.5..0.8);
-                    *c.values.back_mut().unwrap() *= rng.random_range(0.5..0.8);
-                });
+                economy
+                    .currencies
+                    .iter_mut()
+                    .find(|c| matches!(c.country, CountryName::Russia | CountryName::Ukraine))
+                    .map(|c| {
+                        c.base_value *= rng.random_range(0.5..0.8);
+                        *c.values.back_mut().unwrap() *= rng.random_range(0.5..0.8);
+                    });
 
                 economy
                     .bonds
@@ -723,10 +736,14 @@ impl EconomicEvent {
                     });
             },
             EventName::RussiaWar => {
-                economy.currencies.iter_mut().find(|c| matches!(c.country, CountryName::Russia | CountryName::Ukraine)).map(|c| {
-                    c.base_value *= rng.random_range(1.2..1.5);
-                    *c.values.back_mut().unwrap() *= rng.random_range(1.2..1.5);
-                });
+                economy
+                    .currencies
+                    .iter_mut()
+                    .find(|c| matches!(c.country, CountryName::Russia | CountryName::Ukraine))
+                    .map(|c| {
+                        c.base_value *= rng.random_range(1.2..1.5);
+                        *c.values.back_mut().unwrap() *= rng.random_range(1.2..1.5);
+                    });
 
                 economy
                     .bonds
