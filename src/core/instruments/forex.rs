@@ -105,7 +105,7 @@ impl Currency {
 
         // Adjust value to tend towards the base value
         let deviation = (new_value - self.base_value) / self.base_value;
-        new_value *= 1. + -deviation * deviation.abs() / 2.5;
+        new_value *= 1. + -deviation * deviation.abs() / 10.;
 
         new_value = new_value.max(0.001);
 

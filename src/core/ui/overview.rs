@@ -963,10 +963,16 @@ pub fn event_table(
                         let content = vec![
                             event.title(),
                             event.start_date.format(DATE_FORMAT).to_string(),
-                            format!(
-                                "{} days",
-                                (today - event.start_date).num_days().min(event.duration as i64)
-                            ),
+                            if event.duration == 1 {
+                                NA.to_string()
+                            } else {
+                                format!(
+                                    "{} days",
+                                    (today - event.start_date)
+                                        .num_days()
+                                        .min(event.duration as i64)
+                                )
+                            },
                             event.description(),
                         ];
 

@@ -309,6 +309,7 @@ pub fn in_game_menu_keyboard(
 ) {
     if keyboard.just_pressed(KeyCode::Escape) {
         match *game_state.get() {
+            GameState::StartGame => next_game_state.set(GameState::Running),
             GameState::Running | GameState::Paused => {
                 if state.modal.is_some() {
                     state.modal = None;
@@ -328,7 +329,9 @@ pub fn in_game_menu_keyboard(
         }
     }
 
-    if keyboard.just_pressed(KeyCode::Enter) && state.active_event.is_some() {
+    if keyboard.just_pressed(KeyCode::Enter)
+        && (*game_state.get() == GameState::StartGame || state.active_event.is_some())
+    {
         next_game_state.set(GameState::Running);
         state.active_event = None;
     }

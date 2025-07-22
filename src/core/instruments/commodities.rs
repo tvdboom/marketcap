@@ -5,7 +5,6 @@ use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::player::Player;
 use crate::core::research::TechName;
 use crate::utils::{DQueue, NameFromEnum};
-use itertools::Itertools;
 use rand::{Rng, rng};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
@@ -31,6 +30,13 @@ impl Unit {
             Unit::MillionBritishThermalUnits => "MMBtu",
         }
     }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub enum CommodityGroup {
+    Agricultural,
+    Energy,
+    Metals,
 }
 
 #[derive(EnumIter, Clone, Copy, Debug, Default, Eq, Hash, PartialEq, Serialize, Deserialize)]
@@ -68,6 +74,9 @@ impl CommodityName {
 pub struct Commodity {
     /// The name of the commodity
     pub name: CommodityName,
+
+    /// The group the commodity belongs to
+    pub group: CommodityGroup,
 
     /// Default price of the commodity
     pub base_price: f32,
@@ -107,7 +116,7 @@ impl Commodity {
         // At 100% deviation, there's a 20% adjustment towards the base price
         // At 50% deviation, there's a 5% adjustment towards the base price
         let deviation = (new_price - self.base_price) / self.base_price;
-        new_price *= 1. + -deviation * deviation.abs() / 5.;
+        new_price *= 1. + -deviation * deviation.abs() / 25.;
 
         new_price = new_price.max(1.);
 
@@ -214,6 +223,10 @@ impl Instrument for Commodity {
         &self.prices
     }
 
+    fn group(&self) -> CommodityGroup {
+        self.group.clone()
+    }
+    
     fn storage_cost(&self, economy: &GlobalEconomy, player: &Player) -> f32 {
         self.storage_cost / 100.
             * self.base_price
@@ -242,6 +255,7 @@ pub fn start_commodities() -> Vec<Commodity> {
     vec![
         Commodity {
             name: CommodityName::Aluminium,
+            group: CommodityGroup::Metals,
             base_price: 2200.,
             prices: DQueue::from([2200.]),
             unit: Unit::MetricTon,
@@ -251,6 +265,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         },
         Commodity {
             name: CommodityName::Cocoa,
+            group: CommodityGroup::Agricultural,
             base_price: 9762.,
             prices: DQueue::from([9762.]),
             unit: Unit::MetricTon,
@@ -260,6 +275,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         },
         Commodity {
             name: CommodityName::Coffee,
+            group: CommodityGroup::Agricultural,
             base_price: 3300.,
             prices: DQueue::from([3300.]),
             unit: Unit::MetricTon,
@@ -269,6 +285,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         },
         Commodity {
             name: CommodityName::Copper,
+            group: CommodityGroup::Metals,
             base_price: 9623.,
             prices: DQueue::from([9623.]),
             unit: Unit::MetricTon,
@@ -278,6 +295,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         },
         Commodity {
             name: CommodityName::Corn,
+            group: CommodityGroup::Agricultural,
             base_price: 215.,
             prices: DQueue::from([215.]),
             unit: Unit::MetricTon,
@@ -287,6 +305,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         },
         Commodity {
             name: CommodityName::Cotton,
+            group: CommodityGroup::Agricultural,
             base_price: 85.,
             prices: DQueue::from([85.]),
             unit: Unit::MetricTon,
@@ -296,6 +315,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         },
         Commodity {
             name: CommodityName::Ethanol,
+            group: CommodityGroup::Energy,
             base_price: 470.,
             prices: DQueue::from([470.]),
             unit: Unit::CubicMeter,
@@ -305,6 +325,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         },
         Commodity {
             name: CommodityName::Gold,
+            group: CommodityGroup::Metals,
             base_price: 93.,
             prices: DQueue::from([93.]),
             unit: Unit::Gram,
@@ -314,6 +335,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         },
         Commodity {
             name: CommodityName::Iron,
+            group: CommodityGroup::Metals,
             base_price: 125.,
             prices: DQueue::from([125.]),
             unit: Unit::MetricTon,
@@ -323,6 +345,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         },
         Commodity {
             name: CommodityName::LNG,
+            group: CommodityGroup::Energy,
             base_price: 13.,
             prices: DQueue::from([13.]),
             unit: Unit::MillionBritishThermalUnits,
@@ -332,6 +355,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         },
         Commodity {
             name: CommodityName::Oil,
+            group: CommodityGroup::Energy,
             base_price: 65.,
             prices: DQueue::from([65.]),
             unit: Unit::Barrel,
@@ -341,6 +365,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         },
         Commodity {
             name: CommodityName::Silicon,
+            group: CommodityGroup::Metals,
             base_price: 6000.,
             prices: DQueue::from([6000.]),
             unit: Unit::MetricTon,
@@ -350,6 +375,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         },
         Commodity {
             name: CommodityName::Silver,
+            group: CommodityGroup::Metals,
             base_price: 1030.,
             prices: DQueue::from([1030.]),
             unit: Unit::Kilogram,
@@ -359,6 +385,7 @@ pub fn start_commodities() -> Vec<Commodity> {
         },
         Commodity {
             name: CommodityName::Wheat,
+            group: CommodityGroup::Agricultural,
             base_price: 201.,
             prices: DQueue::from([201.]),
             unit: Unit::MetricTon,

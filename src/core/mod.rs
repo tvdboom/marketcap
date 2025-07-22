@@ -42,7 +42,7 @@ use crate::core::ui::modal::trade_modal;
 use crate::core::ui::state::UiState;
 use crate::core::ui::systems::{
     add_egui_images, central_panel, check_keys, left_panel, on_resize_system, set_egui_style,
-    top_panel,
+    start_game, top_panel,
 };
 
 pub struct GamePlugin;
@@ -100,6 +100,7 @@ impl Plugin for GamePlugin {
             .add_systems(
                 Update,
                 (
+                    start_game.run_if(in_state(GameState::StartGame)),
                     top_panel,
                     left_panel,
                     central_panel,

@@ -2,15 +2,18 @@ use bevy::prelude::*;
 use bevy::window::WindowResized;
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::epaint::text::{FontInsert, FontPriority, InsertFontFamily};
+use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::{
-    Align, CentralPanel, Color32, FontData, FontFamily, Frame, Layout, Margin, SidePanel,
-    TopBottomPanel,
+    Align, CentralPanel, Color32, FontData, FontFamily, Frame, Id, Layout, Margin, Modal, RichText,
+    SidePanel, TopBottomPanel, UiBuilder,
 };
 use chrono::Datelike;
 use strum::IntoEnumIterator;
 
 use crate::core::assets::WorldAssets;
-use crate::core::constants::{CUSTOM_GREEN, DATE_FORMAT, LEFT_LABEL_FRAC, TOP_LABEL_FRAC, WIDTH};
+use crate::core::constants::{
+    CUSTOM_GREEN, DATE_FORMAT, HEIGHT, LEFT_LABEL_FRAC, TOP_LABEL_FRAC, WIDTH,
+};
 use crate::core::factors::Factor;
 use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
@@ -94,6 +97,74 @@ pub fn on_resize_system(
     for ev in resize_reader.read() {
         contexts.ctx_mut().set_style(game_settings.theme.get().custom_style(ev.width, ev.height));
     }
+}
+
+pub fn start_game(
+    mut contexts: EguiContexts,
+    mut next_game_state: ResMut<NextState<GameState>>,
+    images: Res<ImageIds>,
+    window: Single<&Window>,
+) {
+    Modal::new(Id::new("start_game")).frame(Frame::default().inner_margin(0.)).show(
+        contexts.ctx_mut(),
+        |ui| {
+            ui.set_width((window.width() * 0.55).max(WIDTH * 0.55));
+            ui.set_height((window.height() * 0.6).max(HEIGHT * 0.6));
+
+            let response = ui.add(bevy_egui::egui::Image::new(SizedTexture::new(
+                images.get("cover"),
+                ui.available_size(),
+            )));
+
+            ui.allocate_new_ui(UiBuilder::new().max_rect(response.rect), |ui| {
+                ui.add_space(window.height() * 0.02);
+                ui.vertical_centered(|ui| {
+                    ui.heading("Welcome to MarketCap");
+                });
+
+                ui.add_space(window.height() * 0.02);
+
+                Frame::default()
+                    .fill(Color32::from_black_alpha(120))
+                    .outer_margin(Margin::same(20))
+                    .inner_margin(Margin::same(10))
+                    .corner_radius(4.)
+                    .show(ui, |ui| {
+                        ui.label(
+                            RichText::new(
+                                "You are the newly minted CEO of Trident Capital, a scrappy asset \
+                        manager with ambitions to dominate global markets. Backed by a mix of \
+                        ruthless investors and young in-house talent, you're entering the most \
+                        cutthroat financial landscape seen to date.\n\n\
+                        Your mission is simple: grow your Assets Under Management (AUM). Trade \
+                        in stocks, bonds, forex, commodities, cryptos and derivatives. Shape \
+                        politics, rewrite economic policy and tilt the balance of power. Navigate \
+                        corporate scandals, macro shocks and global conflict - all while charming \
+                        clients and outwitting regulators. Your company isn't just about market \
+                        plays - it's a political force.\n\n\
+                        In this world, success is measured in billions. Are you ready to rewrite \
+                        history with your portfolio? Let the markets open!",
+                            )
+                            .color(Color32::WHITE),
+                        );
+                    });
+
+                ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
+                    ui.add_space(window.height() * 0.05);
+
+                    ui.horizontal(|ui| {
+                        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                            ui.add_space(window.width() * 0.02);
+
+                            if ui.add_modal_button("Start game", &window).clicked() {
+                                next_game_state.set(GameState::Running);
+                            }
+                        });
+                    });
+                });
+            });
+        },
+    );
 }
 
 pub fn top_panel(

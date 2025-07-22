@@ -465,7 +465,16 @@ impl CustomUi for Ui {
                                             instrument.symbol()
                                         ));
                                     },
-                                    InstrumentKind::Commodity(name) => {
+                                    InstrumentKind::Commodity(_) => {
+                                        ui.label(format!(
+                                            "Classification: {}",
+                                            instrument.group().to_name(),
+                                        ))
+                                            .on_hover_text(
+                                                "Group the commodity belongs to. Some events \
+                                                or policies might affect a specific group only."
+                                            );
+
                                         ui.label(format!(
                                             "Storage costs: {:.0}{CURRENCY}{}/month",
                                             instrument.storage_cost(economy, player) * 30.,
@@ -475,24 +484,6 @@ impl CustomUi for Ui {
                                                 "Current price of storage per month. Note that this \
                                                 price increases with inflation. Storage costs are deducted \
                                                 every month or when the commodity is sold.",
-                                            );
-
-                                        ui.label(format!(
-                                            "Production: {}",
-                                            economy
-                                                .countries
-                                                .iter()
-                                                .filter_map(|c| c
-                                                    .production
-                                                    .keys()
-                                                    .contains(&name)
-                                                    .then_some(c.name.to_name()))
-                                                .collect::<Vec<_>>()
-                                                .join(", ")
-                                        ))
-                                            .on_hover_text(
-                                                "Countries producing this commodity. Bond prices for \
-                                                these countries might be affected by the commodity price.",
                                             );
                                     },
                                     InstrumentKind::Crypto(_) => {
@@ -508,19 +499,57 @@ impl CustomUi for Ui {
                                 }
                             });
 
-                            if matches!(instrument.kind(), InstrumentKind::Stock(_)) {
-                                ui.add_space(window.width() * 0.02);
-                                ui.vertical(|ui| {
-                                    ui.label("Sectors");
-                                    for (name, weight) in instrument.sectors().iter().sorted_by(|a, b| b.1.partial_cmp(&a.1).unwrap()) {
-                                        ui.add(
-                                            ProgressBar::new(*weight)
-                                                .text(RichText::new(format!("{} {}", name.emoji(), name.to_name())).small())
-                                                .corner_radius(5.)
-                                                .desired_width(ui.available_width() * 0.6)
-                                        ).on_hover_text(name.description());
-                                    }
-                                });
+                            match instrument.kind() {
+                                InstrumentKind::Stock(_) => {
+                                    ui.add_space(window.width() * 0.02);
+                                    ui.vertical(|ui| {
+                                        ui.label("Sectors").on_hover_text("The sectors the company operates in.");
+                                        for (name, weight) in instrument.sectors().iter().sorted_by(|a, b| b.1.partial_cmp(&a.1).unwrap()) {
+                                            ui.add(
+                                                ProgressBar::new(*weight)
+                                                    .text(RichText::new(format!("{} {}", name.emoji(), name.to_name())).small())
+                                                    .corner_radius(5.)
+                                                    .desired_width(ui.available_width() * 0.6)
+                                            ).on_hover_text(name.description());
+                                        }
+                                    });
+                                },
+                                InstrumentKind::Commodity(name) => {
+                                    ui.add_space(window.width() * 0.02);
+                                    ui.vertical(|ui| {
+                                        ui.label("Production").on_hover_text("The countries that produce this commodity.");
+
+                                        let mut production = economy
+                                            .countries
+                                            .iter()
+                                            .filter_map(|c| c
+                                                .production
+                                                .iter()
+                                                .find(|(n, _)| **n == name)
+                                                .map(|(_, w)| (c.name, *w)))
+                                            .collect::<Vec<_>>();
+
+                                        production.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap());
+
+                                        let max = production.iter().map(|(_, w)| *w).max_by(|a, b| a.partial_cmp(b).unwrap()).unwrap();
+                                        for (name, weight) in production {
+                                            ui.horizontal(|ui| {
+                                                ui.add(Image::new(SizedTexture::new(
+                                                    images.get(format!("{}-flag", name.to_lowername()).as_str()),
+                                                    [30., 17.],
+                                                )));
+
+                                                ui.add(
+                                                    ProgressBar::new(weight / max)
+                                                        .text(RichText::new(name.to_name()).small())
+                                                        .corner_radius(5.)
+                                                        .desired_width(ui.available_width() * 0.8)
+                                                ).on_hover_text(name.description());
+                                            });
+                                        }
+                                    });
+                                }
+                                _ => ()
                             }
                         });
                     });

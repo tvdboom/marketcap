@@ -81,7 +81,7 @@ pub fn time_pass(
         // && economy.date > START_DATE + Duration::days(30)
         {
             let new_event = EventName::create(&economy, &player);
-            new_event.immediate(&mut economy);
+            new_event.start(&mut economy);
 
             state.active_event = Some(new_event.name.clone());
             economy.events.push(new_event);
@@ -94,7 +94,11 @@ pub fn time_pass(
         let events = economy.active_events().into_iter().cloned().collect::<Vec<_>>();
 
         for event in events {
-            event.advance(&mut economy); // todo!
+            event.advance(&mut economy);
+
+            if !event.is_active(&(today + Duration::days(1))) {
+                event.end(&mut economy);
+            }
         }
 
         let mut cash = player.cash.current();

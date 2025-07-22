@@ -45,9 +45,9 @@ pub enum CountryName {
     Australia,
     Brazil,
     Canada,
+    China,
     EU,
     Japan,
-    China,
     Russia,
     SaudiArabia,
     SouthAfrica,
@@ -71,6 +71,10 @@ impl CountryName {
                 "Canada is a developed market with significant oil and gas reserves, as well \
                 as a strong mining sector."
             },
+            CountryName::China => {
+                "China is an emerging market with rapid industrialization, significant production \
+                of metals and commodities."
+            },
             CountryName::EU => {
                 "The European Union is a developed market with diverse economies, strong \
                 regulations, and a common currency (Euro)."
@@ -78,10 +82,6 @@ impl CountryName {
             CountryName::Japan => {
                 "Japan is a developed market known for its advanced technology and manufacturing \
                 sectors."
-            },
-            CountryName::China => {
-                "China is an emerging market with rapid industrialization, significant production \
-                of metals and commodities."
             },
             CountryName::Russia => {
                 "Russia is a restricted market with vast natural resources, particularly in oil and gas."
@@ -131,12 +131,12 @@ pub fn start_countries() -> Vec<Country> {
             currency: CurrencyName::AUD,
             market: MarketKind::DevelopedMarket,
             production: HashMap::from([
-                (CommodityName::Gold, 0.5),
                 (CommodityName::Cotton, 0.5),
+                (CommodityName::Gold, 0.45),
                 (CommodityName::Oil, 0.4),
                 (CommodityName::Silver, 0.4),
+                (CommodityName::Copper, 0.35),
                 (CommodityName::Iron, 0.3),
-                (CommodityName::Copper, 0.3),
             ]),
         },
         Country {
@@ -147,9 +147,9 @@ pub fn start_countries() -> Vec<Country> {
                 (CommodityName::Coffee, 0.4),
                 (CommodityName::Cocoa, 0.4),
                 (CommodityName::Corn, 0.3),
-                (CommodityName::Iron, 0.3),
-                (CommodityName::Ethanol, 0.3),
                 (CommodityName::Silicon, 0.3),
+                (CommodityName::Iron, 0.2),
+                (CommodityName::Ethanol, 0.1),
             ]),
         },
         Country {
@@ -160,9 +160,22 @@ pub fn start_countries() -> Vec<Country> {
                 (CommodityName::Oil, 0.5),
                 (CommodityName::LNG, 0.4),
                 (CommodityName::Gold, 0.3),
-                (CommodityName::Aluminium, 0.3),
-                (CommodityName::Wheat, 0.3),
+                (CommodityName::Aluminium, 0.4),
                 (CommodityName::Ethanol, 0.2),
+                (CommodityName::Wheat, 0.15),
+            ]),
+        },
+        Country {
+            name: CountryName::China,
+            currency: CurrencyName::CNY,
+            market: MarketKind::EmergingMarket,
+            production: HashMap::from([
+                (CommodityName::Iron, 0.5),
+                (CommodityName::Gold, 0.35),
+                (CommodityName::Cotton, 0.35),
+                (CommodityName::Aluminium, 0.35),
+                (CommodityName::Silver, 0.3),
+                (CommodityName::Copper, 0.25),
             ]),
         },
         Country {
@@ -170,9 +183,9 @@ pub fn start_countries() -> Vec<Country> {
             currency: CurrencyName::EUR,
             market: MarketKind::DevelopedMarket,
             production: HashMap::from([
+                (CommodityName::Ethanol, 0.3),
+                (CommodityName::Silicon, 0.25),
                 (CommodityName::LNG, 0.2),
-                (CommodityName::Ethanol, 0.2),
-                (CommodityName::Silicon, 0.2),
                 (CommodityName::Aluminium, 0.2),
                 (CommodityName::Wheat, 0.2),
             ]),
@@ -184,19 +197,6 @@ pub fn start_countries() -> Vec<Country> {
             production: HashMap::from([(CommodityName::Wheat, 0.2)]),
         },
         Country {
-            name: CountryName::China,
-            currency: CurrencyName::CNY,
-            market: MarketKind::EmergingMarket,
-            production: HashMap::from([
-                (CommodityName::Iron, 0.5),
-                (CommodityName::Cotton, 0.5),
-                (CommodityName::Gold, 0.4),
-                (CommodityName::Aluminium, 0.3),
-                (CommodityName::Copper, 0.3),
-                (CommodityName::Silver, 0.3),
-            ]),
-        },
-        Country {
             name: CountryName::Russia,
             currency: CurrencyName::RUB,
             market: MarketKind::RestrictedMarket,
@@ -206,7 +206,7 @@ pub fn start_countries() -> Vec<Country> {
                 (CommodityName::Gold, 0.3),
                 (CommodityName::Aluminium, 0.3),
                 (CommodityName::Silver, 0.3),
-                (CommodityName::Copper, 0.3),
+                (CommodityName::Copper, 0.2),
             ]),
         },
         Country {
@@ -220,11 +220,11 @@ pub fn start_countries() -> Vec<Country> {
             currency: CurrencyName::ZAR,
             market: MarketKind::EmergingMarket,
             production: HashMap::from([
-                (CommodityName::Gold, 0.4),
-                (CommodityName::Iron, 0.3),
-                (CommodityName::Corn, 0.3),
-                (CommodityName::Silicon, 0.3),
+                (CommodityName::Gold, 0.5),
+                (CommodityName::Iron, 0.25),
                 (CommodityName::Ethanol, 0.2),
+                (CommodityName::Silicon, 0.15),
+                (CommodityName::Corn, 0.15),
             ]),
         },
         Country {
@@ -252,9 +252,9 @@ pub fn start_countries() -> Vec<Country> {
             market: MarketKind::RestrictedMarket,
             production: HashMap::from([
                 (CommodityName::Oil, 0.6),
-                (CommodityName::Gold, 0.4),
-                (CommodityName::Cocoa, 0.4),
-                (CommodityName::Coffee, 0.4),
+                (CommodityName::Coffee, 0.5),
+                (CommodityName::Cocoa, 0.3),
+                (CommodityName::Gold, 0.25),
             ]),
         },
     ]

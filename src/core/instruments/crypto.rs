@@ -58,7 +58,7 @@ impl Crypto {
 
             // Adjust price to tend slightly towards the base price
             let deviation = (new_price - self.base_price) / self.base_price;
-            new_price *= 1. + -deviation * deviation.abs() / 15.;
+            new_price *= 1. + -deviation * deviation.abs() / 35.;
 
             new_price.max(0.)
         };

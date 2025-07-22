@@ -122,6 +122,18 @@ impl ESGRating {
         }
     }
 
+    pub fn increase(&self) -> ESGRating {
+        match self {
+            ESGRating::AAA => ESGRating::AAA,
+            ESGRating::AA => ESGRating::AAA,
+            ESGRating::A => ESGRating::AA,
+            ESGRating::BBB => ESGRating::A,
+            ESGRating::BB => ESGRating::BBB,
+            ESGRating::B => ESGRating::BB,
+            ESGRating::CCC => ESGRating::B,
+        }
+    }
+
     pub fn decrease(&self) -> ESGRating {
         match self {
             ESGRating::AAA => ESGRating::A,
@@ -198,10 +210,8 @@ impl Stock {
             + rng().random_range(-volatility..volatility);
 
         // Adjust price to tend towards the base price
-        // At 100% deviation, there's a 20% adjustment towards the base price
-        // At 50% deviation, there's a 5% adjustment towards the base price
         let deviation = (new_price - self.base_price) / self.base_price;
-        new_price *= 1. + -deviation * deviation.abs() / 5.;
+        new_price *= 1. + -deviation * deviation.abs() / 25.;
 
         new_price = new_price.max(1.);
 

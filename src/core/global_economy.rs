@@ -205,10 +205,7 @@ impl GlobalEconomy {
     }
 
     pub fn active_events(&self) -> Vec<&EconomicEvent> {
-        self.events
-            .iter()
-            .filter(|e| self.date < e.start_date + Duration::days(e.duration as i64))
-            .collect()
+        self.events.iter().filter(|e| e.is_active(&self.date)).collect()
     }
 
     pub fn has_active_event(&self, name: &EventName) -> bool {

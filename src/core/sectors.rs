@@ -1,13 +1,14 @@
 use std::collections::HashMap;
 
-use serde::{Deserialize, Serialize};
-
 use crate::core::factors::inflation::Inflation;
 use crate::core::instruments::commodities::{Commodity, CommodityName};
 use crate::core::instruments::instrument::Instrument;
+use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
 
-#[derive(Clone, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Copy, Default, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum SectorName {
+    #[default]
     Energy,
     Fashion,
     Finance,
@@ -68,8 +69,8 @@ pub struct Sector {
 }
 
 impl Sector {
-    pub(crate) const MIN: u8 = 0;
-    pub(crate) const MAX: u8 = 100;
+    pub const MIN: u8 = 0;
+    pub const MAX: u8 = 100;
 
     pub fn bump(&mut self, inflation: f32, commodities: &Vec<Commodity>) {
         let mut new_value = self.value as f32
@@ -94,6 +95,10 @@ impl Sector {
         new_value *= 1. + -deviation * deviation.abs() / 5.;
 
         self.value = ((new_value / 100.) as u8).clamp(Self::MIN, Self::MAX);
+    }
+
+    pub fn update(&mut self, amount: i8) {
+        self.value = ((self.value as i8 + amount) as u8).clamp(Self::MIN, Self::MAX);
     }
 }
 

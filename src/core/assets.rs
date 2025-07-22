@@ -65,6 +65,7 @@ impl FromWorld for WorldAssets {
             ("time-paused", assets.load("images/icons/time-paused.png")),
             // Events
             ("brazil-politics", assets.load("images/events/brazil-politics.png")),
+            ("ceo-resignation", assets.load("images/events/ceo-resignation.png")),
             ("covid", assets.load("images/events/covid.png")),
             ("crimea", assets.load("images/events/crimea.png")),
             ("crypto-crash", assets.load("images/events/crypto-crash.png")),
@@ -72,6 +73,7 @@ impl FromWorld for WorldAssets {
             ("drought", assets.load("images/events/drought.png")),
             ("esg-scandal", assets.load("images/events/esg-scandal.png")),
             ("gas-discovery", assets.load("images/events/gas-discovery.png")),
+            ("gold-rush", assets.load("images/events/gold-rush.png")),
             ("grounded", assets.load("images/events/grounded.png")),
             ("harvest", assets.load("images/events/harvest.png")),
             ("interest-bump", assets.load("images/events/interest-bump.png")),
@@ -80,6 +82,7 @@ impl FromWorld for WorldAssets {
             ("oil-discovery", assets.load("images/events/oil-discovery.png")),
             ("oil-disruption", assets.load("images/events/oil-disruption.png")),
             ("recession", assets.load("images/events/recession.png")),
+            ("regulatory-crackdown", assets.load("images/events/regulatory-crackdown.png")),
             ("russia-war", assets.load("images/events/russia-war.png")),
             ("storage-costs", assets.load("images/events/storage-costs.png")),
             ("trade-war", assets.load("images/events/trade-war.png")),
@@ -97,6 +100,9 @@ impl FromWorld for WorldAssets {
         for country in CountryName::iter() {
             let name = Box::leak(Box::new(country.to_lowername())).as_str();
             images.insert(name, assets.load(format!("images/bonds/{}.png", name)));
+
+            let name = Box::leak(Box::new(format!("{}-flag", country.to_lowername()))).as_str();
+            images.insert(name, assets.load(format!("images/countries/{}.png", name)));
         }
 
         for currency in CurrencyName::iter() {

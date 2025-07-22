@@ -7,7 +7,7 @@ use strum::IntoEnumIterator;
 use crate::core::derivatives::OptionKind;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::{BondIssuer, BondQuality};
-use crate::core::instruments::commodities::CommodityName;
+use crate::core::instruments::commodities::{CommodityGroup, CommodityName};
 use crate::core::instruments::crypto::CryptoName;
 use crate::core::instruments::forex::CurrencyName;
 use crate::core::instruments::stocks::{Company, ESGRating};
@@ -140,6 +140,7 @@ pub trait Instrument {
     fn esg(&self) -> ESGRating {
         ESGRating::AAA
     }
+    fn group(&self) -> CommodityGroup { CommodityGroup::Agricultural }
     fn interest(&self) -> f32 {
         0.0
     }
