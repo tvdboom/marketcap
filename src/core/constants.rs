@@ -4,8 +4,8 @@ use chrono::NaiveDate;
 use crate::core::instruments::forex::CurrencyName;
 
 /// Window
-pub const HEIGHT: f32 = 900.;
 pub const WIDTH: f32 = 1600.;
+pub const HEIGHT: f32 = 900.;
 
 /// General
 pub const DEFAULT_SPEED: f32 = 1.;

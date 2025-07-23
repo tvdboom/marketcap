@@ -72,12 +72,12 @@ impl Factor for Economy {
 
     fn description(&self) -> String {
         "The global economy represents the overall financial health and activity of the \
-        world. It fluctuates based on trade, market sentiment and events. A strong global \
-        economy means higher consumer confidence, robust industry growth, and increased \
-        investments. A weak global economy signals recessions, crises, or reduced spending, \
-        making businesses expansion difficult.\n\n\
-        In the game, the global economic factor (0-100) serves as a macro-scale indicator, \
-        affecting stock markets and interest rates dynamically."
+        world. It fluctuates based on trade and events. A strong global economy means higher \
+        consumer confidence, robust industry growth, and increased investments. A weak global \
+        economy signals recessions, crises, or reduced spending, making businesses expansion \
+        difficult.\n\n\
+        In the game, the global economy (0-100) serves as a macro-scale indicator, affecting \
+        commodity markets and interest rates dynamically."
             .to_string()
     }
 

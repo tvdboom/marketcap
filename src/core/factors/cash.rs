@@ -55,7 +55,7 @@ impl Factor for Cash {
         format!(
             "Cash represents the liquid assets the company possesses, funds that are immediately \
             available for spending, investing, or covering financial obligations. The bank pays \
-            a low interest on positive cash deposits and charges a high interest for negative \
+            a low interest on positive cash deposits and charges a very high interest on negative \
             cash deposits.\n\n\
             Cash: {}\n\
             Current interest: {:.1}%\n\

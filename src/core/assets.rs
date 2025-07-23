@@ -48,6 +48,7 @@ impl FromWorld for WorldAssets {
         let mut images: HashMap<&'static str, Handle<Image>> = HashMap::from([
             // Splash art
             ("cover", assets.load("images/cover.png")),
+            ("trading", assets.load("images/trading.png")),
             ("victory", assets.load("images/victory.png")),
             ("game-over", assets.load("images/game-over.png")),
             // Icons
@@ -63,13 +64,14 @@ impl FromWorld for WorldAssets {
             ("research", assets.load("images/icons/research.png")),
             ("time", assets.load("images/icons/time.png")),
             ("time-paused", assets.load("images/icons/time-paused.png")),
-            // Events
+            // Events 
             ("brazil-politics", assets.load("images/events/brazil-politics.png")),
             ("ceo-resignation", assets.load("images/events/ceo-resignation.png")),
             ("covid", assets.load("images/events/covid.png")),
             ("crimea", assets.load("images/events/crimea.png")),
             ("crypto-crash", assets.load("images/events/crypto-crash.png")),
             ("crypto-fan", assets.load("images/events/crypto-fan.png")),
+            ("ddos", assets.load("images/events/ddos.png")),
             ("drought", assets.load("images/events/drought.png")),
             ("esg-scandal", assets.load("images/events/esg-scandal.png")),
             ("gas-discovery", assets.load("images/events/gas-discovery.png")),

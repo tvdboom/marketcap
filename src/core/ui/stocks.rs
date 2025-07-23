@@ -19,11 +19,11 @@ pub fn stock_panel(
     ui.label(
         "Stocks are a traditional trading instrument representing partial ownership in a \
         company. They are issued by corporations to raise capital and are bought and sold on \
-        stock exchanges. Owning a stock entitles the investor to a share of the company’s \
+        stock exchanges. Owning a stock entitles the investor to a share of the company's \
         profits, paid out quarterly as dividends.\n\n\
-        Stocks vary in volatility depending on the company, sector, and market conditions. \
-        They are generally less volatile than other instruments such as commodities and \
-        cryptocurrencies.",
+        Stock prices are influenced by the sectors they operate in, their ESG scores and the \
+        public sentiment. They are generally less volatile than other instruments such as \
+        commodities and cryptocurrencies.",
     );
 
     ui.separator();

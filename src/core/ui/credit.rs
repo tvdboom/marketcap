@@ -17,7 +17,7 @@ use crate::utils::{EnhFloat, NameFromEnum, create_guid, first_day_in_two_months}
 pub fn credit_panel(
     ui: &mut Ui,
     state: &mut UiState,
-    economy: &GlobalEconomy,
+    economy: &mut GlobalEconomy,
     player: &mut Player,
     message: &mut EventWriter<MessageEv>,
     window: &Window,
@@ -39,13 +39,13 @@ pub fn credit_panel(
     ui.label(
         "Credit refers to the ability of borrowing money, with the promise of repayment \
         in the future. It's a fundamental part of the financial system, allowing companies to \
-        make purchases, invest, and manage expenses beyond their immediate cash availability. \
-        There are two types of loans: term loans and margin loans. Term loans provide cash to \
-        use at the discretion of the borrower, while margin loans are taken to leverage a specific \
-        instrument. Six months after the start date of a term loan, a company can choose to repay \
-        the debt early, paying an additional fee to the provider to cover missed earnings. A new \
-        loan can be taken by the same provider only when the remaining debt is less than 50% of \
-        the principal.",
+        make purchases, invest, and manage expenses beyond their immediate cash availability.\n\n \
+        There are two types of loans in the game: term loans and margin loans. Term loans provide \
+        cash to use at the discretion of the borrower, while margin loans are taken to leverage \
+        a specific instrument. Six months after the start date of a term loan, a company can \
+        choose to repay the debt early, paying an additional fee to the provider to cover missed \
+        earnings. A new loan can be taken by the same provider only when the remaining debt is \
+        less than 50% of the principal.",
     );
 
     ui.separator();
@@ -54,6 +54,8 @@ pub fn credit_panel(
 
     match state.credit.tab {
         CreditTab::NewLoan => {
+            let aum = player.aum(&economy);
+
             let loan = TermLoan {
                 id: create_guid(),
                 provider: state.credit.provider,
@@ -95,7 +97,7 @@ pub fn credit_panel(
                     let max_principal = state
                         .credit
                         .provider
-                        .max_principal(player.aum(&economy), player.credit_score.current());
+                        .max_principal(aum, player.credit_score.current());
 
                     ui.spacing_mut().slider_width = window.width() * 0.13;
                     let principal = state.credit.principal;
@@ -165,6 +167,10 @@ pub fn credit_panel(
                         player.loans.push(loan.clone());
                         player.loans.sort_by_key(|loan| loan.maturity_date());
                         player.cash.amount += loan.principal;
+
+                        // Increase inflation based on principal size
+                        *economy.inflation.0.back_mut().unwrap() += 0.3 * loan.principal / aum;
+
                         message.write(MessageEv {
                             message: format!("Loan {} acquired!", loan.id),
                             level: MessageLevel::Info,

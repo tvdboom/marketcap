@@ -22,7 +22,10 @@ pub fn forex_panel(
         selling currencies. It is the largest and most liquid financial market in the world, \
         where currencies are traded in pairs. For example, the USD/EUR pair represents \
         the exchange rate between the US dollar and the euro. When buying this pair, you \
-        are effectively buying dollars with euros.",
+        are effectively buying dollars with euros.\n\n\
+        The exchange rate is heavily influenced by the commodity prices produced in the \
+        corresponding country. Note that government bonds are bought in the national currency, \
+        and so are the coupon payments. The current exchange rate is automatically applied."
     );
 
     ui.separator();

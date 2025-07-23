@@ -152,7 +152,7 @@ impl Instrument for Currency {
             CurrencyName::CAD => {
                 "\
                 The Canadian dollar (CAD) is a commodity-linked currency closely tied to the \
-                price of oil, as Canada is one of the world’s largest oil exporters. It’s \
+                price of oil, as Canada is one of the world's largest oil exporters. It's \
                 considered a stable and highly liquid currency, actively traded during North \
                 American market hours. While relatively less volatile than some emerging market \
                 currencies, CAD still responds to shifts in global risk sentiment and U.S. \
@@ -161,7 +161,7 @@ impl Instrument for Currency {
             CurrencyName::CNY => {
                 "\
                 The Chinese yuan (CNY), also known as the renminbi (RMB), is the official currency \
-                of the People’s Republic of China. It is partially managed by the People's Bank \
+                of the People's Republic of China. It is partially managed by the People's Bank \
                 of China, with a tightly controlled exchange rate regime that allows limited \
                 daily movement against a basket of currencies. While not fully convertible, the \
                 yuan's global influence has grown due to China's economic size and trade \
@@ -183,7 +183,7 @@ impl Instrument for Currency {
                 its high liquidity and role as a safe-haven asset. It is heavily influenced by \
                 monetary policy from the Bank of Japan, which has maintained ultra-low interest \
                 rates for decades. The yen tends to strengthen during periods of global uncertainty \
-                as investors seek safety. It’s also widely used in carry trades due to its \
+                as investors seek safety. It's also widely used in carry trades due to its \
                 historically low yields. JPY trading is most active during Asian market hours \
                 and is a key currency in global forex pairs, especially against USD and EUR."
             },
@@ -199,7 +199,7 @@ impl Instrument for Currency {
             CurrencyName::SAR => {
                 "\
                 The Saudi riyal (SAR) value is indirectly influenced by global oil prices, as \
-                Saudi Arabia’s economy is heavily reliant on petroleum exports. While not widely \
+                Saudi Arabia's economy is heavily reliant on petroleum exports. While not widely \
                 traded internationally, the SAR is important in regional finance and reflects \
                 the kingdom's fiscal health and oil market dynamics."
             },
@@ -207,7 +207,7 @@ impl Instrument for Currency {
                 "\
                 The Ukrainian hryvnia (UAH) is considered an emerging market currency with high \
                 volatility due to ongoing political and economic instability. While less liquid \
-                than major currencies, UAH plays a crucial role in Ukraine’s economy and regional \
+                than major currencies, UAH plays a crucial role in Ukraine's economy and regional \
                 trade."
             },
             CurrencyName::USD => {
@@ -228,7 +228,7 @@ impl Instrument for Currency {
                 dollarization in the economy. The Central Bank of Venezuela has limited ability to \
                 stabilize the currency, and exchange rates vary significantly between official and \
                 black markets. Despite reforms, the bolívar remains weak and illiquid, reflecting \
-                the country’s ongoing economic challenges."
+                the country's ongoing economic challenges."
             },
             CurrencyName::ZAR => {
                 "\

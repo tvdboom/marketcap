@@ -27,6 +27,7 @@ pub enum EventName {
     Crimea,
     CryptoCrash(CryptoName),
     CryptoFan(CryptoName),
+    DDos(Company),
     Drought(CountryName),
     EsgScandal(Company),
     GasDiscovery(CountryName),
@@ -70,6 +71,7 @@ impl EventName {
                     _ => unreachable!(),
                 }
             },
+            EventName::DDos(_) => EventName::DDos(Company::iter().choose(&mut rng()).unwrap()),
             name @ (EventName::Drought(_) | EventName::Harvest(_)) => {
                 let country = economy
                     .countries
@@ -268,6 +270,7 @@ impl EconomicEvent {
             EventName::Crimea => "Russia invades Crimea".to_string(),
             EventName::CryptoCrash(name) => format!("{} crash", name.to_name()),
             EventName::CryptoFan(name) => format!("Influencers support {}", name.to_name()),
+            EventName::DDos(company) => format!("DDoS attack on {}", company.to_name()),
             EventName::Drought(country) => format!("Prolonged drought in {}", country.to_name()),
             EventName::EsgScandal(company) => {
                 format!("{} ESG scandal", company.to_name())
@@ -352,6 +355,12 @@ impl EconomicEvent {
                 leading to a surge in interest and investment. This causes the price of the coin \
                 to rise sharply as new investors enter the market.",
                 name.to_name()
+            ),
+            EventName::DDos(company) => format!(
+                "A DDoS attack on {} disrupts its online services, leading to a temporary \
+                decline in stock price. The company may face reputational damage and increased \
+                security costs as it works to restore its systems and prevent future attacks.",
+                company.to_name()
             ),
             EventName::Drought(country) => format!(
                 "A prolonged drought in {} leads to reduced agricultural output, causing food \
@@ -520,6 +529,11 @@ impl EconomicEvent {
             EventName::CryptoCrash(name) => {
                 economy.cryptos.iter_mut().find(|c| c.name == name).map(|c| {
                     *c.prices.back_mut().unwrap() *= rng.random_range(0.5..0.75);
+                });
+            },
+            EventName::DDos(company) => {
+                economy.stocks.iter_mut().find(|s| s.issuer == company).map(|s| {
+                    *s.prices.back_mut().unwrap() *= rng.random_range(0.85..0.95);
                 });
             },
             EventName::EsgScandal(company) => {

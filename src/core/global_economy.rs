@@ -31,7 +31,7 @@ pub struct GlobalEconomy {
     /// Timer for the game clock
     pub clock: Timer,
 
-    /// Global economic factor (0-100)
+    /// Global economy (0-100)
     pub economy: Economy,
 
     /// Inflation rate (1-10)

@@ -113,7 +113,7 @@ pub fn start_game(
             ui.set_height((window.height() * 0.6).max(HEIGHT * 0.6));
 
             let response = ui.add(bevy_egui::egui::Image::new(SizedTexture::new(
-                images.get("cover"),
+                images.get("trading"),
                 ui.available_size(),
             )));
 
@@ -134,17 +134,17 @@ pub fn start_game(
                         ui.label(
                             RichText::new(
                                 "You are the newly minted CEO of Trident Capital, a scrappy asset \
-                        manager with ambitions to dominate global markets. Backed by a mix of \
-                        ruthless investors and young in-house talent, you're entering the most \
-                        cutthroat financial landscape seen to date.\n\n\
-                        Your mission is simple: grow your Assets Under Management (AUM). Trade \
-                        in stocks, bonds, forex, commodities, cryptos and derivatives. Shape \
-                        politics, rewrite economic policy and tilt the balance of power. Navigate \
-                        corporate scandals, macro shocks and global conflict - all while charming \
-                        clients and outwitting regulators. Your company isn't just about market \
-                        plays - it's a political force.\n\n\
-                        In this world, success is measured in billions. Are you ready to rewrite \
-                        history with your portfolio? Let the markets open!",
+                                manager with ambitions to dominate global markets. Backed by a mix of \
+                                ruthless investors and young in-house talent, you're entering the most \
+                                cutthroat financial landscape seen to date.\n\n\
+                                Your mission is simple: grow your Assets Under Management (AUM). Trade \
+                                in stocks, bonds, forex, commodities, cryptos and derivatives. Shape \
+                                politics, rewrite economic policy and tilt the balance of power. Navigate \
+                                corporate scandals, macro shocks and global conflict - all while charming \
+                                clients and outwitting regulators. Your company isn't just about market \
+                                plays - it's a political force.\n\n\
+                                In this world, success is measured in billions. Are you ready to rewrite \
+                                history with your portfolio? Let the markets open!",
                             )
                             .color(Color32::WHITE),
                         );
@@ -327,7 +327,7 @@ pub fn top_panel(
                 ui.add_space(window.width() * 0.04);
 
                 ui.add_factor(
-                    "Global economic factor",
+                    "Global economy",
                     (economy.economy.current() as u8).to_string(),
                     text_color,
                     images.get(economy.economy.image()),
@@ -420,7 +420,7 @@ pub fn central_panel(
     mut contexts: EguiContexts,
     mut state: ResMut<UiState>,
     game_settings: Res<GameSettings>,
-    economy: Res<GlobalEconomy>,
+    mut economy: ResMut<GlobalEconomy>,
     mut player: ResMut<Player>,
     mut message: EventWriter<MessageEv>,
     images: Res<ImageIds>,
@@ -455,7 +455,7 @@ pub fn central_panel(
                 commodities_panel(ui, &mut state, &economy, &player, &images, &window)
             },
             Tab::Credit => {
-                credit_panel(ui, &mut state, &economy, &mut player, &mut message, &window)
+                credit_panel(ui, &mut state, &mut economy, &mut player, &mut message, &window)
             },
             Tab::Policies => {
                 policies_panel(ui, &mut state, &economy, &mut player, &mut message, &window);

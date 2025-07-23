@@ -91,12 +91,14 @@ fn update_settings(
 }
 
 pub fn main_menu(
+    mut commands: Commands,
     mut contexts: EguiContexts,
     mut game_settings: ResMut<GameSettings>,
     mut economy: ResMut<GlobalEconomy>,
     mut load_game_ev: EventWriter<LoadGameEv>,
     app_state: Res<State<AppState>>,
     mut next_app_state: ResMut<NextState<AppState>>,
+    mut next_game_state: ResMut<NextState<GameState>>,
     images: Res<ImageIds>,
     audio: Res<Audio>,
     window: Single<&Window>,
@@ -117,7 +119,11 @@ pub fn main_menu(
                         AppState::MainMenu => {
                             if ui.add_button(RichText::new("New game").heading(), &window).clicked()
                             {
+                                commands.insert_resource(UiState::default());
+                                commands.insert_resource(GlobalEconomy::default());
+                                commands.insert_resource(Player::default());
                                 next_app_state.set(AppState::Game);
+                                next_game_state.set(GameState::StartGame);
                             }
 
                             #[cfg(not(target_arch = "wasm32"))]
@@ -191,7 +197,6 @@ pub fn in_game_menu(
                     }
 
                     if ui.add_button(RichText::new("Exit").heading(), &window).clicked() {
-                        next_game_state.set(GameState::Running);
                         next_app_state.set(AppState::MainMenu);
                     }
                 },

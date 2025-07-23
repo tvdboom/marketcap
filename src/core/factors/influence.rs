@@ -25,8 +25,9 @@ impl Factor for Influence {
 
     fn description(&self) -> String {
         "The influence refers to the capacity or power of the company to affect the behavior, \
-        and decisions of politicians and other law-makers in the world. Use this resource to \
-        lobby politics and policies towards your desired preference."
+        and decisions of politicians and other lawmakers in the world. Use this resource to \
+        lobby politics and policies towards your desired preference. Influence increases over \
+        time proportionally to your AUM."
             .to_string()
     }
 

@@ -8,8 +8,7 @@ use crate::utils::NameFromEnum;
 #[derive(EnumIter, Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum ResearchField {
     Trading,
-    Stocks,
-    Bonds,
+    Equity,
     AlternativeInvestments,
     Credit,
     Strategy,
@@ -24,10 +23,8 @@ pub enum TechName {
     Futures,
     Options,
 
-    // Stocks
+    // Equities
     ESG,
-
-    // Bonds
     CorporateBonds,
     HighYield,
     CreditDefaultSwap,
@@ -241,28 +238,28 @@ impl Default for Research {
                 },
                 Technology {
                     name: TechName::ESG,
-                    field: ResearchField::Stocks,
+                    field: ResearchField::Equity,
                     progress: 0.,
                     researching: false,
                     dependencies: None,
                 },
                 Technology {
                     name: TechName::CorporateBonds,
-                    field: ResearchField::Bonds,
+                    field: ResearchField::Equity,
                     progress: 0.,
                     researching: false,
-                    dependencies: None,
+                    dependencies: Some(vec![TechName::ESG]),
                 },
                 Technology {
                     name: TechName::HighYield,
-                    field: ResearchField::Bonds,
+                    field: ResearchField::Equity,
                     progress: 0.,
                     researching: false,
                     dependencies: Some(vec![TechName::CorporateBonds]),
                 },
                 Technology {
                     name: TechName::CreditDefaultSwap,
-                    field: ResearchField::Bonds,
+                    field: ResearchField::Equity,
                     progress: 0.,
                     researching: false,
                     dependencies: Some(vec![TechName::HighYield]),
