@@ -23,6 +23,18 @@ use crate::core::sectors::{Sector, start_sectors};
 use crate::core::ui::state::UiState;
 use crate::utils::create_guid;
 
+#[derive(Clone, Default, Serialize, Deserialize)]
+pub struct PoliticalLandscape {
+    pub government: i32,
+    pub ideology: i32,
+    pub culture: i32,
+    pub orientation: i32,
+}
+
+impl PoliticalLandscape {
+    pub const RANGE: i32 = 50;
+}
+
 #[derive(Resource, Clone, Serialize, Deserialize)]
 pub struct GlobalEconomy {
     /// Current in-game date
@@ -61,6 +73,9 @@ pub struct GlobalEconomy {
     /// Information about all cryptocurrencies
     pub cryptos: Vec<Crypto>,
 
+    /// Political factors affecting the global economy
+    pub politics: PoliticalLandscape,
+
     /// Currently active events
     pub events: Vec<EconomicEvent>,
 }
@@ -84,7 +99,7 @@ impl GlobalEconomy {
         }
 
         for sector in &mut self.sectors {
-            sector.bump(inflation, &self.commodities);
+            sector.bump(inflation, &self.commodities, &self.politics);
         }
 
         for crypto in &mut self.cryptos {
@@ -144,7 +159,7 @@ impl GlobalEconomy {
         }
 
         for currency in &mut self.currencies {
-            currency.bump(&self.countries, &self.commodities);
+            currency.bump(&self.countries, &self.commodities, &self.politics);
         }
 
         for bond in &mut self.bonds {
@@ -238,6 +253,7 @@ impl Default for GlobalEconomy {
             commodities: start_commodities(),
             currencies: start_currencies(),
             cryptos: start_cryptos(),
+            politics: PoliticalLandscape::default(),
             events: Vec::new(),
         }
     }

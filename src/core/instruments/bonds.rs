@@ -207,6 +207,14 @@ impl Instrument for Bond {
         &self.prices
     }
 
+    fn country(&self) -> Option<CountryName> {
+        if let BondIssuer::Government(name) = self.issuer {
+            Some(name)
+        } else {
+            None
+        }
+    }
+    
     fn interest(&self) -> f32 {
         self.interest
     }

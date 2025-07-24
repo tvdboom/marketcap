@@ -1,4 +1,5 @@
 use bevy::prelude::Window;
+use bevy_egui::egui;
 use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::*;
 use chrono::{Datelike, Duration, NaiveDate};
@@ -10,7 +11,7 @@ use crate::core::constants::{
     CURRENCY, CUSTOM_GREEN, DATE_FORMAT, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH,
 };
 use crate::core::countries::Country;
-use crate::core::global_economy::GlobalEconomy;
+use crate::core::global_economy::{GlobalEconomy, PoliticalLandscape};
 use crate::core::instruments::bonds::BondIssuer;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::orders::{Command, Order};
@@ -66,6 +67,7 @@ pub trait CustomUi {
         state: &mut OrderByState,
         window: &Window,
     );
+    fn add_bar(&mut self, value: i32);
     fn add_technology(&mut self, research: &Technology) -> Response;
     fn add_country(&mut self, country: &Country, images: &ImageIds, window: &Window);
     fn add_plot(
@@ -171,6 +173,37 @@ impl CustomUi for Ui {
         );
     }
 
+    fn add_bar(&mut self, value: i32) {
+        let norm = (value / PoliticalLandscape::RANGE) as f32;
+
+        let (rect, _) = self.allocate_exact_size(vec2(self.available_width() * 0.4, 20.), Sense::hover());
+        let painter = self.painter();
+
+        let center_x = rect.center().x;
+        let y_range = rect.top()..=rect.bottom();
+
+        if norm != 0. {
+            let bar_width = rect.width() * norm.abs() * 0.5;
+            let (x0, x1) = if norm > 0.0 {
+                (center_x, center_x + bar_width)
+            } else {
+                (center_x - bar_width, center_x)
+            };
+            let bar_rect = Rect::from_x_y_ranges(x0..=x1, y_range.clone());
+            painter.rect_filled(bar_rect, 2.0, Color32::RED);
+        }
+
+        painter.rect_stroke(rect, 2.0, (1.0, Color32::LIGHT_GRAY), StrokeKind::Middle);
+
+        painter.text(
+            rect.center(),
+            Align2::CENTER_CENTER,
+            format!("{:+}", value),
+            TextStyle::Body.resolve(self.style()),
+            Color32::WHITE,
+        );
+    }
+
     fn add_technology(&mut self, technology: &Technology) -> Response {
         self.scope_builder(
             UiBuilder::new().id_salt(technology.name.to_name()).sense(Sense::click()),
@@ -241,6 +274,8 @@ impl CustomUi for Ui {
 
                 ui.horizontal(|ui| {
                     ui.vertical(|ui| {
+                        ui.label("Characteristics");
+
                         ui.label(format!(
                             "Currency: {} ({})",
                             country.currency.fullname(),
@@ -249,6 +284,20 @@ impl CustomUi for Ui {
                         ui.label(format!("Classification: {}", country.market.to_name()));
                         ui.label(format!("GDP: {} trillion euros", country.gdp));
                     });
+
+                    ui.add_space(window.width() * 0.02);
+
+                    ui.vertical(|ui| {
+                        ui.label("Politics");
+
+                        ui.label(format!("👑 Governance: {}", country.politics.governance.to_name()));
+                        ui.label(format!("🍀 Ideology: {}", country.politics.ideology.to_name()));
+                        ui.label(format!("👨‍ Culture: {}", country.politics.culture.to_name()));
+                        ui.label(format!("💲 Orientation: {}", country.politics.orientation.to_name()));
+                    });
+
+                    ui.add_space(window.width() * 0.02);
+
                     ui.vertical(|ui| {
                         ui.label("Production");
 
@@ -415,7 +464,7 @@ impl CustomUi for Ui {
                 ui.set_width(ui.available_width() * 0.98);
 
                 ui.horizontal(|ui| {
-                    ui.vertical(|ui| {
+                    let response = ui.vertical(|ui| {
                         if matches!(instrument.kind(), InstrumentKind::Forex(_)) {
                             ui.heading(format!("{}/{}", instrument.name(), CURRENCY.to_name()));
                         } else {
@@ -427,6 +476,11 @@ impl CustomUi for Ui {
                             [window.height() * 0.2; 2],
                         );
                     });
+
+                    if let Some(country) = instrument.country() {
+                        let country = economy.countries.iter().find(|c| c.name == country).unwrap();
+                        response.response.on_hover_ui(|ui| ui.add_country(country, images, window));
+                    }
 
                     ui.vertical(|ui| {
                         ui.set_width(ui.available_width() * 0.5);
@@ -518,15 +572,8 @@ impl CustomUi for Ui {
                                                 The interest increases with the bond's term.",
                                             );
                                     },
-                                    InstrumentKind::Forex(name) => {
-                                        let country = economy
-                                            .countries
-                                            .iter()
-                                            .find(|c| c.currency == name)
-                                            .unwrap();
-
-                                        ui.label(format!("Country: {}", country.name.to_name()))
-                                            .on_hover_ui(|ui| ui.add_country(country, images, window));
+                                    InstrumentKind::Forex(_) => {
+                                        ui.label(format!("Country: {}", instrument.country().to_name()));
 
                                         ui.label(format!(
                                             "Currency: {} ({})",

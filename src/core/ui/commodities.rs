@@ -23,7 +23,7 @@ pub fn commodities_panel(
         Because commodities are physical instruments, they require storage facilities to preserve \
         the products before selling them. This incurs a storage cost, which is a variable price \
         per unit per month (with a minimum of one month). Storage cost prices increase with \
-        inflation. The price of commodities is influenced by the global economy."
+        inflation. The price of commodities is influenced by the global economy.",
     );
 
     ui.separator();

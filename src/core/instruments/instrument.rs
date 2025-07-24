@@ -3,7 +3,7 @@ use std::f32::consts::E;
 
 use serde::{Deserialize, Serialize};
 use strum::IntoEnumIterator;
-
+use crate::core::countries::{CountryName};
 use crate::core::derivatives::OptionKind;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::{BondIssuer, BondQuality};
@@ -131,6 +131,9 @@ pub trait Instrument {
         }
     }
 
+    fn country(&self) -> Option<CountryName> {
+        None
+    }
     fn symbol(&self) -> &str {
         ""
     }

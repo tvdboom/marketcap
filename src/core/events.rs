@@ -9,12 +9,13 @@ use strum_macros::EnumIter;
 
 use crate::core::countries::CountryName;
 use crate::core::global_economy::GlobalEconomy;
-use crate::core::instruments::bonds::{BondIssuer, BondQuality};
+use crate::core::instruments::bonds::{BondIssuer, BondQuality, start_bonds};
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::crypto::CryptoName;
 use crate::core::instruments::instrument::InstrumentKind;
 use crate::core::instruments::stocks::{Company, ESGRating};
 use crate::core::player::Player;
+use crate::core::politics::Ideology;
 use crate::core::research::TechName;
 use crate::core::sectors::SectorName;
 use crate::utils::NameFromEnum;
@@ -35,14 +36,16 @@ pub enum EventName {
     Grounded,
     Harvest(CountryName),
     InterestBump(CountryName),
+    MiningStrike(CountryName),
     NewProduct(Company),
     NewContract(Company),
     OilDiscovery(CountryName),
     OilDisruption,
-    StorageCosts,
     Recession,
     RegulatoryCrackdown(SectorName),
     RussiaWar,
+    SovereignDebt(CountryName),
+    StorageCosts,
     TradeWar,
     Vaccine(Company),
 }
@@ -129,6 +132,24 @@ impl EventName {
             EventName::InterestBump(_) => {
                 EventName::InterestBump(CountryName::iter().choose(&mut rng()).unwrap())
             },
+            EventName::MiningStrike(_) => EventName::MiningStrike(
+                economy
+                    .countries
+                    .iter()
+                    .filter_map(|c| {
+                        matches!(
+                            c.name,
+                            CountryName::Australia
+                                | CountryName::Canada
+                                | CountryName::China
+                                | CountryName::Russia
+                                | CountryName::SouthAfrica
+                        )
+                        .then_some(c.name)
+                    })
+                    .choose(&mut rng())
+                    .unwrap(),
+            ),
             EventName::OilDiscovery(_) => EventName::OilDiscovery(
                 economy
                     .countries
@@ -142,6 +163,15 @@ impl EventName {
             EventName::RegulatoryCrackdown(_) => {
                 EventName::RegulatoryCrackdown(SectorName::iter().choose(&mut rng()).unwrap())
             },
+            EventName::SovereignDebt(_) => EventName::SovereignDebt(
+                CountryName::iter()
+                    .filter(|c| {
+                        economy.get(&InstrumentKind::Bond(BondIssuer::Government(*c))).quality()
+                            <= BondQuality::BB
+                    })
+                    .choose(&mut rng())
+                    .unwrap(),
+            ),
             EventName::Vaccine(_) => EventName::Vaccine(
                 Company::iter()
                     .filter(|c| {
@@ -171,9 +201,10 @@ impl EventName {
             EventName::Grounded => 7,
             EventName::InterestBump(_) => 200,
             EventName::OilDisruption => 10,
-            EventName::StorageCosts => 90,
             EventName::Recession => 60,
             EventName::RussiaWar => 365,
+            EventName::SovereignDebt(_) => 180,
+            EventName::StorageCosts => 90,
             EventName::TradeWar => 180,
             _ => 1,
         };
@@ -190,8 +221,10 @@ impl EventName {
             EventName::BrazilPolitics => 0.1,
             EventName::Covid => 0.1,
             EventName::Crimea => 0.1,
+            EventName::MiningStrike(_) => 0.6,
             EventName::Recession => 0.4,
             EventName::RussiaWar => 0.1,
+            EventName::SovereignDebt(_) => 0.2,
             EventName::TradeWar => 0.1,
             EventName::Vaccine(_) => 0.1,
             _ => 1.0,
@@ -218,9 +251,19 @@ impl EventName {
                     n @ EventName::GoldRush => (player.has_tech(&TechName::Commodities)
                         && !economy.events.iter().any(|e| e.name == n))
                     .then_some(n.base_weight()),
+                    n @ EventName::MiningStrike(_) => (player.has_tech(&TechName::Commodities)
+                        && !economy.events.iter().any(|e| e.name == n))
+                    .then_some(n.base_weight()),
                     n @ EventName::RussiaWar => (!economy.events.iter().any(|e| e.name == n)
                         && economy.active_events().iter().any(|e| e.name == EventName::Crimea))
                     .then_some(n.base_weight()),
+                    n @ EventName::SovereignDebt(_) => {
+                        Some(if economy.has_active_event(&EventName::Recession) {
+                            3. * n.base_weight()
+                        } else {
+                            n.base_weight()
+                        })
+                    },
                     n @ EventName::StorageCosts => (player.has_tech(&TechName::Commodities)
                         && !economy.active_events().iter().any(|e| e.name == n))
                     .then_some(n.base_weight()),
@@ -284,6 +327,9 @@ impl EconomicEvent {
             EventName::InterestBump(country) => {
                 format!("Interest rates raised in {}", country.to_name())
             },
+            EventName::MiningStrike(country) => {
+                format!("Mining strike in {}", country.to_name())
+            },
             EventName::NewContract(company) => {
                 format!("{} signs a big new contract", company.to_name())
             },
@@ -299,6 +345,9 @@ impl EconomicEvent {
                 format!("Regulatory crackdown on sector {}", sector.to_name())
             },
             EventName::RussiaWar => "Russia invades Ukraine".to_string(),
+            EventName::SovereignDebt(country) => {
+                format!("{} debt crisis", country.to_name())
+            },
             EventName::StorageCosts => "Storage costs rise".to_string(),
             EventName::TradeWar => "USA - China trade war escalates".to_string(),
             EventName::Vaccine(company) => format!("{} vaccine breakthrough", company.to_name()),
@@ -403,6 +452,12 @@ impl EconomicEvent {
                 growth in the short term but is aimed at stabilizing the economy in the long run.",
                 country.to_name()
             ),
+            EventName::MiningStrike(country) => format!(
+                "A major mining strike in {} disrupts the production of key commodities, leading \
+                to supply shortages and increased prices. This may result in inflationary pressures \
+                and a global impact on the materials sector.",
+                country.to_name()
+            ),
             EventName::NewContract(company) => format!(
                 "A major contract signed by {} boosts the company's stock price and increases its \
                 revenue. The contract involves the production of new equipment, leading to \
@@ -451,6 +506,13 @@ impl EconomicEvent {
                 supply chains, leading to inflationary pressures worldwide."
                     .to_string()
             },
+            EventName::SovereignDebt(country) => format!(
+                "A debt crisis in {} leads to a default on government bonds, causing panic in \
+                financial markets. Investors flee to safer assets, leading to a sharp decline in \
+                the country's currency. The crisis may require an international bailout and \
+                austerity measures.",
+                country.to_name()
+            ),
             EventName::StorageCosts => {
                 "Rising storage costs for commodities lead to increased prices and reduced \
                 profitability for producers. This may result in a shift in supply chains, as \
@@ -482,6 +544,10 @@ impl EconomicEvent {
         let mut rng = rng();
         match self.name {
             EventName::BrazilPolitics => {
+                economy.countries.iter_mut().find(|c| c.name == CountryName::Brazil).map(|c| {
+                    c.politics.ideology = Ideology::Right;
+                });
+
                 economy
                     .bonds
                     .iter_mut()
@@ -498,6 +564,10 @@ impl EconomicEvent {
             EventName::Covid => {
                 economy.sectors.iter_mut().find(|s| s.name == SectorName::Transport).map(|s| {
                     s.update(rng.random_range(-30..-10));
+                });
+
+                economy.sectors.iter_mut().find(|s| s.name == SectorName::Healthcare).map(|s| {
+                    s.update(rng.random_range(10..15));
                 });
             },
             EventName::Crimea => {
@@ -530,10 +600,18 @@ impl EconomicEvent {
                 economy.cryptos.iter_mut().find(|c| c.name == name).map(|c| {
                     *c.prices.back_mut().unwrap() *= rng.random_range(0.5..0.75);
                 });
+
+                economy.sectors.iter_mut().find(|s| s.name == SectorName::Technology).map(|s| {
+                    s.update(-rng.random_range(5..10));
+                });
             },
             EventName::DDos(company) => {
                 economy.stocks.iter_mut().find(|s| s.issuer == company).map(|s| {
                     *s.prices.back_mut().unwrap() *= rng.random_range(0.85..0.95);
+                });
+
+                economy.sectors.iter_mut().find(|s| s.name == SectorName::Technology).map(|s| {
+                    s.update(-rng.random_range(5..10));
                 });
             },
             EventName::EsgScandal(company) => {
@@ -549,10 +627,14 @@ impl EconomicEvent {
                 economy.commodities.iter_mut().find(|c| c.name == CommodityName::LNG).map(|c| {
                     c.base_price *= rng.random_range(0.85..0.95);
                 });
+
+                economy.sectors.iter_mut().find(|s| s.name == SectorName::Energy).map(|s| {
+                    s.update(rng.random_range(10..15));
+                });
             },
             EventName::Grounded => {
                 economy.sectors.iter_mut().find(|s| s.name == SectorName::Transport).map(|s| {
-                    s.update(-10);
+                    s.update(-rng.random_range(10..25));
                 });
             },
             EventName::InterestBump(country) => {
@@ -564,9 +646,33 @@ impl EconomicEvent {
                         b.interest *= rng.random_range(1.15..1.25);
                     });
             },
+            EventName::MiningStrike(country) => {
+                economy
+                    .commodities
+                    .iter_mut()
+                    .filter(|c| {
+                        let country = economy.countries.iter().find(|c| c.name == country).unwrap();
+                        c.name.is_metal() && country.production.contains_key(&c.name)
+                    })
+                    .for_each(|c| {
+                        *c.prices.back_mut().unwrap() *= rng.random_range(1.1..1.3);
+                    });
+
+                economy.currencies.iter_mut().find(|c| c.country == country).map(|c| {
+                    *c.values.back_mut().unwrap() *= rng.random_range(0.9..0.95);
+                });
+
+                economy.sectors.iter_mut().find(|s| s.name == SectorName::Materials).map(|s| {
+                    s.update(-rng.random_range(10..20));
+                });
+            },
             EventName::NewProduct(company) | EventName::NewContract(company) => {
                 economy.stocks.iter_mut().find(|s| s.issuer == company).map(|s| {
                     *s.prices.back_mut().unwrap() *= rng.random_range(1.2..1.4);
+                });
+
+                economy.sectors.iter_mut().find(|s| s.name == SectorName::Retail).map(|s| {
+                    s.update(rng.random_range(10..15));
                 });
             },
             EventName::OilDiscovery(country) => {
@@ -576,6 +682,10 @@ impl EconomicEvent {
 
                 economy.commodities.iter_mut().find(|c| c.name == CommodityName::Oil).map(|c| {
                     c.base_price *= rng.random_range(0.85..0.95);
+                });
+
+                economy.sectors.iter_mut().find(|s| s.name == SectorName::Energy).map(|s| {
+                    s.update(rng.random_range(10..15));
                 });
             },
             EventName::RegulatoryCrackdown(sector) => {
@@ -603,6 +713,22 @@ impl EconomicEvent {
 
                 economy.sectors.iter_mut().find(|s| s.name == SectorName::Military).map(|s| {
                     s.update(rng.random_range(15..25));
+                });
+            },
+            EventName::SovereignDebt(country) => {
+                economy.bonds.iter_mut().find(|b| b.issuer == BondIssuer::Government(country)).map(
+                    |b| {
+                        b.quality = BondQuality::C;
+                    },
+                );
+
+                economy.currencies.iter_mut().find(|c| c.country == country).map(|c| {
+                    c.base_value *= rng.random_range(0.5..0.7);
+                    *c.values.back_mut().unwrap() *= rng.random_range(0.5..0.7);
+                });
+
+                economy.sectors.iter_mut().find(|s| s.name == SectorName::Finance).map(|s| {
+                    s.update(-rng.random_range(10..15));
                 });
             },
             EventName::TradeWar => {
@@ -717,6 +843,10 @@ impl EconomicEvent {
         let mut rng = rng();
         match self.name {
             EventName::BrazilPolitics => {
+                economy.countries.iter_mut().find(|c| c.name == CountryName::Brazil).map(|c| {
+                    c.politics.ideology = Ideology::Neutral;
+                });
+
                 economy
                     .bonds
                     .iter_mut()
@@ -769,6 +899,22 @@ impl EconomicEvent {
 
                 economy.sectors.iter_mut().find(|s| s.name == SectorName::Military).map(|s| {
                     s.update(-rng.random_range(15..25));
+                });
+            },
+            EventName::SovereignDebt(country) => {
+                economy.bonds.iter_mut().find(|b| b.issuer == BondIssuer::Government(country)).map(
+                    |b| {
+                        b.quality = start_bonds()
+                            .iter()
+                            .find(|b| b.issuer == BondIssuer::Government(country))
+                            .map(|b| b.quality.clone())
+                            .unwrap();
+                    },
+                );
+
+                economy.currencies.iter_mut().find(|c| c.country == country).map(|c| {
+                    c.base_value *= rng.random_range(1.3..1.5);
+                    *c.values.back_mut().unwrap() *= rng.random_range(1.3..1.5);
                 });
             },
             EventName::TradeWar => {

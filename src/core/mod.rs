@@ -14,6 +14,7 @@ mod orders;
 mod pause;
 mod persistence;
 mod player;
+mod politics;
 mod research;
 mod resources;
 mod sectors;

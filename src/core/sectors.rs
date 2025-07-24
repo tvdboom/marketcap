@@ -1,10 +1,12 @@
-use std::collections::HashMap;
-
 use crate::core::factors::inflation::Inflation;
 use crate::core::instruments::commodities::{Commodity, CommodityName};
 use crate::core::instruments::instrument::Instrument;
+use crate::core::politics::{Culture, Governance, Ideology, Orientation, Politics};
+use bevy::utils::default;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use strum_macros::EnumIter;
+use crate::core::global_economy::PoliticalLandscape;
 
 #[derive(EnumIter, Clone, Copy, Default, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum SectorName {
@@ -65,6 +67,7 @@ impl SectorName {
 pub struct Sector {
     pub name: SectorName,
     pub value: u8,
+    pub politics: Politics,
     pub commodities: HashMap<CommodityName, f32>,
 }
 
@@ -72,9 +75,10 @@ impl Sector {
     pub const MIN: u8 = 0;
     pub const MAX: u8 = 100;
 
-    pub fn bump(&mut self, inflation: f32, commodities: &Vec<Commodity>) {
+    pub fn bump(&mut self, inflation: f32, commodities: &Vec<Commodity>, landscape: &PoliticalLandscape) {
         let mut new_value = self.value as f32
-            * (1.0
+            * (1. + self.politics.get_score(&landscape))
+            * (1.
                 + commodities
                     .iter()
                     .map(|c| {
@@ -89,10 +93,10 @@ impl Sector {
         if self.name == SectorName::Finance {
             new_value *= 1. + (inflation - Inflation::DEFAULT) / 100.;
         }
-
+        
         // Adjust value to tend towards the middle
         let deviation = new_value - ((Self::MIN + Self::MAX) as f32 * 0.5);
-        new_value *= 1. + -deviation * deviation.abs() / 5.;
+        new_value *= 1. + -deviation * deviation.abs() / 15.;
 
         self.value = ((new_value / 100.) as u8).clamp(Self::MIN, Self::MAX);
     }
@@ -107,6 +111,11 @@ pub fn start_sectors() -> Vec<Sector> {
         Sector {
             name: SectorName::Energy,
             value: 50,
+            politics: Politics {
+                ideology: Ideology::Right,
+                culture: Culture::Conservative,
+                ..default()
+            },
             commodities: HashMap::from([
                 (CommodityName::LNG, 0.4),
                 (CommodityName::Oil, 0.4),
@@ -116,6 +125,12 @@ pub fn start_sectors() -> Vec<Sector> {
         Sector {
             name: SectorName::Fashion,
             value: 50,
+            politics: Politics {
+                governance: Governance::Democracy,
+                culture: Culture::Progressive,
+                orientation: Orientation::Capitalism,
+                ..default()
+            },
             commodities: HashMap::from([
                 (CommodityName::Cotton, 0.6),
                 (CommodityName::Silver, 0.2),
@@ -125,11 +140,21 @@ pub fn start_sectors() -> Vec<Sector> {
         Sector {
             name: SectorName::Finance,
             value: 50,
+            politics: Politics {
+                governance: Governance::Democracy,
+                ideology: Ideology::Right,
+                orientation: Orientation::Capitalism,
+                ..default()
+            },
             commodities: HashMap::new(),
         },
         Sector {
             name: SectorName::Food,
             value: 50,
+            politics: Politics {
+                ideology: Ideology::Left,
+                ..default()
+            },
             commodities: HashMap::from([
                 (CommodityName::Wheat, 0.3),
                 (CommodityName::Corn, 0.2),
@@ -140,6 +165,12 @@ pub fn start_sectors() -> Vec<Sector> {
         Sector {
             name: SectorName::Healthcare,
             value: 50,
+            politics: Politics {
+                governance: Governance::Democracy,
+                ideology: Ideology::Left,
+                orientation: Orientation::Socialism,
+                ..default()
+            },
             commodities: HashMap::from([
                 (CommodityName::Ethanol, 0.2),
                 (CommodityName::LNG, 0.1),
@@ -151,6 +182,7 @@ pub fn start_sectors() -> Vec<Sector> {
         Sector {
             name: SectorName::Materials,
             value: 50,
+            politics: Politics::default(),
             commodities: HashMap::from([
                 (CommodityName::Gold, 0.1),
                 (CommodityName::Silver, 0.1),
@@ -163,6 +195,12 @@ pub fn start_sectors() -> Vec<Sector> {
         Sector {
             name: SectorName::Military,
             value: 50,
+            politics: Politics {
+                governance: Governance::Autocracy,
+                ideology: Ideology::Right,
+                culture: Culture::Conservative,
+                orientation: Orientation::Capitalism,
+            },
             commodities: HashMap::from([
                 (CommodityName::Iron, 0.5),
                 (CommodityName::Aluminium, 0.3),
@@ -172,6 +210,12 @@ pub fn start_sectors() -> Vec<Sector> {
         Sector {
             name: SectorName::Retail,
             value: 50,
+            politics: Politics {
+                governance: Governance::Democracy,
+                culture: Culture::Progressive,
+                orientation: Orientation::Capitalism,
+                ..default()
+            },
             commodities: HashMap::from([
                 (CommodityName::Cotton, 0.2),
                 (CommodityName::Silver, 0.1),
@@ -183,6 +227,11 @@ pub fn start_sectors() -> Vec<Sector> {
         Sector {
             name: SectorName::Technology,
             value: 50,
+            politics: Politics {
+                culture: Culture::Progressive,
+                orientation: Orientation::Capitalism,
+                ..default()
+            },
             commodities: HashMap::from([
                 (CommodityName::Silicon, 0.7),
                 (CommodityName::Copper, 0.3),
@@ -191,6 +240,10 @@ pub fn start_sectors() -> Vec<Sector> {
         Sector {
             name: SectorName::Transport,
             value: 50,
+            politics: Politics {
+                governance: Governance::Democracy,
+                ..default()
+            },
             commodities: HashMap::from([
                 (CommodityName::Iron, 0.4),
                 (CommodityName::Aluminium, 0.25),

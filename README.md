@@ -8,10 +8,10 @@
 <br><br>
 </div>
 
-<img src="https://github.com/tvdboom/marabunta/blob/master/assets/images/scenery/stocks.png?raw=true" alt="Stocks">
-<img src="https://github.com/tvdboom/marabunta/blob/master/assets/images/scenery/options.png?raw=true" alt="Options">
-<img src="https://github.com/tvdboom/marabunta/blob/master/assets/images/scenery/credit.png?raw=true" alt="Credit">
-<img src="https://github.com/tvdboom/marabunta/blob/master/assets/images/scenery/commodities.png?raw=true" alt="Commodities">
+<img src="https://github.com/tvdboom/marketcap/blob/master/extras/stocks.png?raw=true" alt="Stocks">
+<img src="https://github.com/tvdboom/marketcap/blob/master/extras/options.png?raw=true" alt="Options">
+<img src="https://github.com/tvdboom/marketcap/blob/master/extras/credit.png?raw=true" alt="Credit">
+<img src="https://github.com/tvdboom/marketcap/blob/master/extras/commodities.png?raw=true" alt="Commodities">
 
 <br>
 
@@ -23,9 +23,9 @@ you're entering the most cutthroat financial landscape seen to date.
 
 Your mission is simple: grow your Assets Under Management (AUM). Trade in stocks, bonds, 
 forex, commodities, cryptos and derivatives. Shape politics, rewrite economic policy and 
-tilt the balance of power. Navigate corporate scandals, macro shocks and global conflict 
-- all while charming clients and outwitting regulators. Your company isn't just about market 
-plays - it's a political force.
+tilt the balance of power. Navigate corporate scandals, macro shocks and global conflict, 
+all while charming clients and outwitting regulators. Your company isn't just about market 
+plays, it's a political force.
 
 In this world, success is measured in billions. Are you ready to rewrite history with your 
 portfolio? Let the markets open!
@@ -109,6 +109,14 @@ make purchases, invest, and manage expenses beyond their immediate cash availabi
 
 ### Policies
 
+#### Politics
+
+The game features four political fields where players can influence the 
+political landscape: government, ideology, culture, and orientation. The values 
+in these fields represent the global tendency towards one of the two directions. 
+Countries and sectors are influenced depending on their affiliation to each field.
+Use your influence to change the political landscape to your advantage.
+
 
 <br>
 
@@ -139,7 +147,7 @@ See below a schema of how the different game components interact with each other
 represents a dependency or influence relationship.
 
 <div align="center">
-    <img src="https://github.com/tvdboom/marabunta/blob/master/schema.png?raw=true" alt="schema">
+    <img src="https://github.com/tvdboom/marketcap/blob/master/extras/schema.png?raw=true" alt="schema">
 </div>
 
 ## ⌨️ Key bindings

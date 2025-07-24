@@ -68,6 +68,18 @@ impl CommodityName {
                 | CommodityName::Wheat
         )
     }
+
+    pub fn is_metal(&self) -> bool {
+        matches!(
+            self,
+            CommodityName::Aluminium
+                | CommodityName::Copper
+                | CommodityName::Gold
+                | CommodityName::Iron
+                | CommodityName::Silicon
+                | CommodityName::Silver
+        )
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]

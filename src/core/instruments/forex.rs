@@ -5,6 +5,7 @@ use strum_macros::EnumIter;
 
 use crate::core::constants::CURRENCY;
 use crate::core::countries::{Country, CountryName};
+use crate::core::global_economy::PoliticalLandscape;
 use crate::core::instruments::commodities::Commodity;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::utils::{DQueue, NameFromEnum};
@@ -83,13 +84,14 @@ pub struct Currency {
 }
 
 impl Currency {
-    pub fn bump(&mut self, countries: &Vec<Country>, commodities: &Vec<Commodity>) -> f32 {
+    pub fn bump(&mut self, countries: &Vec<Country>, commodities: &Vec<Commodity>, landscape: &PoliticalLandscape) -> f32 {
         if self.name == CURRENCY {
             return self.current(); // The base currency doesn't change
         }
 
         let country = countries.iter().find(|c| c.name == self.country).unwrap();
         let mut new_value = self.current()
+            * (1. + country.politics.get_score(&landscape))
             + (1.
                 * country
                     .production
@@ -248,6 +250,10 @@ impl Instrument for Currency {
 
     fn all(&self) -> &DQueue<f32> {
         &self.values
+    }
+
+    fn country(&self) -> Option<CountryName> {
+        Some(self.country.clone())
     }
 
     fn symbol(&self) -> &str {

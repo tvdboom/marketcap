@@ -1,17 +1,18 @@
 use bevy::prelude::*;
-use bevy_egui::egui::Ui;
+use bevy_egui::egui::{Ui, Button};
 use strum::IntoEnumIterator;
 
-use crate::core::global_economy::GlobalEconomy;
+use crate::core::global_economy::{GlobalEconomy};
 use crate::core::messages::MessageEv;
 use crate::core::player::Player;
 use crate::core::ui::state::{PoliciesTab, UiState};
+use crate::core::ui::utils::CustomUi;
 use crate::utils::NameFromEnum;
 
 pub fn policies_panel(
     ui: &mut Ui,
     state: &mut UiState,
-    economy: &GlobalEconomy,
+    economy: &mut GlobalEconomy,
     player: &mut Player,
     message: &mut EventWriter<MessageEv>,
     window: &Window,
@@ -28,7 +29,7 @@ pub fn policies_panel(
 
     ui.separator();
 
-    ui.add_space(window.height() * 0.02);
+    ui.add_space(window.height() * 0.01);
 
     match state.policies {
         PoliciesTab::Sectors => {
@@ -46,7 +47,61 @@ pub fn policies_panel(
 
             ui.separator();
         },
-        PoliciesTab::Politics => (),
+        PoliciesTab::Politics => {
+            ui.label(
+                "The game features four political fields where players can influence the \
+                political landscape: government, ideology, culture, and orientation. The values \
+                in these fields represent the global tendency towards one of the two directions. \
+                Countries and sectors are influenced depending on their affiliation to each field.\n\n\
+                Use your influence to change the political landscape to your advantage.",
+            );
+
+            ui.separator();
+
+            ui.heading("Government");
+
+            ui.horizontal(|ui| {
+                ui.label("Democracy");
+                if ui.add_sized([20., 20.], Button::new("👈 +1")).clicked() {
+                    economy.politics.government -= 1;
+                }
+                ui.add_bar(economy.politics.government);
+                if ui.add_sized([20., 20.], Button::new("👉 +1")).clicked() {
+                    economy.politics.government += 1;
+                }
+                ui.label("Autocracy");
+            });
+
+            ui.add_space(window.height() * 0.02);
+
+            ui.heading("Ideology");
+
+            ui.horizontal(|ui| {
+                ui.label("Left");
+                ui.add_bar(economy.politics.ideology);
+                ui.label("Right");
+            });
+
+            ui.add_space(window.height() * 0.02);
+
+            ui.heading("Culture");
+
+            ui.horizontal(|ui| {
+                ui.label("Conservative");
+                ui.add_bar(economy.politics.culture);
+                ui.label("Progressive");
+            });
+
+            ui.add_space(window.height() * 0.02);
+
+            ui.heading("Orientation");
+
+            ui.horizontal(|ui| {
+                ui.label("Socialism");
+                ui.add_bar(economy.politics.orientation);
+                ui.label("Capitalism");
+            });
+        },
         PoliciesTab::Laws => (),
     }
 }

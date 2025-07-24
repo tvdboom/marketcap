@@ -64,7 +64,7 @@ impl FromWorld for WorldAssets {
             ("research", assets.load("images/icons/research.png")),
             ("time", assets.load("images/icons/time.png")),
             ("time-paused", assets.load("images/icons/time-paused.png")),
-            // Events 
+            // Events
             ("brazil-politics", assets.load("images/events/brazil-politics.png")),
             ("ceo-resignation", assets.load("images/events/ceo-resignation.png")),
             ("covid", assets.load("images/events/covid.png")),
@@ -79,6 +79,7 @@ impl FromWorld for WorldAssets {
             ("grounded", assets.load("images/events/grounded.png")),
             ("harvest", assets.load("images/events/harvest.png")),
             ("interest-bump", assets.load("images/events/interest-bump.png")),
+            ("mining-strike", assets.load("images/events/mining-strike.png")),
             ("new-contract", assets.load("images/events/new-contract.png")),
             ("new-product", assets.load("images/events/new-product.png")),
             ("oil-discovery", assets.load("images/events/oil-discovery.png")),
@@ -86,6 +87,7 @@ impl FromWorld for WorldAssets {
             ("recession", assets.load("images/events/recession.png")),
             ("regulatory-crackdown", assets.load("images/events/regulatory-crackdown.png")),
             ("russia-war", assets.load("images/events/russia-war.png")),
+            ("sovereign-debt", assets.load("images/events/sovereign-debt.png")),
             ("storage-costs", assets.load("images/events/storage-costs.png")),
             ("trade-war", assets.load("images/events/trade-war.png")),
             ("vaccine", assets.load("images/events/vaccine.png")),
