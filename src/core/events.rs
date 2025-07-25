@@ -36,23 +36,29 @@ pub enum EventName {
     Grounded,
     Harvest(CountryName),
     InterestBump(CountryName),
+    Merger,
     MiningStrike(CountryName),
     NewProduct(Company),
     NewContract(Company),
     OilDiscovery(CountryName),
     OilDisruption,
+    Rail,
     Recession,
     RegulatoryCrackdown(SectorName),
     RussiaWar,
     SovereignDebt(CountryName),
     StorageCosts,
     TradeWar,
+    Trial,
     Vaccine(Company),
 }
 
 impl EventName {
-    pub fn create(economy: &GlobalEconomy, player: &Player) -> EconomicEvent {
-        let dist = WeightedIndex::new(&Self::weights(economy, player)).unwrap();
+    pub fn create(
+        economy: &GlobalEconomy,
+        player: &Player,
+    ) -> Result<EconomicEvent, rand::distr::weighted::Error> {
+        let dist = WeightedIndex::new(&Self::weights(economy, player))?;
         let mut name = Self::iter().collect::<Vec<_>>()[dist.sample(&mut rng())].clone();
 
         name = match name {
@@ -188,7 +194,7 @@ impl EventName {
             _ => name,
         };
 
-        EconomicEvent::new(name.clone(), economy.date, name.duration())
+        Ok(EconomicEvent::new(name.clone(), economy.date, name.duration()))
     }
 
     pub fn duration(&self) -> u32 {
@@ -327,6 +333,7 @@ impl EconomicEvent {
             EventName::InterestBump(country) => {
                 format!("Interest rates raised in {}", country.to_name())
             },
+            EventName::Merger => "Big banking merger shakes regional markets".to_string(),
             EventName::MiningStrike(country) => {
                 format!("Mining strike in {}", country.to_name())
             },
@@ -340,6 +347,7 @@ impl EconomicEvent {
                 format!("New oil field discovered in {}", country.to_name())
             },
             EventName::OilDisruption => "Oil supply disruption in Saudi Arabia".to_string(),
+            EventName::Rail => "High-speed rail expansion in EU".to_string(),
             EventName::Recession => "Global recession".to_string(),
             EventName::RegulatoryCrackdown(sector) => {
                 format!("Regulatory crackdown on sector {}", sector.to_name())
@@ -350,6 +358,7 @@ impl EconomicEvent {
             },
             EventName::StorageCosts => "Storage costs rise".to_string(),
             EventName::TradeWar => "USA - China trade war escalates".to_string(),
+            EventName::Trial => "ONGs win big climate trial".to_string(),
             EventName::Vaccine(company) => format!("{} vaccine breakthrough", company.to_name()),
         }
     }
@@ -452,6 +461,12 @@ impl EconomicEvent {
                 growth in the short term but is aimed at stabilizing the economy in the long run.",
                 country.to_name()
             ),
+            EventName::Merger => {
+                "A major banking merger shakes regional markets, leading to increased consolidation \
+                in the financial sector. The merger results in cost savings, but also raises concerns \
+                about reduced competition and potential job losses."
+                    .to_string()
+            },
             EventName::MiningStrike(country) => format!(
                 "A major mining strike in {} disrupts the production of key commodities, leading \
                 to supply shortages and increased prices. This may result in inflationary pressures \
@@ -481,6 +496,12 @@ impl EconomicEvent {
                 "A major disruption in oil supply from Saudi Arabia leads to a spike in global \
                 oil prices. This causes inflation and economic instability in the area, affecting \
                 industries reliant on oil and energy."
+                    .to_string()
+            },
+            EventName::Rail => {
+                "The expansion of high-speed rail networks in the European Union boosts \
+                transportation efficiency and reduces travel times. This leads to increased \
+                economic activity, as businesses can operate more effectively across regions."
                     .to_string()
             },
             EventName::Recession => {
@@ -527,6 +548,13 @@ impl EconomicEvent {
                 conflict may lead to shifts in supply chains and trade alliances."
                     .to_string()
             },
+            EventName::Trial => {
+                "A landmark trial results in a major victory for environmental NGOs, leading to \
+                increased scrutiny of corporate practices. The ruling may result in stricter \
+                regulations and higher compliance costs for companies, particularly in the energy \
+                and materials sectors."
+                    .to_string()
+            },
             EventName::Vaccine(company) => format!(
                 "A breakthrough in vaccine development by {} leads to a significant reduction \
                 in the spread of infectious diseases. This boosts public health, increases \
@@ -544,6 +572,8 @@ impl EconomicEvent {
         let mut rng = rng();
         match self.name {
             EventName::BrazilPolitics => {
+                economy.politics.update_ideology(rng.random_range(15..25));
+                
                 economy.countries.iter_mut().find(|c| c.name == CountryName::Brazil).map(|c| {
                     c.politics.ideology = Ideology::Right;
                 });
@@ -666,6 +696,12 @@ impl EconomicEvent {
                     s.update(-rng.random_range(10..20));
                 });
             },
+            EventName::Merger => {
+                economy.politics.update_orientation(rng.random_range(15..25));
+                economy.sectors.iter_mut().find(|s| s.name == SectorName::Finance).map(|s| {
+                    s.update(rng.random_range(15..25));
+                });
+            }
             EventName::NewProduct(company) | EventName::NewContract(company) => {
                 economy.stocks.iter_mut().find(|s| s.issuer == company).map(|s| {
                     *s.prices.back_mut().unwrap() *= rng.random_range(1.2..1.4);
@@ -693,6 +729,23 @@ impl EconomicEvent {
                     s.update(-rng.random_range(20..40));
                 });
             },
+            EventName::Rail => {
+                economy.sectors.iter_mut().find(|s| s.name == SectorName::Transport).map(|s| {
+                    s.update(rng.random_range(15..25));
+                });
+
+                economy
+                    .currencies
+                    .iter_mut()
+                    .find(|c| c.country == CountryName::EU)
+                    .map(|c| {
+                        *c.values.back_mut().unwrap() *= rng.random_range(1.05..1.1);
+                    });
+
+                economy.stocks.iter_mut().find(|s| s.issuer == Company::Boeing).map(|s| {
+                    *s.prices.back_mut().unwrap() *= rng.random_range(0.85..0.95);
+                });
+            }
             EventName::RussiaWar => {
                 economy
                     .currencies
@@ -743,6 +796,14 @@ impl EconomicEvent {
 
                 economy.sectors.iter_mut().find(|s| s.name == SectorName::Finance).map(|s| {
                     s.update(-10);
+                });
+            },
+            EventName::Trial => {
+                economy.politics.update_ideology(-rng.random_range(15..25));
+                economy.politics.update_culture(-rng.random_range(15..25));
+                
+                economy.sectors.iter_mut().find(|s| matches!(s.name, SectorName::Energy | SectorName::Materials)).map(|s| {
+                    s.update(-rng.random_range(15..25));
                 });
             },
             EventName::Vaccine(company) => {

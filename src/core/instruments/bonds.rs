@@ -214,7 +214,7 @@ impl Instrument for Bond {
             None
         }
     }
-    
+
     fn interest(&self) -> f32 {
         self.interest
     }

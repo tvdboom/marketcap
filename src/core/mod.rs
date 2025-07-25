@@ -30,7 +30,9 @@ use crate::core::global_economy::GlobalEconomy;
 use crate::core::messages::MessageEv;
 use crate::core::orders::{OrderEv, execute_orders};
 use crate::core::pause::toggle_pause_keyboard;
-use crate::core::persistence::{LoadGameEv, SaveGameEv, load_game, save_game};
+use crate::core::persistence::{LoadGameEv, SaveGameEv};
+#[cfg(not(target_arch = "wasm32"))]
+use crate::core::persistence::{load_game, save_game};
 use crate::core::player::Player;
 use crate::core::resources::ImageIds;
 use crate::core::states::{AppState, GameState};
@@ -89,8 +91,6 @@ impl Plugin for GamePlugin {
             )
             // Audio
             .add_systems(Update, (toggle_music_keyboard, play_audio_event))
-            // Persistence
-            .add_systems(Update, (load_game, save_game))
             // Ui
             .add_systems(Startup, (set_egui_style, add_egui_images))
             .add_systems(
@@ -124,5 +124,9 @@ impl Plugin for GamePlugin {
                     check_keys.in_set(InRunningGameSet),
                 ),
             );
+
+        // Persistence
+        #[cfg(not(target_arch = "wasm32"))]
+        app.add_systems(Update, (load_game, save_game));
     }
 }

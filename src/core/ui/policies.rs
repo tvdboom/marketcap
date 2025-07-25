@@ -1,8 +1,8 @@
 use bevy::prelude::*;
-use bevy_egui::egui::{Ui, Button};
+use bevy_egui::egui::{Button, Sides, Ui};
 use strum::IntoEnumIterator;
 
-use crate::core::global_economy::{GlobalEconomy};
+use crate::core::global_economy::GlobalEconomy;
 use crate::core::messages::MessageEv;
 use crate::core::player::Player;
 use crate::core::ui::state::{PoliciesTab, UiState};
@@ -51,17 +51,21 @@ pub fn policies_panel(
             ui.label(
                 "The game features four political fields where players can influence the \
                 political landscape: government, ideology, culture, and orientation. The values \
-                in these fields represent the global tendency towards one of the two directions. \
-                Countries and sectors are influenced depending on their affiliation to each field.\n\n\
-                Use your influence to change the political landscape to your advantage.",
+                in these fields represent the global tendency towards one of the two directions \
+                in the field. Countries and sectors are influenced depending on their affiliation \
+                to each field. Use your influence to change the political landscape to your advantage.",
             );
 
             ui.separator();
 
             ui.heading("Government");
 
+            Sides::new().show(ui, |ui| ui.label("Democracy"), |ui| ui.label("Autocracy"));
+
             ui.horizontal(|ui| {
-                ui.label("Democracy");
+                if ui.add_sized([20., 20.], Button::new("👈 +5")).clicked() {
+                    economy.politics.government -= 5;
+                }
                 if ui.add_sized([20., 20.], Button::new("👈 +1")).clicked() {
                     economy.politics.government -= 1;
                 }
@@ -69,38 +73,40 @@ pub fn policies_panel(
                 if ui.add_sized([20., 20.], Button::new("👉 +1")).clicked() {
                     economy.politics.government += 1;
                 }
-                ui.label("Autocracy");
+                if ui.add_sized([20., 20.], Button::new("👉 +5")).clicked() {
+                    economy.politics.government += 5;
+                }
             });
 
-            ui.add_space(window.height() * 0.02);
-
-            ui.heading("Ideology");
-
-            ui.horizontal(|ui| {
-                ui.label("Left");
-                ui.add_bar(economy.politics.ideology);
-                ui.label("Right");
-            });
-
-            ui.add_space(window.height() * 0.02);
-
-            ui.heading("Culture");
-
-            ui.horizontal(|ui| {
-                ui.label("Conservative");
-                ui.add_bar(economy.politics.culture);
-                ui.label("Progressive");
-            });
-
-            ui.add_space(window.height() * 0.02);
-
-            ui.heading("Orientation");
-
-            ui.horizontal(|ui| {
-                ui.label("Socialism");
-                ui.add_bar(economy.politics.orientation);
-                ui.label("Capitalism");
-            });
+            // ui.add_space(window.height() * 0.02);
+            //
+            // ui.heading("Ideology");
+            //
+            // ui.horizontal(|ui| {
+            //     ui.label("Left");
+            //     ui.add_bar(economy.politics.ideology);
+            //     ui.label("Right");
+            // });
+            //
+            // ui.add_space(window.height() * 0.02);
+            //
+            // ui.heading("Culture");
+            //
+            // ui.horizontal(|ui| {
+            //     ui.label("Conservative");
+            //     ui.add_bar(economy.politics.culture);
+            //     ui.label("Progressive");
+            // });
+            //
+            // ui.add_space(window.height() * 0.02);
+            //
+            // ui.heading("Orientation");
+            //
+            // ui.horizontal(|ui| {
+            //     ui.label("Socialism");
+            //     ui.add_bar(economy.politics.orientation);
+            //     ui.label("Capitalism");
+            // });
         },
         PoliciesTab::Laws => (),
     }

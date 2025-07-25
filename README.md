@@ -111,11 +111,11 @@ make purchases, invest, and manage expenses beyond their immediate cash availabi
 
 #### Politics
 
-The game features four political fields where players can influence the 
-political landscape: government, ideology, culture, and orientation. The values 
-in these fields represent the global tendency towards one of the two directions. 
-Countries and sectors are influenced depending on their affiliation to each field.
-Use your influence to change the political landscape to your advantage.
+The game features four political fields where players can influence the political landscape:
+government, ideology, culture, and orientation. The values in these fields represent the 
+global tendency towards one of the two directions in the field. Countries and sectors are 
+influenced depending on their affiliation to each field. Use your influence to change the 
+political landscape to your advantage.
 
 
 <br>

@@ -4,15 +4,16 @@ use std::io::{Read, Write};
 
 use bevy::prelude::*;
 use bincode::config::standard;
-use bincode::serde::{decode_from_slice, encode_into_slice};
+use bincode::serde::{decode_from_slice, encode_to_vec};
 #[cfg(not(target_arch = "wasm32"))]
 use rfd::FileDialog;
 use serde::{Deserialize, Serialize};
 
 use crate::core::game_settings::GameSettings;
 use crate::core::global_economy::GlobalEconomy;
+use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::player::Player;
-use crate::core::states::AppState;
+use crate::core::states::{AppState, GameState};
 use crate::core::ui::state::UiState;
 
 #[derive(Event)]
@@ -30,19 +31,18 @@ pub struct SaveAll {
 }
 
 fn save_to_bin(file_path: &str, data: &SaveAll) -> io::Result<()> {
-    let mut buffer = vec![];
-    encode_into_slice(data, &mut buffer, standard()).expect("Failed to serialize data.");
-
     let mut file = File::create(file_path)?;
+
+    let buffer = encode_to_vec(data, standard()).expect("Failed to serialize data.");
     file.write_all(&buffer)?;
 
     Ok(())
 }
 
 fn load_from_bin(file_path: &str) -> io::Result<SaveAll> {
-    let mut buffer = vec![];
-
     let mut file = File::open(file_path)?;
+
+    let mut buffer = vec![];
     file.read_to_end(&mut buffer)?;
 
     let (data, _) = decode_from_slice(&buffer, standard()).expect("Failed to deserialize data.");
@@ -57,6 +57,8 @@ pub fn load_game(
     mut player: ResMut<Player>,
     mut state: ResMut<UiState>,
     mut next_app_state: ResMut<NextState<AppState>>,
+    mut next_game_state: ResMut<NextState<GameState>>,
+    mut message: EventWriter<MessageEv>,
 ) {
     for _ in load_game_ev.read() {
         if let Some(file_path) = FileDialog::new().pick_file() {
@@ -68,7 +70,13 @@ pub fn load_game(
             *player = data.player;
             *state = data.state;
 
+            next_game_state.set(GameState::Running);
             next_app_state.set(AppState::Game);
+
+            message.write(MessageEv {
+                message: "Game loaded!".to_string(),
+                level: MessageLevel::Info,
+            });
         }
     }
 }
@@ -80,6 +88,7 @@ pub fn save_game(
     global_economy: Res<GlobalEconomy>,
     player: Res<Player>,
     state: Res<UiState>,
+    mut message: EventWriter<MessageEv>,
 ) {
     for _ in save_game_ev.read() {
         if let Some(mut file_path) = FileDialog::new().save_file() {
@@ -96,6 +105,11 @@ pub fn save_game(
             };
 
             save_to_bin(&file_path_str, &data).expect("Failed to save the game.");
+
+            message.write(MessageEv {
+                message: "Game saved!".to_string(),
+                level: MessageLevel::Info,
+            });
         }
     }
 }

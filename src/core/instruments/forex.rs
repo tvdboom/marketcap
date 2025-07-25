@@ -84,14 +84,18 @@ pub struct Currency {
 }
 
 impl Currency {
-    pub fn bump(&mut self, countries: &Vec<Country>, commodities: &Vec<Commodity>, landscape: &PoliticalLandscape) -> f32 {
+    pub fn bump(
+        &mut self,
+        countries: &Vec<Country>,
+        commodities: &Vec<Commodity>,
+        landscape: &PoliticalLandscape,
+    ) -> f32 {
         if self.name == CURRENCY {
             return self.current(); // The base currency doesn't change
         }
 
         let country = countries.iter().find(|c| c.name == self.country).unwrap();
-        let mut new_value = self.current()
-            * (1. + country.politics.get_score(&landscape))
+        let mut new_value = self.current() * (1. + country.politics.get_score(&landscape))
             + (1.
                 * country
                     .production

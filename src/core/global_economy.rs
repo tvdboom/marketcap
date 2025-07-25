@@ -33,6 +33,22 @@ pub struct PoliticalLandscape {
 
 impl PoliticalLandscape {
     pub const RANGE: i32 = 50;
+    
+    pub fn update_government(&mut self, value: i32) {
+        self.government = (self.government + value).clamp(-Self::RANGE, Self::RANGE);
+    }
+    
+    pub fn update_ideology(&mut self, value: i32) {
+        self.ideology = (self.ideology + value).clamp(-Self::RANGE, Self::RANGE);
+    }
+    
+    pub fn update_culture(&mut self, value: i32) {
+        self.culture = (self.culture + value).clamp(-Self::RANGE, Self::RANGE);
+    }
+    
+    pub fn update_orientation(&mut self, value: i32) {
+        self.orientation = (self.orientation + value).clamp(-Self::RANGE, Self::RANGE);
+    }
 }
 
 #[derive(Resource, Clone, Serialize, Deserialize)]

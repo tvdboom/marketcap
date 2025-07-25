@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 use std::f32::consts::E;
 
-use serde::{Deserialize, Serialize};
-use strum::IntoEnumIterator;
-use crate::core::countries::{CountryName};
+use crate::core::countries::CountryName;
 use crate::core::derivatives::OptionKind;
 use crate::core::global_economy::GlobalEconomy;
 use crate::core::instruments::bonds::{BondIssuer, BondQuality};
@@ -16,6 +14,8 @@ use crate::core::player::Player;
 use crate::core::research::TechName;
 use crate::core::sectors::SectorName;
 use crate::utils::{DQueue, NameFromEnum, norm_cdf};
+use serde::{Deserialize, Serialize};
+use strum::IntoEnumIterator;
 
 #[derive(Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum InstrumentKind {

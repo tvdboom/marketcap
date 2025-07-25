@@ -5,7 +5,7 @@ use chrono::{Datelike, Duration};
 use rand::{Rng, rng};
 
 use crate::core::audio::PlayAudioEv;
-use crate::core::constants::{CURRENCY, DATE_FORMAT, DAYS_PER_EVENT, VICTORY_AMOUNT};
+use crate::core::constants::{CURRENCY, DATE_FORMAT, DAYS_PER_EVENT, START_DATE, VICTORY_AMOUNT};
 use crate::core::derivatives::{DerivativeAction, DerivativeKind, OptionKind};
 use crate::core::events::EventName;
 use crate::core::factors::Factor;
@@ -78,16 +78,17 @@ pub fn time_pass(
 
         // Start new events
         if rng().random::<f32>() < 1. / DAYS_PER_EVENT
-        // && economy.date > START_DATE + Duration::days(30)
+            && economy.date > START_DATE + Duration::days(30)
         {
-            let new_event = EventName::create(&economy, &player);
-            new_event.start(&mut economy);
+            if let Ok(new_event) = EventName::create(&economy, &player) {
+                new_event.start(&mut economy);
 
-            state.active_event = Some(new_event.name.clone());
-            economy.events.push(new_event);
+                state.active_event = Some(new_event.name.clone());
+                economy.events.push(new_event);
 
-            play_audio_ev.write(PlayAudioEv::new("message"));
-            next_game_state.set(GameState::Paused);
+                play_audio_ev.write(PlayAudioEv::new("message"));
+                next_game_state.set(GameState::Paused);
+            }
         }
 
         // Advance all events

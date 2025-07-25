@@ -1,4 +1,5 @@
 use crate::core::factors::inflation::Inflation;
+use crate::core::global_economy::PoliticalLandscape;
 use crate::core::instruments::commodities::{Commodity, CommodityName};
 use crate::core::instruments::instrument::Instrument;
 use crate::core::politics::{Culture, Governance, Ideology, Orientation, Politics};
@@ -6,7 +7,6 @@ use bevy::utils::default;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use strum_macros::EnumIter;
-use crate::core::global_economy::PoliticalLandscape;
 
 #[derive(EnumIter, Clone, Copy, Default, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum SectorName {
@@ -75,7 +75,12 @@ impl Sector {
     pub const MIN: u8 = 0;
     pub const MAX: u8 = 100;
 
-    pub fn bump(&mut self, inflation: f32, commodities: &Vec<Commodity>, landscape: &PoliticalLandscape) {
+    pub fn bump(
+        &mut self,
+        inflation: f32,
+        commodities: &Vec<Commodity>,
+        landscape: &PoliticalLandscape,
+    ) {
         let mut new_value = self.value as f32
             * (1. + self.politics.get_score(&landscape))
             * (1.
@@ -93,7 +98,7 @@ impl Sector {
         if self.name == SectorName::Finance {
             new_value *= 1. + (inflation - Inflation::DEFAULT) / 100.;
         }
-        
+
         // Adjust value to tend towards the middle
         let deviation = new_value - ((Self::MIN + Self::MAX) as f32 * 0.5);
         new_value *= 1. + -deviation * deviation.abs() / 15.;

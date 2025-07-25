@@ -1,5 +1,4 @@
 use bevy::prelude::Window;
-use bevy_egui::egui;
 use bevy_egui::egui::load::SizedTexture;
 use bevy_egui::egui::*;
 use chrono::{Datelike, Duration, NaiveDate};
@@ -176,22 +175,21 @@ impl CustomUi for Ui {
     fn add_bar(&mut self, value: i32) {
         let norm = (value / PoliticalLandscape::RANGE) as f32;
 
-        let (rect, _) = self.allocate_exact_size(vec2(self.available_width() * 0.4, 20.), Sense::hover());
+        let (rect, _) =
+            self.allocate_exact_size(vec2(self.available_width(), 40.), Sense::hover());
         let painter = self.painter();
 
         let center_x = rect.center().x;
         let y_range = rect.top()..=rect.bottom();
 
-        if norm != 0. {
-            let bar_width = rect.width() * norm.abs() * 0.5;
-            let (x0, x1) = if norm > 0.0 {
-                (center_x, center_x + bar_width)
-            } else {
-                (center_x - bar_width, center_x)
-            };
-            let bar_rect = Rect::from_x_y_ranges(x0..=x1, y_range.clone());
-            painter.rect_filled(bar_rect, 2.0, Color32::RED);
-        }
+        let bar_width = rect.width() * norm.abs() * 0.5;
+        let (x0, x1) = if norm > 0.0 {
+            (center_x, center_x + bar_width)
+        } else {
+            (center_x - bar_width, center_x)
+        };
+        let bar_rect = Rect::from_x_y_ranges(x0..=x1, y_range.clone());
+        painter.rect_filled(bar_rect, 2.0, Color32::RED);
 
         painter.rect_stroke(rect, 2.0, (1.0, Color32::LIGHT_GRAY), StrokeKind::Middle);
 
@@ -290,10 +288,16 @@ impl CustomUi for Ui {
                     ui.vertical(|ui| {
                         ui.label("Politics");
 
-                        ui.label(format!("👑 Governance: {}", country.politics.governance.to_name()));
+                        ui.label(format!(
+                            "👑 Governance: {}",
+                            country.politics.governance.to_name()
+                        ));
                         ui.label(format!("🍀 Ideology: {}", country.politics.ideology.to_name()));
                         ui.label(format!("👨‍ Culture: {}", country.politics.culture.to_name()));
-                        ui.label(format!("💲 Orientation: {}", country.politics.orientation.to_name()));
+                        ui.label(format!(
+                            "💲 Orientation: {}",
+                            country.politics.orientation.to_name()
+                        ));
                     });
 
                     ui.add_space(window.width() * 0.02);
