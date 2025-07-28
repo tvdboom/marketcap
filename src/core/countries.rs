@@ -5,7 +5,7 @@ use strum_macros::EnumIter;
 
 use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::forex::CurrencyName;
-use crate::core::politics::{Culture, Governance, Ideology, Orientation, Politics};
+use crate::core::politics::{Culture, Government, Ideology, Orientation, Politics};
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum MarketKind {
@@ -196,7 +196,7 @@ pub fn start_countries() -> Vec<Country> {
             market: MarketKind::DevelopedMarket,
             gdp: 1.496,
             politics: Politics {
-                governance: Governance::Democracy,
+                government: Government::Democracy,
                 ideology: Ideology::Neutral,
                 culture: Culture::Progressive,
                 orientation: Orientation::Capitalism,
@@ -216,7 +216,7 @@ pub fn start_countries() -> Vec<Country> {
             market: MarketKind::EmergingMarket,
             gdp: 1.864,
             politics: Politics {
-                governance: Governance::SemiDemocracy,
+                government: Government::SemiDemocracy,
                 ideology: Ideology::Neutral,
                 culture: Culture::Moderate,
                 orientation: Orientation::Capitalism,
@@ -236,7 +236,7 @@ pub fn start_countries() -> Vec<Country> {
             market: MarketKind::DevelopedMarket,
             gdp: 1.918,
             politics: Politics {
-                governance: Governance::Democracy,
+                government: Government::Democracy,
                 ideology: Ideology::Neutral,
                 culture: Culture::Progressive,
                 orientation: Orientation::Capitalism,
@@ -256,7 +256,7 @@ pub fn start_countries() -> Vec<Country> {
             market: MarketKind::EmergingMarket,
             gdp: 16.07,
             politics: Politics {
-                governance: Governance::Autocracy,
+                government: Government::Autocracy,
                 ideology: Ideology::Left,
                 culture: Culture::Conservative,
                 orientation: Orientation::Socialism,
@@ -276,7 +276,7 @@ pub fn start_countries() -> Vec<Country> {
             market: MarketKind::DevelopedMarket,
             gdp: 16.61,
             politics: Politics {
-                governance: Governance::Democracy,
+                government: Government::Democracy,
                 ideology: Ideology::Neutral,
                 culture: Culture::Progressive,
                 orientation: Orientation::Capitalism,
@@ -295,7 +295,7 @@ pub fn start_countries() -> Vec<Country> {
             market: MarketKind::DevelopedMarket,
             gdp: 3.43,
             politics: Politics {
-                governance: Governance::Democracy,
+                government: Government::Democracy,
                 ideology: Ideology::Right,
                 culture: Culture::Conservative,
                 orientation: Orientation::Capitalism,
@@ -308,7 +308,7 @@ pub fn start_countries() -> Vec<Country> {
             market: MarketKind::RestrictedMarket,
             gdp: 1.859,
             politics: Politics {
-                governance: Governance::Autocracy,
+                government: Government::Autocracy,
                 ideology: Ideology::Left,
                 culture: Culture::Conservative,
                 orientation: Orientation::Socialism,
@@ -328,7 +328,7 @@ pub fn start_countries() -> Vec<Country> {
             market: MarketKind::EmergingMarket,
             gdp: 1.058,
             politics: Politics {
-                governance: Governance::Autocracy,
+                government: Government::Autocracy,
                 ideology: Ideology::Right,
                 culture: Culture::Conservative,
                 orientation: Orientation::Capitalism,
@@ -341,7 +341,7 @@ pub fn start_countries() -> Vec<Country> {
             market: MarketKind::EmergingMarket,
             gdp: 0.351,
             politics: Politics {
-                governance: Governance::Democracy,
+                government: Government::Democracy,
                 ideology: Ideology::Left,
                 culture: Culture::Moderate,
                 orientation: Orientation::Mixed,
@@ -360,7 +360,7 @@ pub fn start_countries() -> Vec<Country> {
             market: MarketKind::EmergingMarket,
             gdp: 0.2,
             politics: Politics {
-                governance: Governance::Democracy,
+                government: Government::Democracy,
                 ideology: Ideology::Neutral,
                 culture: Culture::Moderate,
                 orientation: Orientation::Mixed,
@@ -373,7 +373,7 @@ pub fn start_countries() -> Vec<Country> {
             market: MarketKind::DevelopedMarket,
             gdp: 26.09,
             politics: Politics {
-                governance: Governance::Democracy,
+                government: Government::Democracy,
                 ideology: Ideology::Right,
                 culture: Culture::Moderate,
                 orientation: Orientation::Capitalism,
@@ -393,7 +393,7 @@ pub fn start_countries() -> Vec<Country> {
             market: MarketKind::RestrictedMarket,
             gdp: 0.098,
             politics: Politics {
-                governance: Governance::Autocracy,
+                government: Government::Autocracy,
                 ideology: Ideology::Left,
                 culture: Culture::Moderate,
                 orientation: Orientation::Socialism,

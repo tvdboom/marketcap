@@ -1,28 +1,30 @@
-use crate::core::global_economy::PoliticalLandscape;
 use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-pub enum Governance {
+use crate::core::global_economy::PoliticalLandscape;
+
+#[derive(EnumIter, Clone, Debug, Serialize, Deserialize)]
+pub enum Government {
     Democracy,
     SemiDemocracy,
     Autocracy,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Debug, Serialize, Deserialize)]
 pub enum Ideology {
     Left,
     Neutral,
     Right,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Debug, Serialize, Deserialize)]
 pub enum Culture {
     Conservative,
     Moderate,
     Progressive,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(EnumIter, Clone, Debug, Serialize, Deserialize)]
 pub enum Orientation {
     Socialism,
     Mixed,
@@ -31,7 +33,7 @@ pub enum Orientation {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Politics {
-    pub governance: Governance,
+    pub government: Government,
     pub ideology: Ideology,
     pub culture: Culture,
     pub orientation: Orientation,
@@ -46,10 +48,10 @@ impl Politics {
     pub fn get_score(&self, landscape: &PoliticalLandscape) -> f32 {
         let mut score = 0.0;
 
-        score += match self.governance {
-            Governance::Democracy => Self::score_alignment(landscape.government, -1),
-            Governance::SemiDemocracy => 0.,
-            Governance::Autocracy => Self::score_alignment(landscape.government, 1),
+        score += match self.government {
+            Government::Democracy => Self::score_alignment(landscape.government, -1),
+            Government::SemiDemocracy => 0.,
+            Government::Autocracy => Self::score_alignment(landscape.government, 1),
         };
 
         score += match self.ideology {
@@ -77,7 +79,7 @@ impl Politics {
 impl Default for Politics {
     fn default() -> Self {
         Self {
-            governance: Governance::SemiDemocracy,
+            government: Government::SemiDemocracy,
             ideology: Ideology::Neutral,
             culture: Culture::Moderate,
             orientation: Orientation::Mixed,

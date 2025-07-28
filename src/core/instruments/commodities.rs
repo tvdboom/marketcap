@@ -1,3 +1,7 @@
+use rand::{Rng, rng};
+use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
+
 use crate::core::events::EventName;
 use crate::core::factors::economy::Economy;
 use crate::core::global_economy::GlobalEconomy;
@@ -5,9 +9,6 @@ use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::player::Player;
 use crate::core::research::TechName;
 use crate::utils::{DQueue, NameFromEnum};
-use rand::{Rng, rng};
-use serde::{Deserialize, Serialize};
-use strum_macros::EnumIter;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub enum Unit {

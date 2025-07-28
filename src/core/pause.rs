@@ -53,11 +53,13 @@ pub fn toggle_pause_keyboard(
                 *economy.economy.values.back_mut().unwrap() -= 10.0;
             }
 
-            // Hack to control cash
+            // Hack to control cash and influence
             if keyboard.just_pressed(KeyCode::KeyV) {
                 player.cash.amount *= 1000.;
+                player.influence.score += 1000.;
             } else if keyboard.just_pressed(KeyCode::KeyC) {
                 player.cash.amount -= 1000.;
+                player.influence.score = (player.influence.score - 1000.).max(0.);
             }
 
             // Hack to unlock all technologies

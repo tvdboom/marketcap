@@ -65,6 +65,7 @@ impl FromWorld for WorldAssets {
             ("time", assets.load("images/icons/time.png")),
             ("time-paused", assets.load("images/icons/time-paused.png")),
             // Events
+            ("ai-regulations", assets.load("images/events/ai-regulations.png")),
             ("brazil-politics", assets.load("images/events/brazil-politics.png")),
             ("ceo-resignation", assets.load("images/events/ceo-resignation.png")),
             ("covid", assets.load("images/events/covid.png")),
@@ -74,6 +75,7 @@ impl FromWorld for WorldAssets {
             ("ddos", assets.load("images/events/ddos.png")),
             ("drought", assets.load("images/events/drought.png")),
             ("esg-scandal", assets.load("images/events/esg-scandal.png")),
+            ("fashion-boycott", assets.load("images/events/fashion-boycott.png")),
             ("gas-discovery", assets.load("images/events/gas-discovery.png")),
             ("gold-rush", assets.load("images/events/gold-rush.png")),
             ("grounded", assets.load("images/events/grounded.png")),

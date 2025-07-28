@@ -4,7 +4,7 @@ use crate::core::factors::Factor;
 
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct Influence {
-    score: f32,
+    pub score: f32,
 }
 
 impl Influence {

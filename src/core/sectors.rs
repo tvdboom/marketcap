@@ -1,12 +1,14 @@
+use std::collections::HashMap;
+
+use bevy::utils::default;
+use serde::{Deserialize, Serialize};
+use strum_macros::EnumIter;
+
 use crate::core::factors::inflation::Inflation;
 use crate::core::global_economy::PoliticalLandscape;
 use crate::core::instruments::commodities::{Commodity, CommodityName};
 use crate::core::instruments::instrument::Instrument;
-use crate::core::politics::{Culture, Governance, Ideology, Orientation, Politics};
-use bevy::utils::default;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use strum_macros::EnumIter;
+use crate::core::politics::{Culture, Government, Ideology, Orientation, Politics};
 
 #[derive(EnumIter, Clone, Copy, Default, Debug, Eq, Hash, PartialEq, Serialize, Deserialize)]
 pub enum SectorName {
@@ -131,7 +133,7 @@ pub fn start_sectors() -> Vec<Sector> {
             name: SectorName::Fashion,
             value: 50,
             politics: Politics {
-                governance: Governance::Democracy,
+                government: Government::Democracy,
                 culture: Culture::Progressive,
                 orientation: Orientation::Capitalism,
                 ..default()
@@ -146,7 +148,7 @@ pub fn start_sectors() -> Vec<Sector> {
             name: SectorName::Finance,
             value: 50,
             politics: Politics {
-                governance: Governance::Democracy,
+                government: Government::Democracy,
                 ideology: Ideology::Right,
                 orientation: Orientation::Capitalism,
                 ..default()
@@ -171,7 +173,7 @@ pub fn start_sectors() -> Vec<Sector> {
             name: SectorName::Healthcare,
             value: 50,
             politics: Politics {
-                governance: Governance::Democracy,
+                government: Government::Democracy,
                 ideology: Ideology::Left,
                 orientation: Orientation::Socialism,
                 ..default()
@@ -201,7 +203,7 @@ pub fn start_sectors() -> Vec<Sector> {
             name: SectorName::Military,
             value: 50,
             politics: Politics {
-                governance: Governance::Autocracy,
+                government: Government::Autocracy,
                 ideology: Ideology::Right,
                 culture: Culture::Conservative,
                 orientation: Orientation::Capitalism,
@@ -216,7 +218,7 @@ pub fn start_sectors() -> Vec<Sector> {
             name: SectorName::Retail,
             value: 50,
             politics: Politics {
-                governance: Governance::Democracy,
+                government: Government::Democracy,
                 culture: Culture::Progressive,
                 orientation: Orientation::Capitalism,
                 ..default()
@@ -246,7 +248,7 @@ pub fn start_sectors() -> Vec<Sector> {
             name: SectorName::Transport,
             value: 50,
             politics: Politics {
-                governance: Governance::Democracy,
+                government: Government::Democracy,
                 ..default()
             },
             commodities: HashMap::from([

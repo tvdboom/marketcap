@@ -67,6 +67,14 @@ pub trait CustomUi {
         window: &Window,
     );
     fn add_bar(&mut self, value: i32);
+    fn add_influence_block(
+        &mut self,
+        title: impl Into<RichText>,
+        left_label: impl Into<WidgetText>,
+        right_label: impl Into<WidgetText>,
+        influence: &mut f32,
+        value: &mut i32,
+    );
     fn add_technology(&mut self, research: &Technology) -> Response;
     fn add_country(&mut self, country: &Country, images: &ImageIds, window: &Window);
     fn add_plot(
@@ -173,33 +181,84 @@ impl CustomUi for Ui {
     }
 
     fn add_bar(&mut self, value: i32) {
-        let norm = (value / PoliticalLandscape::RANGE) as f32;
+        let norm = value as f32 / PoliticalLandscape::RANGE as f32;
 
         let (rect, _) =
-            self.allocate_exact_size(vec2(self.available_width(), 40.), Sense::hover());
+            self.allocate_exact_size(vec2(self.available_width() * 0.8, 40.), Sense::hover());
         let painter = self.painter();
 
         let center_x = rect.center().x;
         let y_range = rect.top()..=rect.bottom();
 
         let bar_width = rect.width() * norm.abs() * 0.5;
-        let (x0, x1) = if norm > 0.0 {
+        let (x0, x1) = if norm > 0. {
             (center_x, center_x + bar_width)
         } else {
             (center_x - bar_width, center_x)
         };
         let bar_rect = Rect::from_x_y_ranges(x0..=x1, y_range.clone());
-        painter.rect_filled(bar_rect, 2.0, Color32::RED);
+        painter.rect_filled(bar_rect, 2.0, Color32::LIGHT_BLUE);
 
         painter.rect_stroke(rect, 2.0, (1.0, Color32::LIGHT_GRAY), StrokeKind::Middle);
 
         painter.text(
-            rect.center(),
+            bar_rect.center(),
             Align2::CENTER_CENTER,
-            format!("{:+}", value),
+            value.abs(),
             TextStyle::Body.resolve(self.style()),
             Color32::WHITE,
         );
+    }
+
+    fn add_influence_block(
+        &mut self,
+        title: impl Into<RichText>,
+        left_label: impl Into<WidgetText>,
+        right_label: impl Into<WidgetText>,
+        influence: &mut f32,
+        value: &mut i32,
+    ) {
+        self.monospace(title);
+
+        Sides::new().show(
+            self,
+            |ui| {
+                ui.add_space(ui.available_width() * 0.13);
+                ui.label(left_label);
+            },
+            |ui| {
+                ui.add_space(ui.available_width() * 0.22);
+                ui.label(right_label);
+            },
+        );
+
+        self.horizontal(|ui| {
+            for i in [5, 1] {
+                ui.add_enabled_ui(*influence >= i as f32, |ui| {
+                    if ui.add(Button::new(format!("👈 +{}", i))).clicked() {
+                        let change = i.min(PoliticalLandscape::RANGE + *value);
+                        *influence -= change as f32;
+                        *value -= change;
+                    }
+                })
+                .response
+                .on_disabled_hover_text("Not enough influence.");
+            }
+
+            ui.add_bar(*value);
+
+            for i in [1, 5] {
+                ui.add_enabled_ui(*influence >= i as f32, |ui| {
+                    if ui.add(Button::new(format!("👉 +{}", i))).clicked() {
+                        let change = i.min(PoliticalLandscape::RANGE - *value);
+                        *influence -= change as f32;
+                        *value += change;
+                    }
+                })
+                .response
+                .on_disabled_hover_text("Not enough influence.");
+            }
+        });
     }
 
     fn add_technology(&mut self, technology: &Technology) -> Response {
@@ -290,7 +349,7 @@ impl CustomUi for Ui {
 
                         ui.label(format!(
                             "👑 Governance: {}",
-                            country.politics.governance.to_name()
+                            country.politics.government.to_name()
                         ));
                         ui.label(format!("🍀 Ideology: {}", country.politics.ideology.to_name()));
                         ui.label(format!("👨‍ Culture: {}", country.politics.culture.to_name()));

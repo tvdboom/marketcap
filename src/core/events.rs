@@ -572,8 +572,9 @@ impl EconomicEvent {
         let mut rng = rng();
         match self.name {
             EventName::BrazilPolitics => {
+                economy.politics.update_government(rng.random_range(10..15));
                 economy.politics.update_ideology(rng.random_range(15..25));
-                
+
                 economy.countries.iter_mut().find(|c| c.name == CountryName::Brazil).map(|c| {
                     c.politics.ideology = Ideology::Right;
                 });
@@ -701,7 +702,7 @@ impl EconomicEvent {
                 economy.sectors.iter_mut().find(|s| s.name == SectorName::Finance).map(|s| {
                     s.update(rng.random_range(15..25));
                 });
-            }
+            },
             EventName::NewProduct(company) | EventName::NewContract(company) => {
                 economy.stocks.iter_mut().find(|s| s.issuer == company).map(|s| {
                     *s.prices.back_mut().unwrap() *= rng.random_range(1.2..1.4);
@@ -734,18 +735,14 @@ impl EconomicEvent {
                     s.update(rng.random_range(15..25));
                 });
 
-                economy
-                    .currencies
-                    .iter_mut()
-                    .find(|c| c.country == CountryName::EU)
-                    .map(|c| {
-                        *c.values.back_mut().unwrap() *= rng.random_range(1.05..1.1);
-                    });
+                economy.currencies.iter_mut().find(|c| c.country == CountryName::EU).map(|c| {
+                    *c.values.back_mut().unwrap() *= rng.random_range(1.05..1.1);
+                });
 
                 economy.stocks.iter_mut().find(|s| s.issuer == Company::Boeing).map(|s| {
                     *s.prices.back_mut().unwrap() *= rng.random_range(0.85..0.95);
                 });
-            }
+            },
             EventName::RussiaWar => {
                 economy
                     .currencies
@@ -801,10 +798,14 @@ impl EconomicEvent {
             EventName::Trial => {
                 economy.politics.update_ideology(-rng.random_range(15..25));
                 economy.politics.update_culture(-rng.random_range(15..25));
-                
-                economy.sectors.iter_mut().find(|s| matches!(s.name, SectorName::Energy | SectorName::Materials)).map(|s| {
-                    s.update(-rng.random_range(15..25));
-                });
+
+                economy
+                    .sectors
+                    .iter_mut()
+                    .find(|s| matches!(s.name, SectorName::Energy | SectorName::Materials))
+                    .map(|s| {
+                        s.update(-rng.random_range(15..25));
+                    });
             },
             EventName::Vaccine(company) => {
                 economy.stocks.iter_mut().find(|s| s.issuer == company).map(|s| {

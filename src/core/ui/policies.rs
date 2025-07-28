@@ -1,10 +1,11 @@
 use bevy::prelude::*;
-use bevy_egui::egui::{Button, Sides, Ui};
+use bevy_egui::egui::{ScrollArea, Ui};
 use strum::IntoEnumIterator;
 
-use crate::core::global_economy::GlobalEconomy;
-use crate::core::messages::MessageEv;
+use crate::core::factors::Factor;
+use crate::core::global_economy::{GlobalEconomy};
 use crate::core::player::Player;
+use crate::core::politics::{Culture, Government, Ideology, Orientation};
 use crate::core::ui::state::{PoliciesTab, UiState};
 use crate::core::ui::utils::CustomUi;
 use crate::utils::NameFromEnum;
@@ -14,7 +15,6 @@ pub fn policies_panel(
     state: &mut UiState,
     economy: &mut GlobalEconomy,
     player: &mut Player,
-    message: &mut EventWriter<MessageEv>,
     window: &Window,
 ) {
     ui.horizontal(|ui| {
@@ -53,60 +53,50 @@ pub fn policies_panel(
                 political landscape: government, ideology, culture, and orientation. The values \
                 in these fields represent the global tendency towards one of the two directions \
                 in the field. Countries and sectors are influenced depending on their affiliation \
-                to each field. Use your influence to change the political landscape to your advantage.",
+                to each field. Use your companies influence to change the landscape to your advantage.",
             );
 
             ui.separator();
 
-            ui.heading("Government");
+            ScrollArea::vertical().show(ui, |ui| {
+                ui.add_influence_block(
+                    "Government",
+                    Government::iter().next().unwrap().to_name(),
+                    Government::iter().last().unwrap().to_name(),
+                    &mut player.influence.current(),
+                    &mut economy.politics.government,
+                );
 
-            Sides::new().show(ui, |ui| ui.label("Democracy"), |ui| ui.label("Autocracy"));
+                ui.add_space(window.height() * 0.05);
 
-            ui.horizontal(|ui| {
-                if ui.add_sized([20., 20.], Button::new("👈 +5")).clicked() {
-                    economy.politics.government -= 5;
-                }
-                if ui.add_sized([20., 20.], Button::new("👈 +1")).clicked() {
-                    economy.politics.government -= 1;
-                }
-                ui.add_bar(economy.politics.government);
-                if ui.add_sized([20., 20.], Button::new("👉 +1")).clicked() {
-                    economy.politics.government += 1;
-                }
-                if ui.add_sized([20., 20.], Button::new("👉 +5")).clicked() {
-                    economy.politics.government += 5;
-                }
+                ui.add_influence_block(
+                    "Ideology",
+                    Ideology::iter().next().unwrap().to_name(),
+                    Ideology::iter().last().unwrap().to_name(),
+                    &mut player.influence.current(),
+                    &mut economy.politics.ideology,
+                );
+
+                ui.add_space(window.height() * 0.05);
+
+                ui.add_influence_block(
+                    "Culture",
+                    Culture::iter().next().unwrap().to_name(),
+                    Culture::iter().last().unwrap().to_name(),
+                    &mut player.influence.current(),
+                    &mut economy.politics.culture,
+                );
+
+                ui.add_space(window.height() * 0.05);
+
+                ui.add_influence_block(
+                    "Orientation",
+                    Orientation::iter().next().unwrap().to_name(),
+                    Orientation::iter().last().unwrap().to_name(),
+                    &mut player.influence.current(),
+                    &mut economy.politics.orientation,
+                );
             });
-
-            // ui.add_space(window.height() * 0.02);
-            //
-            // ui.heading("Ideology");
-            //
-            // ui.horizontal(|ui| {
-            //     ui.label("Left");
-            //     ui.add_bar(economy.politics.ideology);
-            //     ui.label("Right");
-            // });
-            //
-            // ui.add_space(window.height() * 0.02);
-            //
-            // ui.heading("Culture");
-            //
-            // ui.horizontal(|ui| {
-            //     ui.label("Conservative");
-            //     ui.add_bar(economy.politics.culture);
-            //     ui.label("Progressive");
-            // });
-            //
-            // ui.add_space(window.height() * 0.02);
-            //
-            // ui.heading("Orientation");
-            //
-            // ui.horizontal(|ui| {
-            //     ui.label("Socialism");
-            //     ui.add_bar(economy.politics.orientation);
-            //     ui.label("Capitalism");
-            // });
         },
         PoliciesTab::Laws => (),
     }
