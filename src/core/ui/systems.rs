@@ -458,7 +458,7 @@ pub fn central_panel(
                 credit_panel(ui, &mut state, &mut economy, &mut player, &mut message, &window)
             },
             Tab::Policies => {
-                policies_panel(ui, &mut state, &mut economy, &mut player, &window);
+                policies_panel(ui, &mut state, &mut economy, &mut player, &images, &window);
             },
             Tab::Research => research_panel(ui, &mut player, &mut message, &images, &window),
         });

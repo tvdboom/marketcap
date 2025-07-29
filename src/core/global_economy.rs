@@ -1,5 +1,6 @@
 use bevy::prelude::*;
 use chrono::{Datelike, Duration, NaiveDate};
+use rand::{Rng, rng};
 use serde::{Deserialize, Serialize};
 
 use crate::core::constants::{DEFAULT_SPEED, START_DATE};
@@ -18,6 +19,7 @@ use crate::core::loans::Term;
 use crate::core::messages::{MessageEv, MessageLevel};
 use crate::core::orders::{Command, Order, OrderEv, OrderKind, OrderStatus};
 use crate::core::player::Player;
+use crate::core::politics::PoliticalField;
 use crate::core::research::TechName;
 use crate::core::sectors::{Sector, start_sectors};
 use crate::core::ui::state::UiState;
@@ -25,28 +27,62 @@ use crate::utils::create_guid;
 
 #[derive(Clone, Default, Serialize, Deserialize)]
 pub struct PoliticalLandscape {
-    pub government: i32,
-    pub ideology: i32,
-    pub culture: i32,
-    pub orientation: i32,
+    pub government: i8,
+    pub ideology: i8,
+    pub culture: i8,
+    pub orientation: i8,
 }
 
 impl PoliticalLandscape {
-    pub const RANGE: i32 = 50;
+    pub const RANGE: i8 = 50;
 
-    pub fn update_government(&mut self, value: i32) {
+    pub fn get(&self, field: &PoliticalField) -> i8 {
+        match *field {
+            PoliticalField::Government => self.government,
+            PoliticalField::Ideology => self.ideology,
+            PoliticalField::Culture => self.culture,
+            PoliticalField::Orientation => self.orientation,
+        }
+    }
+
+    pub fn get_mut(&mut self, field: &PoliticalField) -> &mut i8 {
+        match *field {
+            PoliticalField::Government => &mut self.government,
+            PoliticalField::Ideology => &mut self.ideology,
+            PoliticalField::Culture => &mut self.culture,
+            PoliticalField::Orientation => &mut self.orientation,
+        }
+    }
+
+    pub fn bump(&mut self) {
+        let mut rng = rng();
+
+        let value = match rng.random::<f32>() {
+            0.0..0.2 => Some(&mut self.government),
+            0.2..0.4 => Some(&mut self.ideology),
+            0.4..0.6 => Some(&mut self.culture),
+            0.6..0.8 => Some(&mut self.orientation),
+            _ => None,
+        };
+
+        if let Some(field) = value {
+            *field = (*field + rng.random_range(-1..=1)).clamp(-Self::RANGE, Self::RANGE);
+        }
+    }
+
+    pub fn update_government(&mut self, value: i8) {
         self.government = (self.government + value).clamp(-Self::RANGE, Self::RANGE);
     }
 
-    pub fn update_ideology(&mut self, value: i32) {
+    pub fn update_ideology(&mut self, value: i8) {
         self.ideology = (self.ideology + value).clamp(-Self::RANGE, Self::RANGE);
     }
 
-    pub fn update_culture(&mut self, value: i32) {
+    pub fn update_culture(&mut self, value: i8) {
         self.culture = (self.culture + value).clamp(-Self::RANGE, Self::RANGE);
     }
 
-    pub fn update_orientation(&mut self, value: i32) {
+    pub fn update_orientation(&mut self, value: i8) {
         self.orientation = (self.orientation + value).clamp(-Self::RANGE, Self::RANGE);
     }
 }
@@ -109,6 +145,8 @@ impl GlobalEconomy {
         let economy = self.economy.bump(aum);
         let interest = self.interest.bump();
         let inflation = self.inflation.bump(economy, interest);
+
+        self.politics.bump();
 
         for commodity in &mut self.commodities {
             commodity.bump(economy, inflation);

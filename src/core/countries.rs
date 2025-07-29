@@ -216,9 +216,9 @@ pub fn start_countries() -> Vec<Country> {
             market: MarketKind::EmergingMarket,
             gdp: 1.864,
             politics: Politics {
-                government: Government::SemiDemocracy,
+                government: Government::Neutral,
                 ideology: Ideology::Neutral,
-                culture: Culture::Moderate,
+                culture: Culture::Neutral,
                 orientation: Orientation::Capitalism,
             },
             production: HashMap::from([
@@ -343,8 +343,8 @@ pub fn start_countries() -> Vec<Country> {
             politics: Politics {
                 government: Government::Democracy,
                 ideology: Ideology::Left,
-                culture: Culture::Moderate,
-                orientation: Orientation::Mixed,
+                culture: Culture::Neutral,
+                orientation: Orientation::Neutral,
             },
             production: HashMap::from([
                 (CommodityName::Gold, 0.5),
@@ -362,8 +362,8 @@ pub fn start_countries() -> Vec<Country> {
             politics: Politics {
                 government: Government::Democracy,
                 ideology: Ideology::Neutral,
-                culture: Culture::Moderate,
-                orientation: Orientation::Mixed,
+                culture: Culture::Neutral,
+                orientation: Orientation::Neutral,
             },
             production: HashMap::from([(CommodityName::Wheat, 0.5), (CommodityName::Corn, 0.4)]),
         },
@@ -375,7 +375,7 @@ pub fn start_countries() -> Vec<Country> {
             politics: Politics {
                 government: Government::Democracy,
                 ideology: Ideology::Right,
-                culture: Culture::Moderate,
+                culture: Culture::Neutral,
                 orientation: Orientation::Capitalism,
             },
             production: HashMap::from([
@@ -395,7 +395,7 @@ pub fn start_countries() -> Vec<Country> {
             politics: Politics {
                 government: Government::Autocracy,
                 ideology: Ideology::Left,
-                culture: Culture::Moderate,
+                culture: Culture::Neutral,
                 orientation: Orientation::Socialism,
             },
             production: HashMap::from([

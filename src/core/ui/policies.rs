@@ -2,10 +2,11 @@ use bevy::prelude::*;
 use bevy_egui::egui::{ScrollArea, Ui};
 use strum::IntoEnumIterator;
 
-use crate::core::factors::Factor;
-use crate::core::global_economy::{GlobalEconomy};
+use crate::core::global_economy::GlobalEconomy;
 use crate::core::player::Player;
-use crate::core::politics::{Culture, Government, Ideology, Orientation};
+use crate::core::politics::PoliticalField;
+use crate::core::resources::ImageIds;
+use crate::core::sectors::SectorName;
 use crate::core::ui::state::{PoliciesTab, UiState};
 use crate::core::ui::utils::CustomUi;
 use crate::utils::NameFromEnum;
@@ -15,6 +16,7 @@ pub fn policies_panel(
     state: &mut UiState,
     economy: &mut GlobalEconomy,
     player: &mut Player,
+    images: &ImageIds,
     window: &Window,
 ) {
     ui.horizontal(|ui| {
@@ -34,18 +36,33 @@ pub fn policies_panel(
     match state.policies {
         PoliciesTab::Sectors => {
             ui.label(
-                "Credit refers to the ability of borrowing money, with the promise of repayment \
-                in the future. It's a fundamental part of the financial system, allowing companies to \
-                make purchases, invest, and manage expenses beyond their immediate cash availability. \
-                There are two types of loans: term loans and margin loans. Term loans provide cash to \
-                use at the discretion of the borrower, while margin loans are taken to leverage a specific \
-                instrument. Six months after the start date of a term loan, a company can choose to repay \
-                the debt early, paying an additional fee to the provider to cover missed earnings. A new \
-                loan can be taken by the same provider only when the remaining debt is less than 50% of \
-                the principal.",
+                "The companies in the game are part of the following collection of sectors, \
+                 which represents the foundational pillars of the global economy, encompassing \
+                 a diverse range of industries that drive market dynamics. The score of the sector \
+                 is determined by the underlying commodity prices, and in turn, influences the \
+                 stock market. Use your companies influence to change the scores to your advantage.",
             );
 
             ui.separator();
+
+            ScrollArea::vertical().show(ui, |ui| {
+                for name in SectorName::iter() {
+                    let mut value = economy.sectors.iter().find(|s| s.name == name).unwrap().value;
+
+                    ui.add_influence_block(
+                        format!("{} {}", name.emoji(), name.to_name()),
+                        |ui| ui.add_sector(&name, economy, images, window),
+                        "Negative",
+                        "Positive",
+                        &mut player.influence.score,
+                        &mut value,
+                    );
+
+                    economy.sectors.iter_mut().find(|s| s.name == name).unwrap().value = value;
+
+                    ui.add_space(window.height() * 0.05);
+                }
+            });
         },
         PoliciesTab::Politics => {
             ui.label(
@@ -59,43 +76,22 @@ pub fn policies_panel(
             ui.separator();
 
             ScrollArea::vertical().show(ui, |ui| {
-                ui.add_influence_block(
-                    "Government",
-                    Government::iter().next().unwrap().to_name(),
-                    Government::iter().last().unwrap().to_name(),
-                    &mut player.influence.current(),
-                    &mut economy.politics.government,
-                );
+                for field in PoliticalField::iter() {
+                    let mut value = economy.politics.get_mut(&field).clone();
 
-                ui.add_space(window.height() * 0.05);
+                    ui.add_influence_block(
+                        format!("{} {}", field.emoji(), field.to_name()),
+                        |ui| ui.add_politics(&field, economy, images, window),
+                        field.fields().first().unwrap(),
+                        field.fields().last().unwrap(),
+                        &mut player.influence.score,
+                        &mut value,
+                    );
 
-                ui.add_influence_block(
-                    "Ideology",
-                    Ideology::iter().next().unwrap().to_name(),
-                    Ideology::iter().last().unwrap().to_name(),
-                    &mut player.influence.current(),
-                    &mut economy.politics.ideology,
-                );
+                    *economy.politics.get_mut(&field) = value;
 
-                ui.add_space(window.height() * 0.05);
-
-                ui.add_influence_block(
-                    "Culture",
-                    Culture::iter().next().unwrap().to_name(),
-                    Culture::iter().last().unwrap().to_name(),
-                    &mut player.influence.current(),
-                    &mut economy.politics.culture,
-                );
-
-                ui.add_space(window.height() * 0.05);
-
-                ui.add_influence_block(
-                    "Orientation",
-                    Orientation::iter().next().unwrap().to_name(),
-                    Orientation::iter().last().unwrap().to_name(),
-                    &mut player.influence.current(),
-                    &mut economy.politics.orientation,
-                );
+                    ui.add_space(window.height() * 0.05);
+                }
             });
         },
         PoliciesTab::Laws => (),

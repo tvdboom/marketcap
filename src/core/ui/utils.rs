@@ -9,14 +9,16 @@ use strum::IntoEnumIterator;
 use crate::core::constants::{
     CURRENCY, CUSTOM_GREEN, DATE_FORMAT, HEIGHT, LINE_COLOR, LINE_WIDTH, WIDTH,
 };
-use crate::core::countries::Country;
+use crate::core::countries::{Country, CountryName};
 use crate::core::global_economy::{GlobalEconomy, PoliticalLandscape};
 use crate::core::instruments::bonds::BondIssuer;
 use crate::core::instruments::instrument::{Instrument, InstrumentKind};
 use crate::core::orders::{Command, Order};
 use crate::core::player::Player;
+use crate::core::politics::PoliticalField;
 use crate::core::research::{TechName, Technology};
 use crate::core::resources::ImageIds;
+use crate::core::sectors::SectorName;
 use crate::core::ui::state::{OrderByState, OrderOptions, PlotRange};
 use crate::utils::{DQueue, EnhFloat, NameFromEnum, create_guid, get_ratio};
 
@@ -66,17 +68,32 @@ pub trait CustomUi {
         state: &mut OrderByState,
         window: &Window,
     );
-    fn add_bar(&mut self, value: i32);
+    fn add_bar(&mut self, value: i8);
     fn add_influence_block(
         &mut self,
         title: impl Into<RichText>,
+        hover: impl FnOnce(&mut Ui),
         left_label: impl Into<WidgetText>,
         right_label: impl Into<WidgetText>,
         influence: &mut f32,
-        value: &mut i32,
+        value: &mut i8,
     );
     fn add_technology(&mut self, research: &Technology) -> Response;
     fn add_country(&mut self, country: &Country, images: &ImageIds, window: &Window);
+    fn add_sector(
+        &mut self,
+        sector: &SectorName,
+        economy: &GlobalEconomy,
+        images: &ImageIds,
+        window: &Window,
+    );
+    fn add_politics(
+        &mut self,
+        field: &PoliticalField,
+        economy: &GlobalEconomy,
+        images: &ImageIds,
+        window: &Window,
+    );
     fn add_plot(
         &mut self,
         data: &DQueue<f32>,
@@ -180,7 +197,7 @@ impl CustomUi for Ui {
         );
     }
 
-    fn add_bar(&mut self, value: i32) {
+    fn add_bar(&mut self, value: i8) {
         let norm = value as f32 / PoliticalLandscape::RANGE as f32;
 
         let (rect, _) =
@@ -213,21 +230,22 @@ impl CustomUi for Ui {
     fn add_influence_block(
         &mut self,
         title: impl Into<RichText>,
+        hover: impl FnOnce(&mut Ui),
         left_label: impl Into<WidgetText>,
         right_label: impl Into<WidgetText>,
         influence: &mut f32,
-        value: &mut i32,
+        value: &mut i8,
     ) {
-        self.monospace(title);
+        self.monospace(title).on_hover_ui(hover);
 
         Sides::new().show(
             self,
             |ui| {
-                ui.add_space(ui.available_width() * 0.13);
+                ui.add_space(180.);
                 ui.label(left_label);
             },
             |ui| {
-                ui.add_space(ui.available_width() * 0.22);
+                ui.add_space(220.);
                 ui.label(right_label);
             },
         );
@@ -346,17 +364,14 @@ impl CustomUi for Ui {
 
                     ui.vertical(|ui| {
                         ui.label("Politics");
-
-                        ui.label(format!(
-                            "👑 Governance: {}",
-                            country.politics.government.to_name()
-                        ));
-                        ui.label(format!("🍀 Ideology: {}", country.politics.ideology.to_name()));
-                        ui.label(format!("👨‍ Culture: {}", country.politics.culture.to_name()));
-                        ui.label(format!(
-                            "💲 Orientation: {}",
-                            country.politics.orientation.to_name()
-                        ));
+                        for field in PoliticalField::iter() {
+                            ui.label(format!(
+                                "{} {}: {}",
+                                field.emoji(),
+                                field.to_name(),
+                                country.politics.get(&field)
+                            ));
+                        }
                     });
 
                     ui.add_space(window.width() * 0.02);
@@ -381,6 +396,191 @@ impl CustomUi for Ui {
                                 );
                             });
                         }
+                    });
+                });
+            });
+        });
+    }
+
+    fn add_sector(
+        &mut self,
+        sector: &SectorName,
+        economy: &GlobalEconomy,
+        images: &ImageIds,
+        window: &Window,
+    ) {
+        let sector = economy.sectors.iter().find(|s| s.name == *sector).unwrap();
+
+        self.horizontal(|ui| {
+            ui.heading(format!("{} {}", sector.name.emoji(), sector.name.to_name()));
+
+            ui.add_space(window.width() * 0.02);
+
+            ui.vertical(|ui| {
+                ui.label(sector.name.description());
+
+                ui.horizontal(|ui| {
+                    ui.vertical(|ui| {
+                        ui.vertical(|ui| {
+                            ui.label("Political preference");
+                            for field in PoliticalField::iter() {
+                                let name = sector.politics.get(&field);
+                                if name != "Neutral" {
+                                    ui.label(format!(
+                                        "{} {}: {}",
+                                        field.emoji(),
+                                        field.to_name(),
+                                        sector.politics.get(&field)
+                                    ));
+                                }
+                            }
+                        });
+                    });
+
+                    ui.add_space(window.width() * 0.02);
+
+                    ui.vertical(|ui| {
+                        ui.label("Dependencies");
+
+                        let dependencies = sector
+                            .commodities
+                            .iter()
+                            .sorted_by(|a, b| b.1.partial_cmp(&a.1).unwrap())
+                            .collect::<Vec<_>>();
+                        let max = dependencies.first().unwrap().1;
+                        for (name, weight) in dependencies {
+                            ui.horizontal(|ui| {
+                                ui.add_image(images.get(name.to_lowername().as_str()), [20.; 2]);
+                                ui.add(
+                                    ProgressBar::new(weight / max)
+                                        .text(RichText::new(name.to_name()).small())
+                                        .corner_radius(5.)
+                                        .desired_width((ui.available_width() * 0.4).max(250.)),
+                                );
+                            });
+                        }
+                    });
+
+                    ui.add_space(window.width() * 0.02);
+
+                    ui.vertical(|ui| {
+                        ui.label("Influence");
+
+                        let influence = economy
+                            .stocks
+                            .iter()
+                            .filter_map(|s| s.sector.get(&sector.name).map(|v| (s.name(), *v)))
+                            .sorted_by(|a, b| b.1.partial_cmp(&a.1).unwrap())
+                            .collect::<Vec<_>>();
+                        let max = influence.first().unwrap().1;
+                        for (name, weight) in influence {
+                            ui.add(
+                                ProgressBar::new(weight / max)
+                                    .text(RichText::new(name).small())
+                                    .corner_radius(5.)
+                                    .desired_width((ui.available_width() * 0.4).max(250.)),
+                            );
+                        }
+                    });
+                });
+            });
+        });
+    }
+
+    fn add_politics(
+        &mut self,
+        field: &PoliticalField,
+        economy: &GlobalEconomy,
+        images: &ImageIds,
+        window: &Window,
+    ) {
+        self.horizontal(|ui| {
+            ui.heading(format!("{} {}", field.emoji(), field.to_name()));
+
+            ui.add_space(window.width() * 0.02);
+
+            ui.vertical(|ui| {
+                ui.label(field.description());
+
+                ui.horizontal(|ui| {
+                    ui.vertical(|ui| {
+                        ui.label("Countries");
+
+                        let value = economy.politics.get(field);
+                        let func = |ui: &mut Ui, name: CountryName| {
+                            let country =
+                                economy.countries.iter().find(|c| c.name == name).unwrap();
+
+                            ui.horizontal(|ui| {
+                                ui.add_image(
+                                    images.get(format!("{}-flag", name.to_lowername()).as_str()),
+                                    [30., 20.],
+                                );
+                                ui.label(name.to_name());
+                                ui.add_image(
+                                    images.get(match country.politics.matches(&field, value) {
+                                        -1 => "cross",
+                                        0 => "neutral",
+                                        1 => "tick",
+                                        _ => unreachable!(),
+                                    }),
+                                    [20.; 2],
+                                );
+                            });
+                        };
+
+                        let half = CountryName::iter().len() / 2;
+                        ui.horizontal(|ui| {
+                            ui.vertical(|ui| {
+                                for name in CountryName::iter().take(half) {
+                                    func(ui, name);
+                                }
+                            });
+                            ui.vertical(|ui| {
+                                for name in CountryName::iter().skip(half) {
+                                    func(ui, name);
+                                }
+                            });
+                        });
+                    });
+
+                    ui.add_space(window.width() * 0.02);
+
+                    ui.vertical(|ui| {
+                        ui.label("Sectors");
+
+                        let value = economy.politics.get(field);
+                        let func = |ui: &mut Ui, name: SectorName| {
+                            let sector =
+                                economy.sectors.iter().find(|c| c.name == name).unwrap();
+
+                            ui.horizontal(|ui| {
+                                ui.label(format!("{} {}", name.emoji(), name.to_name()));
+                                ui.add_image(
+                                    images.get(match sector.politics.matches(&field, value) {
+                                        -1 => "cross",
+                                        0 => "neutral",
+                                        1 => "tick",
+                                        _ => unreachable!(),
+                                    }),
+                                    [20.; 2],
+                                );
+                            });
+                        };
+
+                        let half = SectorName::iter().len() / 2;
+                        ui.horizontal(|ui| {
+                            ui.vertical(|ui| {
+                                for name in SectorName::iter().take(half) {
+                                    func(ui, name);
+                                }
+                            });
+                            ui.vertical(|ui| {
+                                for name in SectorName::iter().skip(half) {
+                                    func(ui, name);
+                                }
+                            });
+                        });
                     });
                 });
             });
@@ -689,7 +889,7 @@ impl CustomUi for Ui {
                                                     .text(RichText::new(format!("{} {}", name.emoji(), name.to_name())).small())
                                                     .corner_radius(5.)
                                                     .desired_width(ui.available_width() * 0.6)
-                                            ).on_hover_text(name.description());
+                                            ).on_hover_ui(|ui| ui.add_sector(name, economy, images, window));
                                         }
                                     });
                                 },

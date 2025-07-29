@@ -22,6 +22,7 @@ use crate::utils::NameFromEnum;
 
 #[derive(EnumIter, Clone, Copy, Debug, PartialEq, Serialize, Deserialize)]
 pub enum EventName {
+    AiRegulations,
     BrazilPolitics,
     CeoResignation(Company),
     Covid,
@@ -31,6 +32,7 @@ pub enum EventName {
     DDos(Company),
     Drought(CountryName),
     EsgScandal(Company),
+    FashionBoycott,
     GasDiscovery(CountryName),
     GoldRush,
     Grounded,
@@ -311,6 +313,7 @@ impl EconomicEvent {
 
     pub fn title(&self) -> String {
         match self.name {
+            EventName::AiRegulations => "EU regulations scare AI companies away".to_string(),
             EventName::BrazilPolitics => "Brazilian right-wing gains power".to_string(),
             EventName::CeoResignation(company) => {
                 format!("The CEO of {} resigns", company.to_name())
@@ -329,6 +332,9 @@ impl EconomicEvent {
             },
             EventName::GoldRush => "Gold rush".to_string(),
             EventName::Grounded => "Air travel in EU grounded".to_string(),
+            EventName::FashionBoycott => {
+                "Fashion brands face boycott over labor practices".to_string()
+            },
             EventName::Harvest(country) => format!("Plentiful harvest in {}", country.to_name()),
             EventName::InterestBump(country) => {
                 format!("Interest rates raised in {}", country.to_name())
@@ -369,6 +375,12 @@ impl EconomicEvent {
 
     pub fn description(&self) -> String {
         match self.name {
+            EventName::AiRegulations => {
+                "The European Union implements strict regulations on AI companies, leading to \
+                a mass exodus of tech firms from the region. This results in a significant \
+                decline in the tech sector's stock prices and a slowdown in innovation."
+                    .to_string()
+            },
             EventName::BrazilPolitics => {
                 "A right-wing government in Brazil implements policies that favor deregulation \
                 and privatization, leading to increased foreign investment. However, it also \
@@ -432,6 +444,12 @@ impl EconomicEvent {
                 such as environmental violations, labor rights abuses, or governance failures.",
                 company.to_name()
             ),
+            EventName::FashionBoycott => {
+                "A global boycott of fashion brands over labor practices leads to a decline in \
+                sales and stock prices for major retailers. The boycott highlights issues such as \
+                worker exploitation, environmental impact, and corporate responsibility."
+                    .to_string()
+            },
             EventName::GasDiscovery(country) => format!(
                 "The discovery of a new gas field in {} boosts the country's energy sector, \
                 leading to increased exports and potential economic growth. This may also lead \
@@ -571,6 +589,14 @@ impl EconomicEvent {
     pub fn start(&self, economy: &mut GlobalEconomy) {
         let mut rng = rng();
         match self.name {
+            EventName::AiRegulations => {
+                economy.politics.update_government(-rng.random_range(10..15));
+                economy.politics.update_culture(-rng.random_range(15..20));
+
+                economy.sectors.iter_mut().find(|s| s.name == SectorName::Technology).map(|s| {
+                    s.update(-rng.random_range(10..20));
+                });
+            },
             EventName::BrazilPolitics => {
                 economy.politics.update_government(rng.random_range(10..15));
                 economy.politics.update_ideology(rng.random_range(15..25));
@@ -627,7 +653,12 @@ impl EconomicEvent {
                     s.update(rng.random_range(15..25));
                 });
             },
+            EventName::CryptoFan(_) => {
+                economy.politics.update_culture(rng.random_range(10..15));
+            },
             EventName::CryptoCrash(name) => {
+                economy.politics.update_culture(-rng.random_range(10..15));
+
                 economy.cryptos.iter_mut().find(|c| c.name == name).map(|c| {
                     *c.prices.back_mut().unwrap() *= rng.random_range(0.5..0.75);
                 });
@@ -646,8 +677,22 @@ impl EconomicEvent {
                 });
             },
             EventName::EsgScandal(company) => {
+                economy.politics.update_culture(rng.random_range(15..25));
+
                 economy.stocks.iter_mut().find(|s| s.issuer == company).map(|s| {
                     s.esg.decrease();
+                });
+            },
+            EventName::FashionBoycott => {
+                economy.politics.update_government(-rng.random_range(10..15));
+                economy.politics.update_ideology(-rng.random_range(10..15));
+
+                economy.sectors.iter_mut().find(|s| s.name == SectorName::Fashion).map(|s| {
+                    s.update(-rng.random_range(10..20));
+                });
+
+                economy.commodities.iter_mut().find(|c| c.name == CommodityName::Cotton).map(|c| {
+                    *c.prices.back_mut().unwrap() *= rng.random_range(0.85..0.95);
                 });
             },
             EventName::GasDiscovery(country) => {
@@ -678,6 +723,8 @@ impl EconomicEvent {
                     });
             },
             EventName::MiningStrike(country) => {
+                economy.politics.update_orientation(-rng.random_range(10..15));
+
                 economy
                     .commodities
                     .iter_mut()
@@ -699,6 +746,7 @@ impl EconomicEvent {
             },
             EventName::Merger => {
                 economy.politics.update_orientation(rng.random_range(15..25));
+
                 economy.sectors.iter_mut().find(|s| s.name == SectorName::Finance).map(|s| {
                     s.update(rng.random_range(15..25));
                 });
@@ -726,6 +774,8 @@ impl EconomicEvent {
                 });
             },
             EventName::RegulatoryCrackdown(sector) => {
+                economy.politics.update_orientation(-rng.random_range(15..25));
+
                 economy.sectors.iter_mut().find(|s| s.name == sector).map(|s| {
                     s.update(-rng.random_range(20..40));
                 });
@@ -766,6 +816,8 @@ impl EconomicEvent {
                 });
             },
             EventName::SovereignDebt(country) => {
+                economy.politics.update_orientation(rng.random_range(15..25));
+
                 economy.bonds.iter_mut().find(|b| b.issuer == BondIssuer::Government(country)).map(
                     |b| {
                         b.quality = BondQuality::C;

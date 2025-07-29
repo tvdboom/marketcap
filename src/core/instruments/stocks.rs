@@ -194,9 +194,10 @@ impl Stock {
             .sector
             .iter()
             .map(|(s, w)| {
-                sectors.iter().find(|sec| sec.name == *s).map_or(0., |sec| {
-                    w * (sec.value as f32 - Sector::MIN as f32) / (Sector::MAX - Sector::MIN) as f32
-                })
+                sectors
+                    .iter()
+                    .find(|sec| sec.name == *s)
+                    .map_or(0., |sec| w * sec.value as f32 / Sector::RANGE as f32)
             })
             .sum::<f32>();
         let sentiment_effect = self.sentiment() * 0.005 * self.base_price; // 0.5% max effect

@@ -60,7 +60,7 @@ pub fn research_panel(
             ui.add_space(5.);
             ui.horizontal(|ui| {
                 ui.add_space(20.);
-                ui.label(category.to_name());
+                ui.monospace(category.to_name());
             });
             ui.add_space(5.);
 
