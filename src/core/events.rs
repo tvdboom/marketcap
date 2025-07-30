@@ -31,6 +31,7 @@ pub enum EventName {
     CryptoFan(CryptoName),
     DDos(Company),
     Drought(CountryName),
+    Emissions,
     EsgScandal(Company),
     FashionBoycott,
     GasDiscovery(CountryName),
@@ -50,6 +51,7 @@ pub enum EventName {
     RussiaWar,
     SovereignDebt(CountryName),
     StorageCosts,
+    Surprise(Company),
     TradeWar,
     Trial,
     Vaccine(Company),
@@ -180,6 +182,9 @@ impl EventName {
                     .choose(&mut rng())
                     .unwrap(),
             ),
+            EventName::Surprise(_) => {
+                EventName::Surprise(Company::iter().choose(&mut rng()).unwrap())
+            },
             EventName::Vaccine(_) => EventName::Vaccine(
                 Company::iter()
                     .filter(|c| {
@@ -252,7 +257,12 @@ impl EventName {
                     EventName::Drought(_) | EventName::Harvest(_) => {
                         player.has_tech(&TechName::Commodities).then_some(1.)
                     },
-                    EventName::EsgScandal(_) => player.has_tech(&TechName::ESG).then_some(1.),
+                    n @ EventName::Emissions => {
+                        player.has_tech(&TechName::ESG).then_some(n.base_weight())
+                    },
+                    n @ EventName::EsgScandal(_) => {
+                        player.has_tech(&TechName::ESG).then_some(n.base_weight())
+                    },
                     EventName::GasDiscovery(_) | EventName::OilDiscovery(_) => {
                         player.has_tech(&TechName::Commodities).then_some(1.)
                     },
@@ -324,6 +334,7 @@ impl EconomicEvent {
             EventName::CryptoFan(name) => format!("Influencers support {}", name.to_name()),
             EventName::DDos(company) => format!("DDoS attack on {}", company.to_name()),
             EventName::Drought(country) => format!("Prolonged drought in {}", country.to_name()),
+            EventName::Emissions => "Government enforces stricter emissions standards".to_string(),
             EventName::EsgScandal(company) => {
                 format!("{} ESG scandal", company.to_name())
             },
@@ -363,6 +374,9 @@ impl EconomicEvent {
                 format!("{} debt crisis", country.to_name())
             },
             EventName::StorageCosts => "Storage costs rise".to_string(),
+            EventName::Surprise(company) => {
+                format!("Traders react to unexpected annual report for {}", company.to_name())
+            },
             EventName::TradeWar => "USA - China trade war escalates".to_string(),
             EventName::Trial => "ONGs win big climate trial".to_string(),
             EventName::Vaccine(company) => format!("{} vaccine breakthrough", company.to_name()),
@@ -438,6 +452,13 @@ impl EconomicEvent {
                 implement measures to conserve water and support farmers.",
                 country.to_name()
             ),
+            EventName::Emissions => {
+                "Governments around the world implement stricter emissions standards, leading to \
+                increased costs for companies with low ESG-ratings. This may result in a shift \
+                towards cleaner technologies and renewable energy sources, but also causes \
+                short-term disruptions and higher prices for consumers."
+                    .to_string()
+            },
             EventName::EsgScandal(company) => format!(
                 "A major ESG scandal involving {} leads to a loss of investor confidence and \
                 a significant drop in the company's stock price. The scandal may involve issues \
@@ -559,6 +580,15 @@ impl EconomicEvent {
                 increased investment in logistics and infrastructure."
                     .to_string()
             },
+            EventName::Surprise(company) => {
+                format!(
+                    "An unexpected annual report from {} reveals worse-than-expected financial \
+                    performance, surprising investors. The company's stock price drops as traders \
+                    react to the news, leading to decreased confidence in the company's future \
+                    prospects.",
+                    company.to_name()
+                )
+            },
             EventName::TradeWar => {
                 "The escalating trade war between the USA and China leads to tariffs, trade \
                 restrictions, and increased costs for consumers and businesses. It causes \
@@ -676,6 +706,14 @@ impl EconomicEvent {
                     s.update(-rng.random_range(5..10));
                 });
             },
+            EventName::Emissions => {
+                economy.politics.update_ideology(-rng.random_range(15..20));
+                economy.politics.update_culture(rng.random_range(10..15));
+
+                economy.stocks.iter_mut().filter(|s| s.esg < ESGRating::A).for_each(|s| {
+                    *s.prices.back_mut().unwrap() *= rng.random_range(0.8..0.9);
+                });
+            }
             EventName::EsgScandal(company) => {
                 economy.politics.update_culture(rng.random_range(15..25));
 
@@ -831,6 +869,12 @@ impl EconomicEvent {
 
                 economy.sectors.iter_mut().find(|s| s.name == SectorName::Finance).map(|s| {
                     s.update(-rng.random_range(10..15));
+                });
+            },
+            EventName::Surprise(company) => {
+                economy.stocks.iter_mut().find(|s| s.issuer == company).map(|s| {
+                    *s.prices.back_mut().unwrap() *= rng.random_range(0.75..0.85);
+                    s.sentiment -= rng.random_range(0.25..0.5);
                 });
             },
             EventName::TradeWar => {

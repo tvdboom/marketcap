@@ -109,6 +109,12 @@ make purchases, invest, and manage expenses beyond their immediate cash availabi
 
 ### Policies
 
+#### Sectors
+
+The game presents eight different sectors that influence companies, i.e., stock prices.
+Sectors are in turn influenced by commodities. The player can also influence sectors to
+change the economical landscape to their advantage.
+
 #### Politics
 
 The game features four political fields where players can influence the political landscape:

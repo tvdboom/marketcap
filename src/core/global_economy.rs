@@ -133,7 +133,10 @@ pub struct GlobalEconomy {
 }
 
 impl GlobalEconomy {
-    /// Daily changes in the global economy
+    pub fn adjust_clock(&mut self, speed: f32) {
+        self.clock.set_duration(std::time::Duration::from_secs_f32(1. / speed));
+    }
+
     pub fn bump(
         &mut self,
         aum: f32,

@@ -551,8 +551,7 @@ impl CustomUi for Ui {
 
                         let value = economy.politics.get(field);
                         let func = |ui: &mut Ui, name: SectorName| {
-                            let sector =
-                                economy.sectors.iter().find(|c| c.name == name).unwrap();
+                            let sector = economy.sectors.iter().find(|c| c.name == name).unwrap();
 
                             ui.horizontal(|ui| {
                                 ui.label(format!("{} {}", name.emoji(), name.to_name()));

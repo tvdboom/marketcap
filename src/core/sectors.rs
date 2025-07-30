@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use bevy::utils::default;
-use rand::{rng, Rng};
+use rand::{Rng, rng};
 use serde::{Deserialize, Serialize};
 use strum_macros::EnumIter;
 
@@ -164,23 +164,22 @@ impl Sector {
         landscape: &PoliticalLandscape,
     ) {
         let mut bump = self.politics.get_score(&landscape)
-            + (0.01
-                * commodities
+            + commodities
                     .iter()
                     .map(|c| {
                         self.commodities
                             .get(&c.name)
-                            .map(|weight| weight * (c.current() - c.base_price))
+                            .map(|weight| weight * (c.current() - c.base_price) / c.base_price)
                             .unwrap_or_default()
                     })
-                    .sum::<f32>());
+                    .sum::<f32>();
 
         // Finance is special since it also depends on inflation
         if self.name == SectorName::Finance {
-            bump += 0.01 * (inflation - Inflation::DEFAULT) / 100.;
+            bump += 0.1 * (inflation - Inflation::DEFAULT) / Inflation::DEFAULT;
         }
 
-        if rng().random::<f32>() > bump.abs() {
+        if rng().random::<f32>() < bump.abs() {
             if bump > 0. {
                 self.value += 1;
             } else {

@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
 use bevy_egui::egui::{
@@ -83,7 +81,7 @@ fn update_settings(
         .ctx_mut()
         .set_style(game_settings.theme.get().custom_style(window.width(), window.height()));
 
-    economy.clock.set_duration(Duration::from_secs_f32(1. / game_settings.speed));
+    economy.adjust_clock(game_settings.speed);
 
     if matches!(game_settings.audio, AudioSetting::Mute | AudioSetting::NoMusic) {
         audio.stop();
@@ -119,8 +117,11 @@ pub fn main_menu(
                         AppState::MainMenu => {
                             if ui.add_button(RichText::new("New game").heading(), &window).clicked()
                             {
+                                let mut new_economy = GlobalEconomy::default();
+                                new_economy.adjust_clock(game_settings.speed);
+
                                 commands.insert_resource(UiState::default());
-                                commands.insert_resource(GlobalEconomy::default());
+                                commands.insert_resource(new_economy);
                                 commands.insert_resource(Player::default());
                                 next_app_state.set(AppState::Game);
                                 next_game_state.set(GameState::StartGame);
