@@ -159,8 +159,8 @@ pub trait Instrument {
     fn sectors(&self) -> HashMap<SectorName, f32> {
         HashMap::new()
     }
-    fn sentiment(&self) -> f32 {
-        0.
+    fn sentiment(&self) -> i8 {
+        0
     }
 
     /// Costs of holding this instrument per unit per day

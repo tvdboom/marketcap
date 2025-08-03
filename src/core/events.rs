@@ -874,7 +874,7 @@ impl EconomicEvent {
             EventName::Surprise(company) => {
                 economy.stocks.iter_mut().find(|s| s.issuer == company).map(|s| {
                     *s.prices.back_mut().unwrap() *= rng.random_range(0.75..0.85);
-                    s.sentiment -= rng.random_range(0.25..0.5);
+                    s.sentiment -= rng.random_range(15..25);
                 });
             },
             EventName::TradeWar => {

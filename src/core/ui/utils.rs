@@ -800,12 +800,22 @@ impl CustomUi for Ui {
                                                 is an indication).",
                                             );
 
-                                        ui.label(format!("Sentiment: {}", instrument.sentiment()))
-                                            .on_hover_text(
-                                                "People's feelings towards the company (0-100). Higher \
-                                                scores means favorable sentiment, thus usually higher stock \
-                                                prices.",
+                                        ui.horizontal(|ui| {
+                                            ui.label(format!("Sentiment: {:+}", instrument.sentiment()));
+                                            ui.add_image(
+                                                images.get(match instrument.sentiment() {
+                                                    n if n < 0 => "cross",
+                                                    0 => "neutral",
+                                                    _ => "tick",
+                                                }),
+                                                [20.; 2],
                                             );
+                                        }).response.on_hover_text(
+                                            "People's feelings towards the company (-50 to +50). \
+                                                A positive sentiment indicates optimism (increases \
+                                                stock prices), while a negative sentiment indicates \
+                                                pessimism (decreases stock prices).",
+                                        );
 
                                         if player.has_tech(&TechName::ESG) {
                                             ui.label(format!("ESG: {}", instrument.esg().to_name()))
