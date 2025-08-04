@@ -7,7 +7,7 @@ use crate::core::instruments::commodities::CommodityName;
 use crate::core::instruments::forex::CurrencyName;
 use crate::core::politics::{Culture, Government, Ideology, Orientation, Politics};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum MarketKind {
     DevelopedMarket,
     EmergingMarket,

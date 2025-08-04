@@ -165,14 +165,14 @@ impl Sector {
     ) {
         let mut bump = self.politics.get_score(&landscape)
             + commodities
-                    .iter()
-                    .map(|c| {
-                        self.commodities
-                            .get(&c.name)
-                            .map(|weight| weight * (c.current() - c.base_price) / c.base_price)
-                            .unwrap_or_default()
-                    })
-                    .sum::<f32>();
+                .iter()
+                .map(|c| {
+                    self.commodities
+                        .get(&c.name)
+                        .map(|weight| weight * (c.current() - c.base_price) / c.base_price)
+                        .unwrap_or_default()
+                })
+                .sum::<f32>();
 
         // Finance is special since it also depends on inflation
         if self.name == SectorName::Finance {
