@@ -453,7 +453,6 @@ pub enum PoliciesTab {
     #[default]
     Sectors,
     Politics,
-    Laws,
 }
 
 impl PoliciesTab {

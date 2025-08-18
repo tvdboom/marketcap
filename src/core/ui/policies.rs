@@ -94,6 +94,5 @@ pub fn policies_panel(
                 }
             });
         },
-        PoliciesTab::Laws => (),
     }
 }
