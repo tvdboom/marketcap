@@ -31,7 +31,7 @@ pub enum EventName {
     CryptoCrash(CryptoName),
     CryptoFan(CryptoName),
     CryptoHub(CountryName),
-    CurrencyRevaluation,
+    CurrencyReevaluation,
     DDos(Company),
     Drought(CountryName),
     Emissions,
@@ -253,7 +253,7 @@ impl EventName {
     pub fn base_weight(&self) -> f32 {
         match self {
             EventName::BrazilPolitics => 0.1,
-            EventName::CurrencyRevaluation => 0.1,
+            EventName::CurrencyReevaluation => 0.1,
             EventName::Covid => 0.1,
             EventName::Crimea => 0.1,
             EventName::MiningStrike(_) | EventName::MiningNationalization(_) => 0.6,
@@ -278,7 +278,7 @@ impl EventName {
                     | EventName::CryptoHub(_) => {
                         player.has_tech(&TechName::Cryptocurrencies).then_some(1.)
                     },
-                    EventName::CurrencyRevaluation => {
+                    EventName::CurrencyReevaluation => {
                         player.has_tech(&TechName::ForeignExchange).then_some(1.)
                     },
                     EventName::Drought(_) | EventName::Harvest(_) => {
@@ -363,7 +363,7 @@ impl EconomicEvent {
             EventName::CryptoHub(country) => {
                 format!("{} becomes a crypto hub", country.to_name())
             },
-            EventName::CurrencyRevaluation => {
+            EventName::CurrencyReevaluation => {
                 "Venezuela performs a currency revaluation".to_string()
             },
             EventName::DDos(company) => format!("DDoS attack on {}", company.to_name()),
@@ -491,7 +491,7 @@ impl EconomicEvent {
                 to balance innovation with consumer protection.",
                 country.to_name()
             ),
-            EventName::CurrencyRevaluation => {
+            EventName::CurrencyReevaluation => {
                 "Venezuela performs a currency revaluation, leading to a temporary stabilization \
                 of its economy. However, the move may also result in inflationary pressures and \
                 challenges in restoring investor confidence."
@@ -801,7 +801,7 @@ impl EconomicEvent {
                     s.update(rng.random_range(5..10));
                 });
             },
-            EventName::CurrencyRevaluation => {
+            EventName::CurrencyReevaluation => {
                 economy.politics.update_government(rng.random_range(5..10));
 
                 economy.currencies.iter_mut().find(|c| c.country == CountryName::Venezuela).map(|c| {

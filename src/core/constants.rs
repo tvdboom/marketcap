@@ -14,6 +14,7 @@ pub const MAX_GAME_SPEED: f32 = 10.;
 pub const MESSAGE_DURATION: u64 = 4; // Seconds that messages are shown
 pub const VICTORY_AMOUNT: f32 = 1e12;
 pub const START_DATE: NaiveDate = NaiveDate::from_ymd_opt(2024, 12, 31).unwrap();
+pub const START_CAPITAL: f32 = 100_000.;
 
 /// Colors
 pub const CUSTOM_GREEN: Color32 = Color32::from_rgb(79, 170, 102);
@@ -28,5 +29,5 @@ pub const LINE_WIDTH: f32 = 2.5;
 pub const LINE_COLOR: Color32 = Color32::LIGHT_BLUE;
 
 /// Game
-pub const DAYS_PER_EVENT: f32 = 30.; // Average number of days between events
+pub const DAYS_PER_EVENT: f32 = 60.; // Average number of days between events
 pub const LOAN_STEP: u32 = 1_000;

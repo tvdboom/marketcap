@@ -199,6 +199,8 @@ pub fn top_panel(
                         the AUM drops to zero, the company goes bankrupt and the game is lost.\n\n\
                         Cash: {}\n\
                         Stocks: {}\n\
+                        Bonds: {}\n\
+                        Forex: {}\n\
                         Commodities: {}\n\
                         Crypto: {}\n\
                         Term loan debt: {}\n\
@@ -208,6 +210,18 @@ pub fn top_panel(
                         player.cash.current().signed(),
                         player
                             .stocks()
+                            .iter()
+                            .map(|o| o.amount as f32 * economy.get_price(&o.kind))
+                            .sum::<f32>()
+                            .signed(),
+                        player
+                            .bonds()
+                            .iter()
+                            .map(|o| o.amount as f32 * economy.get_price(&o.kind))
+                            .sum::<f32>()
+                            .signed(),
+                        player
+                            .forex()
                             .iter()
                             .map(|o| o.amount as f32 * economy.get_price(&o.kind))
                             .sum::<f32>()

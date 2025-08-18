@@ -134,7 +134,7 @@ pub struct GlobalEconomy {
 
 impl GlobalEconomy {
     pub fn adjust_clock(&mut self, speed: f32) {
-        self.clock.set_duration(std::time::Duration::from_secs_f32(1. / speed));
+        self.clock.set_duration(std::time::Duration::from_secs_f32(2. / speed));
     }
 
     pub fn bump(
@@ -297,7 +297,7 @@ impl Default for GlobalEconomy {
         Self {
             date: START_DATE,
             clock: Timer::new(
-                std::time::Duration::from_secs_f32(DEFAULT_SPEED),
+                std::time::Duration::from_secs_f32(2. * DEFAULT_SPEED),
                 TimerMode::Repeating,
             ),
             economy: Economy::default(),

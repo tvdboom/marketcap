@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::constants::CURRENCY;
+use crate::core::constants::{CURRENCY, START_CAPITAL};
 use crate::core::factors::Factor;
 use crate::utils::EnhFloat;
 
@@ -39,7 +39,7 @@ impl Cash {
 impl Default for Cash {
     fn default() -> Self {
         Cash {
-            amount: 10_000.,
+            amount: START_CAPITAL,
             current_interest: 0.,
             accumulated_interest: 0.,
         }
