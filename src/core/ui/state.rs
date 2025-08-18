@@ -460,7 +460,6 @@ impl PoliciesTab {
         match self {
             PoliciesTab::Sectors => "🏭",
             PoliciesTab::Politics => "⚖",
-            PoliciesTab::Laws => "🎓",
         }
     }
 }
