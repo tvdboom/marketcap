@@ -702,8 +702,7 @@ pub fn trade_modal(
                     |ui| {
                         if tab != OrderKind::ShortSell && !matches!(instrument.kind(), InstrumentKind::Bond(_)) {
                             ui.add_enabled_ui(
-                                total_price > 0.
-                                    && (tab.is_derivative() || (owned > 0 && !state.modal_info.loan))
+                                    (tab.is_derivative() || (owned > 0 && !state.modal_info.loan))
                                     && (tab != OrderKind::LimitOrder || limit_price > instrument.current()),
                                 |ui| {
 
@@ -872,6 +871,12 @@ pub fn trade_modal(
 
             player.derivatives.push(derivative);
         } else {
+            let order_price = if command != Command::Close {
+                total_price
+            } else {
+                owned as f32 * instrument.current()
+            };
+
             let mut order = Order {
                 id: create_guid(),
                 created: economy.date,
@@ -883,7 +888,7 @@ pub fn trade_modal(
                 } else {
                     -(amount as i32)
                 },
-                price: total_price
+                price: order_price
                     - if command == Command::Buy {
                         0.
                     } else {
@@ -912,7 +917,7 @@ pub fn trade_modal(
                 order.processed = economy.date;
                 order_ev.write(OrderEv {
                     id: order.id.clone(),
-                    price: total_price,
+                    price: order_price,
                 });
             } else {
                 order.status = OrderStatus::Pending;

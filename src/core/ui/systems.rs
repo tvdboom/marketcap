@@ -292,8 +292,8 @@ pub fn top_panel(
                         -----------------------------\n\
                         Net flow: {}",
                         player.cash.accumulated_interest.signed(),
-                        (if economy.date.month() % 3 == 0 { player.approx_dividends(&economy) } else { 0. }).signed(),
-                        (if economy.date.month() % 6 == 0 { player.approx_coupons(&economy) } else { 0. }).signed(),
+                        (if economy.date.month() % 3 == 1 { player.approx_dividends(&economy) } else { 0. }).signed(),
+                        (if economy.date.month() % 6 == 1 { player.approx_coupons(&economy) } else { 0. }).signed(),
                         (-player.storage_costs(&economy)).signed(),
                         (-player.loan_installments()).signed(),
                         (-player.short_sell_interest()).signed(),

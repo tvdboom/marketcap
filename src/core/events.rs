@@ -804,9 +804,11 @@ impl EconomicEvent {
             EventName::CurrencyReevaluation => {
                 economy.politics.update_government(rng.random_range(5..10));
 
-                economy.currencies.iter_mut().find(|c| c.country == CountryName::Venezuela).map(|c| {
-                    c.base_value *= rng.random_range(0.6..0.7);
-                });
+                economy.currencies.iter_mut().find(|c| c.country == CountryName::Venezuela).map(
+                    |c| {
+                        c.base_value *= rng.random_range(0.6..0.7);
+                    },
+                );
 
                 economy.sectors.iter_mut().find(|s| s.name == SectorName::Finance).map(|s| {
                     s.update(-rng.random_range(5..10));
@@ -897,7 +899,7 @@ impl EconomicEvent {
                 economy.sectors.iter_mut().find(|s| s.name == SectorName::Materials).map(|s| {
                     s.update(-rng.random_range(10..15));
                 });
-            }
+            },
             EventName::MiningStrike(country) => {
                 economy.politics.update_orientation(-rng.random_range(10..15));
 
@@ -1018,13 +1020,9 @@ impl EconomicEvent {
             EventName::SyntheticMeat => {
                 economy.politics.update_culture(rng.random_range(10..15));
 
-                economy
-                    .commodities
-                    .iter_mut()
-                    .filter(|c| c.name.is_food())
-                    .for_each(|c| {
-                        *c.prices.back_mut().unwrap() *= rng.random_range(0.85..0.95);
-                    });
+                economy.commodities.iter_mut().filter(|c| c.name.is_food()).for_each(|c| {
+                    *c.prices.back_mut().unwrap() *= rng.random_range(0.85..0.95);
+                });
 
                 economy.sectors.iter_mut().find(|s| s.name == SectorName::Food).map(|s| {
                     s.update(-rng.random_range(5..10));

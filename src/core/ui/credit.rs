@@ -381,7 +381,7 @@ pub fn credit_panel(
                     if let Some(owned) = player
                         .instruments
                         .iter_mut()
-                        .find(|o| o.loan.as_ref().map(|l| l.id == *id).unwrap())
+                        .find(|o| o.loan.as_ref().map(|l| l.id == *id).unwrap_or(false))
                     {
                         if let Some(loan) = &mut owned.loan.as_mut() {
                             ui.horizontal(|ui| {
@@ -420,7 +420,7 @@ pub fn credit_panel(
 
                                     ui.add_space(window.height() * 0.02);
 
-                                    if ui.button("Repay loan").clicked() {
+                                    if ui.button("Increase collateral").clicked() {
                                         owned.warning = false;
                                         player.cash.amount -= collateral_amount as f32;
                                         loan.collateral += collateral_amount as f32;
